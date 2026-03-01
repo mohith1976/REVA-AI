@@ -1,0 +1,1597 @@
+'use client';
+import { useState, useEffect, useRef } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import api from "@/utils/api";
+import toast from "react-hot-toast";
+
+const PRIORITY_COLORS = {
+  EMERGENCY: "#ff3b30",
+  HIGH: "#f87171",
+  MODERATE: "#fbbf24",
+  INFORMATIONAL: "#34d399",
+};
+const STATUS_ORDER = [
+  "FILED",
+  "UNDER_REVIEW",
+  "ASSIGNED",
+  "IN_PROGRESS",
+  "ESCALATED",
+  "RESOLVED",
+  "CLOSED",
+];
+
+const SUMMARY_STATUS_LABELS = {
+  FILED: "Filed",
+  UNDER_REVIEW: "Under Review",
+  ASSIGNED: "Assigned",
+  IN_PROGRESS: "In Progress",
+  ESCALATED: "Escalated",
+  RESOLVED: "Resolved",
+  CLOSED: "Closed",
+};
+
+function EvidenceCard({ item }) {
+  const [url, setUrl] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const fetchUrl = async () => {
+    if (url) return;
+    setLoading(true);
+    try {
+      const res = await api.get(`/api/evidence/${item.id}/url`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("reva_police_token")}`,
+        },
+      });
+      setUrl(res.data.url);
+    } catch (err) {
+      toast.error("Failed to load evidence file");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isImage = item.mediaCategory === "IMAGE";
+  const isVideo = item.mediaCategory === "VIDEO";
+
+  return (
+    <div
+      className="card"
+      style={{
+        padding: "12px",
+        background: "var(--clr-bg-2)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "10px",
+        border: "1px solid var(--clr-border)",
+      }}
+    >
+      <div
+        style={{
+          height: "140px",
+          background: "var(--clr-bg)",
+          borderRadius: "8px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          overflow: "hidden",
+          position: "relative",
+          cursor: "pointer",
+        }}
+        onClick={fetchUrl}
+      >
+        {url ? (
+          isImage ? (
+            <img
+              src={url}
+              alt={item.fileName}
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          ) : isVideo ? (
+            <video
+              src={url}
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          ) : (
+            <div style={{ fontSize: "2rem" }}>📄</div>
+          )
+        ) : (
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: "1.5rem", marginBottom: "4px" }}>
+              {isImage ? "🖼️" : isVideo ? "📹" : "📄"}
+            </div>
+            <div style={{ fontSize: "0.7rem", color: "var(--clr-text-faint)" }}>
+              {loading ? "Loading..." : "Click to view"}
+            </div>
+          </div>
+        )}
+        {item.riskLevel && (
+          <div
+            style={{
+              position: "absolute",
+              top: "6px",
+              right: "6px",
+              padding: "2px 6px",
+              borderRadius: "4px",
+              fontSize: "0.6rem",
+              fontWeight: 700,
+              background:
+                item.riskLevel === "Critical" || item.riskLevel === "High"
+                  ? "#ff3b30"
+                  : "#fbbf24",
+              color: "#fff",
+            }}
+          >
+            {item.riskLevel}
+          </div>
+        )}
+      </div>
+      <div>
+        <div
+          style={{
+            fontSize: "0.8rem",
+            fontWeight: 600,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+          title={item.fileName}
+        >
+          {item.fileName}
+        </div>
+        <div
+          style={{
+            fontSize: "0.65rem",
+            color: "var(--clr-text-faint)",
+            marginTop: "2px",
+          }}
+        >
+          {item.mediaCategory} • {(item.fileSizeBytes / 1024 / 1024).toFixed(2)}{" "}
+          MB
+        </div>
+      </div>
+      {url && (
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn btn-ghost btn-xs"
+          style={{ fontSize: "0.7rem", marginTop: "4px" }}
+        >
+          Open Original ↗
+        </a>
+      )}
+    </div>
+  );
+}
+
+export default function ComplaintDetailPage() {
+  const { id } = useParams();
+  const { policeUser } = useAuth();
+  const router = useRouter();
+  const [complaint, setComplaint] = useState(null);
+  const [officers, setOfficers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [note, setNote] = useState("");
+  const [submittingNote, setSubmittingNote] = useState(false);
+  const [selectedOfficer, setSelectedOfficer] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("");
+  const [activeView, setActiveView] = useState("case_file");
+  const [stations, setStations] = useState([]);
+  const [selectedTargetStation, setSelectedTargetStation] = useState("");
+  const [migrationReason, setMigrationReason] = useState("");
+  const [isMigrating, setIsMigrating] = useState(false);
+  const [firData, setFirData] = useState(null);
+  const [firLoading, setFirLoading] = useState(false);
+  const [firError, setFirError] = useState(null);
+  const firGeneratedRef = useRef(false);
+
+  const token = localStorage.getItem("reva_police_token");
+  const headers = { Authorization: `Bearer ${token}` };
+
+  useEffect(() => {
+    fetchData();
+  }, [id]);
+
+  useEffect(() => {
+    if (complaint && !firGeneratedRef.current) {
+      firGeneratedRef.current = true;
+      generateFIR(complaint.id);
+    }
+  }, [complaint?.id]);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      // Fetch complaint first as it's critical
+      const cRes = await api.get(`/api/police/complaints/${id}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("reva_police_token")}`,
+        },
+      });
+      setComplaint(cRes.data);
+      setSelectedStatus(cRes.data.status);
+
+      // Fetch other data secondary
+      try {
+        if (["STATION_ADMIN", "SUPER_ADMIN"].includes(policeUser?.role)) {
+          const oRes = await api.get("/api/police/officers", {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("reva_police_token")}`,
+            },
+          });
+          setOfficers(oRes.data.officers || []);
+        }
+      } catch (e) {
+        console.warn("Failed to load officers", e);
+      }
+
+      try {
+        const sRes = await api.get("/api/stations");
+        setStations(sRes.data.stations || []);
+      } catch (e) {
+        console.warn("Failed to load stations", e);
+      }
+    } catch (err) {
+      const errorMsg =
+        err.response?.data?.error || "Failed to load complaint details";
+      toast.error(errorMsg);
+      console.error("Fetch Error:", err.response?.data || err.message);
+
+      // Don't navigate away immediately if it's an auth error we want to see
+      if (err.response?.status === 401) {
+        router.push("/police/login");
+      } else if (err.response?.status === 404) {
+        // Only navigate back if it's truly missing
+        setTimeout(() => router.push("/police/dashboard"), 3000);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAssign = async () => {
+    if (!selectedOfficer) return;
+    try {
+      await api.patch(
+        `/api/police/complaints/${id}/assign`,
+        { officerId: selectedOfficer },
+        { headers },
+      );
+      toast.success("Complaint assigned successfully");
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Failed to assign");
+    }
+  };
+
+  const handleStatusChange = async () => {
+    if (!selectedStatus || selectedStatus === complaint.status) return;
+    try {
+      await api.patch(
+        `/api/police/complaints/${id}/status`,
+        { status: selectedStatus },
+        { headers },
+      );
+      toast.success("Status updated");
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Failed to update status");
+    }
+  };
+
+  const addNote = async () => {
+    if (!note.trim()) return;
+    setSubmittingNote(true);
+    try {
+      await api.post(
+        `/api/police/complaints/${id}/notes`,
+        { note },
+        { headers },
+      );
+      toast.success("Note added");
+      setNote("");
+      fetchData();
+    } catch (err) {
+      toast.error("Failed to add note");
+    } finally {
+      setSubmittingNote(false);
+    }
+  };
+
+  const generateFIR = async (complaintId) => {
+    if (firData || firLoading) return;
+    setFirLoading(true);
+    setFirError(null);
+    try {
+      const res = await api.post(
+        `/api/police/complaints/${complaintId}/generate-fir`,
+        {},
+        { headers },
+      );
+      setFirData(res.data.firData);
+    } catch (err) {
+      setFirError(err.response?.data?.error || "Failed to generate FIR");
+    } finally {
+      setFirLoading(false);
+    }
+  };
+
+  const handleMigrate = async () => {
+    if (!selectedTargetStation) return toast.error("Select target station");
+    setIsMigrating(true);
+    try {
+      await api.patch(
+        `/api/police/complaints/${id}/migrate`,
+        { targetStationId: selectedTargetStation, reason: migrationReason },
+        { headers },
+      );
+      toast.success("Complaint migrated and transferred");
+      router.push("/police/dashboard");
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Migration failed");
+    } finally {
+      setIsMigrating(false);
+    }
+  };
+
+  const handlePrint = () => {
+    const printContent = document.getElementById("print-root");
+    if (!printContent) {
+      toast.error("FIR not yet generated. Please wait.");
+      return;
+    }
+
+    const printWindow = window.open("", "_blank");
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>FIR Report - ${complaint.trackingId}</title>
+          <style>
+            body { 
+              font-family: "Times New Roman", Times, serif; 
+              padding: 40px; 
+              color: #000; 
+              background: #fff; 
+              line-height: 1.7;
+              font-size: 14px;
+            }
+            table { border-collapse: collapse; width: 100%; }
+            td, th { border: 1px solid #999; padding: 8px 12px; }
+            h2 { text-align: center; margin-bottom: 8px; }
+            h4 { border-bottom: 2px solid #000; padding-bottom: 6px; text-transform: uppercase; }
+            .no-print { display: none !important; }
+            @page { margin: 2cm; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          </style>
+        </head>
+        <body>
+          ${printContent.innerHTML}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 500);
+  };
+
+  if (loading)
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "var(--clr-bg)",
+        }}
+      >
+        <div
+          style={{
+            width: 40,
+            height: 40,
+            border: "3px solid var(--clr-border)",
+            borderTopColor: "var(--clr-primary)",
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite",
+          }}
+        />
+      </div>
+    );
+
+  if (!complaint) return null;
+
+  const pColor = PRIORITY_COLORS[complaint.priorityLevel] || "#94a3b8";
+  const structured = complaint.structuredJson || {};
+
+  return (
+    <div style={{ minHeight: "100vh", background: "var(--clr-bg)" }}>
+      {/* Header */}
+      <div
+        className="no-print"
+        style={{
+          background: "rgba(8,12,20,0.9)",
+          backdropFilter: "blur(12px)",
+          borderBottom: "1px solid var(--clr-border)",
+          padding: "0 24px",
+          height: "60px",
+          display: "flex",
+          alignItems: "center",
+          gap: "16px",
+        }}
+      >
+        <button
+          className="btn btn-ghost btn-sm"
+          onClick={() => router.push("/police/dashboard")}
+        >
+          ← Back
+        </button>
+        <div
+          style={{
+            fontFamily: "monospace",
+            fontWeight: 700,
+            color: "var(--clr-primary-light)",
+          }}
+        >
+          {complaint.trackingId}
+        </div>
+        <div
+          style={{
+            height: "20px",
+            width: "1px",
+            background: "var(--clr-border)",
+          }}
+        />
+        <span
+          style={{
+            padding: "3px 10px",
+            borderRadius: "12px",
+            fontSize: "0.75rem",
+            fontWeight: 600,
+            background: `${pColor}20`,
+            color: pColor,
+          }}
+        >
+          {complaint.priorityLevel}
+        </span>
+        {complaint.isEmergency && (
+          <span
+            style={{
+              padding: "3px 10px",
+              borderRadius: "12px",
+              fontSize: "0.75rem",
+              fontWeight: 700,
+              background: "rgba(255,59,48,0.2)",
+              color: "#ff3b30",
+              animation: "pulse 1s infinite",
+            }}
+          >
+            🚨 EMERGENCY
+          </span>
+        )}
+        {(complaint.linksAsA?.length > 0 || complaint.linksAsB?.length > 0) && (
+          <span
+            style={{
+              padding: "3px 10px",
+              borderRadius: "12px",
+              fontSize: "0.75rem",
+              fontWeight: 700,
+              background: "rgba(139, 92, 246, 0.2)",
+              color: "#8b5cf6",
+            }}
+          >
+            🔗 LINKED
+          </span>
+        )}
+        <div style={{ flex: 1 }} />
+        {/* Risk score */}
+        {complaint.priorityScore > 0 && (
+          <div style={{ fontSize: "0.8rem", color: "var(--clr-text-muted)" }}>
+            Risk Score:{" "}
+            <span
+              style={{
+                fontWeight: 700,
+                color:
+                  complaint.priorityScore >= 80
+                    ? "#ff3b30"
+                    : complaint.priorityScore >= 50
+                      ? "#fbbf24"
+                      : "#34d399",
+              }}
+            >
+              {complaint.priorityScore}/100
+            </span>
+          </div>
+        )}
+      </div>
+
+      <div
+        style={{
+          maxWidth: "1200px",
+          margin: "0 auto",
+          padding: "24px",
+          display: "grid",
+          gridTemplateColumns: "1fr 340px",
+          gap: "24px",
+        }}
+      >
+        {/* Main column */}
+        <div>
+          {/* Tabs */}
+          <div
+            className="no-print"
+            style={{
+              display: "flex",
+              gap: "0",
+              borderBottom: "1px solid var(--clr-border)",
+              marginBottom: "20px",
+            }}
+          >
+            {[
+              { id: "case_file", label: "Full Case File (Transcript + FIR)" },
+              { id: "extraction", label: "Ai Analytics" },
+              { id: "timeline", label: "Audit Timeline" },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveView(tab.id)}
+                style={{
+                  padding: "12px 20px",
+                  border: "none",
+                  background: "none",
+                  cursor: "pointer",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "0.85rem",
+                  letterSpacing: "0.5px",
+                  textTransform: "uppercase",
+                  fontWeight: activeView === tab.id ? 700 : 500,
+                  color:
+                    activeView === tab.id
+                      ? "var(--clr-primary-light)"
+                      : "var(--clr-text-faint)",
+                  borderBottom:
+                    activeView === tab.id
+                      ? "3px solid var(--clr-primary)"
+                      : "3px solid transparent",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {activeView === "case_file" && (
+            <div
+              className="animate-fade-in"
+              style={{ display: "grid", gap: "32px" }}
+            >
+              {/* SECTION 1: TRANSCRIPT */}
+              <div
+                className="card no-print"
+                style={{ border: "1px solid var(--clr-border-hover)" }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "20px",
+                  }}
+                >
+                  <h4
+                    style={{
+                      fontSize: "1.1rem",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <span style={{ color: "var(--clr-primary)" }}>●</span> AI
+                    Intake Conversation
+                  </h4>
+                  <div
+                    style={{
+                      fontSize: "0.75rem",
+                      color: "var(--clr-text-faint)",
+                      textTransform: "uppercase",
+                      letterSpacing: "1px",
+                    }}
+                  >
+                    Digital Audio Transcript
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    background: "var(--clr-bg-3)",
+                    borderRadius: "12px",
+                    padding: "24px",
+                    fontFamily: "monospace",
+                    fontSize: "0.88rem",
+                    lineHeight: 1.9,
+                    color: "var(--clr-text-muted)",
+                    maxHeight: "450px",
+                    overflowY: "auto",
+                    border: "1px solid rgba(255,255,255,0.03)",
+                    boxShadow: "inset 0 4px 12px rgba(0,0,0,0.2)",
+                    marginBottom: "16px",
+                  }}
+                >
+                  {complaint.transcript ? (
+                    complaint.transcript.split("
+").map((line, i) => {
+                      const isAi = line.startsWith("REVA:");
+                      const isUser = line.startsWith("USER:");
+                      return (
+                        <div
+                          key={i}
+                          style={{
+                            marginBottom: "10px",
+                            padding: "8px 12px",
+                            borderRadius: "6px",
+                            background: isAi
+                              ? "rgba(59, 130, 246, 0.03)"
+                              : isUser
+                                ? "rgba(255,255,255,0.02)"
+                                : "transparent",
+                            borderLeft: isAi
+                              ? "3px solid var(--clr-primary)"
+                              : isUser
+                                ? "3px solid #8b5cf6"
+                                : "none",
+                          }}
+                        >
+                          <span
+                            style={{
+                              color: isAi
+                                ? "var(--clr-primary-light)"
+                                : isUser
+                                  ? "#a78bfa"
+                                  : "inherit",
+                              fontWeight: 700,
+                              marginRight: "8px",
+                              fontSize: "0.75rem",
+                              display: "block",
+                              marginBottom: "4px",
+                            }}
+                          >
+                            {line.split(":")[0]}:
+                          </span>
+                          <div
+                            style={{
+                              color: "var(--clr-text)",
+                              paddingLeft: "4px",
+                            }}
+                          >
+                            {line
+                              .split(":")
+                              .slice(1)
+                              .join(":")
+                              .split(/(?<=[.!?])\s+/)
+                              .filter((s) => s.trim())
+                              .map((sentence, idx) => (
+                                <div key={idx} style={{ marginBottom: "6px" }}>
+                                  {sentence}
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div
+                      style={{
+                        textAlign: "center",
+                        padding: "40px",
+                        color: "var(--clr-text-faint)",
+                      }}
+                    >
+                      No transcript data available.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* SECTION 1.5: EVIDENCE GALLERY */}
+              {complaint.evidence?.length > 0 && (
+                <div
+                  className="card no-print"
+                  style={{ border: "1px solid var(--clr-border-hover)" }}
+                >
+                  <h4
+                    style={{
+                      fontSize: "1.1rem",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      marginBottom: "20px",
+                    }}
+                  >
+                    <span style={{ color: "var(--clr-primary)" }}>●</span>{" "}
+                    Evidence & Media Attachments
+                  </h4>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        "repeat(auto-fill, minmax(180px, 1fr))",
+                      gap: "16px",
+                    }}
+                  >
+                    {complaint.evidence.map((ev) => (
+                      <EvidenceCard key={ev.id} item={ev} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* SECTION 2: FORMAL FIR REPORT — Section 154 CrPC */}
+              {firLoading && (
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: "40px",
+                    color: "var(--clr-text-muted)",
+                    fontSize: "0.95rem",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 32,
+                      height: 32,
+                      border: "3px solid var(--clr-border)",
+                      borderTopColor: "var(--clr-primary)",
+                      borderRadius: "50%",
+                      animation: "spin 1s linear infinite",
+                      margin: "0 auto 16px",
+                    }}
+                  />
+                  Generating formal FIR from transcript…
+                </div>
+              )}
+
+              {firError && (
+                <div
+                  className="card"
+                  style={{
+                    background: "rgba(255,59,48,0.08)",
+                    border: "1px solid rgba(255,59,48,0.3)",
+                    padding: "20px",
+                    color: "#ff3b30",
+                    fontSize: "0.9rem",
+                  }}
+                >
+                  ⚠️ FIR generation failed: {firError}
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    style={{ marginLeft: "16px" }}
+                    onClick={() => {
+                      setFirError(null);
+                      generateFIR(complaint.id);
+                    }}
+                  >
+                    Retry
+                  </button>
+                </div>
+              )}
+
+              {firData && (
+                <div
+                  id="print-root"
+                  className="card printable-area"
+                  style={{
+                    background: "#fff",
+                    color: "#1a1a1a",
+                    padding: "50px",
+                    boxShadow: "0 20px 50px rgba(0,0,0,0.3)",
+                    fontFamily: '"Times New Roman", Times, serif',
+                    fontSize: "0.97rem",
+                    lineHeight: 1.7,
+                  }}
+                >
+                  {/* ── Header ── */}
+                  <div
+                    style={{
+                      textAlign: "center",
+                      marginBottom: "30px",
+                      borderBottom: "3px double #000",
+                      paddingBottom: "20px",
+                    }}
+                  >
+                    <div style={{ fontSize: "0.85rem", letterSpacing: "2px", marginBottom: "6px" }}>GOVERNMENT OF INDIA</div>
+                    <h2
+                      style={{
+                        fontSize: "1.5rem",
+                        color: "#000",
+                        marginBottom: "6px",
+                        textTransform: "uppercase",
+                        letterSpacing: "1px",
+                      }}
+                    >
+                      First Information Report
+                    </h2>
+                    <div style={{ fontSize: "0.9rem", fontWeight: 600, marginBottom: "4px" }}>
+                      (Complaint Statement)
+                    </div>
+                    <div style={{ fontSize: "0.85rem" }}>(Under Section 154 CrPC)</div>
+                  </div>
+
+                  {/* ── Top meta row ── */}
+                  <table
+                    style={{
+                      width: "100%",
+                      borderCollapse: "collapse",
+                      marginBottom: "24px",
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    <tbody>
+                      <tr>
+                        <td
+                          style={{
+                            border: "1px solid #999",
+                            padding: "8px 12px",
+                            width: "50%",
+                          }}
+                        >
+                          <strong>FIR No.:</strong> {complaint.trackingId}
+                        </td>
+                        <td
+                          style={{ border: "1px solid #999", padding: "8px 12px" }}
+                        >
+                          <strong>Date &amp; Time of Filing:</strong>{" "}
+                          {new Date(complaint.createdAt).toLocaleString("en-IN")}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td
+                          style={{ border: "1px solid #999", padding: "8px 12px" }}
+                        >
+                          <strong>Police Station:</strong>{" "}
+                          {complaint.station?.stationName},{" "}
+                          {complaint.station?.district}
+                        </td>
+                        <td
+                          style={{ border: "1px solid #999", padding: "8px 12px" }}
+                        >
+                          <strong>Status:</strong> {complaint.status}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  {/* ── Numbered fields ── */}
+                  {[
+                    { no: "1.", label: "Name of Complainant", value: complaint.isAnonymous ? "UNDER PROTECTED IDENTITY (ANONYMOUS)" : firData.complainant_name },
+                    { no: "2.", label: "Father's / Husband's Name", value: firData.fathers_or_husbands_name },
+                    { no: "3.", label: "Age", value: firData.age },
+                    { no: "4.", label: "Gender", value: firData.gender },
+                    { no: "5.", label: "Occupation", value: firData.occupation },
+                    { no: "6.", label: "Residential Address", value: firData.address },
+                    { no: "7.", label: "Contact Number", value: complaint.isAnonymous ? "WITHHELD" : firData.contact_number },
+                    { no: "8.", label: "Aadhaar (Masked)", value: complaint.user?.aadhaarMasked || "Not Provided" },
+                  ].map(({ no, label, value }) => (
+                    <div
+                      key={no}
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "28px 220px 1fr",
+                        gap: "8px",
+                        marginBottom: "10px",
+                        paddingBottom: "10px",
+                        borderBottom: "1px dashed #ccc",
+                        alignItems: "start",
+                      }}
+                    >
+                      <span style={{ fontWeight: 700, color: "#555" }}>{no}</span>
+                      <span style={{ fontWeight: 700 }}>{label}:</span>
+                      <span>{value || "Not mentioned"}</span>
+                    </div>
+                  ))}
+
+                  {/* ── Occurrence details ── */}
+                  <div style={{ marginTop: "20px", marginBottom: "6px" }}>
+                    <h4
+                      style={{
+                        borderBottom: "2px solid #000",
+                        paddingBottom: "6px",
+                        fontSize: "1rem",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.5px",
+                        marginBottom: "14px",
+                      }}
+                    >
+                      Particulars of Occurrence
+                    </h4>
+                  </div>
+
+                  {[
+                    { no: "9.", label: "Date of Occurrence", value: firData.date_of_occurrence },
+                    { no: "10.", label: "Time of Occurrence", value: firData.time_of_occurrence },
+                    { no: "11.", label: "Place of Occurrence", value: firData.place_of_occurrence },
+                    { no: "12.", label: "Nature of Offence", value: firData.nature_of_offence },
+                    { no: "13.", label: "Applicable IPC / BNS Sections", value: firData.ipc_sections },
+                  ].map(({ no, label, value }) => (
+                    <div
+                      key={no}
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "28px 220px 1fr",
+                        gap: "8px",
+                        marginBottom: "10px",
+                        paddingBottom: "10px",
+                        borderBottom: "1px dashed #ccc",
+                        alignItems: "start",
+                      }}
+                    >
+                      <span style={{ fontWeight: 700, color: "#555" }}>{no}</span>
+                      <span style={{ fontWeight: 700 }}>{label}:</span>
+                      <span>{value || "Not mentioned"}</span>
+                    </div>
+                  ))}
+
+                  {/* ── Incident-specific details (property / accused etc.) ── */}
+                  <div
+                    style={{
+                      marginTop: "20px",
+                      marginBottom: "16px",
+                      padding: "16px",
+                      border: "1px solid #ccc",
+                      background: "#fafafa",
+                    }}
+                  >
+                    <strong style={{ display: "block", marginBottom: "10px" }}>
+                      14. {firData.incident_specific_details_label || "Incident Details"}:
+                    </strong>
+                    <div style={{ whiteSpace: "pre-line", lineHeight: 1.8 }}>
+                      {firData.incident_specific_details || "Not mentioned"}
+                    </div>
+                  </div>
+
+                  {/* ── Brief facts ── */}
+                  <div
+                    style={{
+                      marginBottom: "16px",
+                      padding: "16px",
+                      border: "1px solid #ccc",
+                      background: "#fafafa",
+                    }}
+                  >
+                    <strong style={{ display: "block", marginBottom: "10px" }}>
+                      15. Brief Facts of the Case:
+                    </strong>
+                    <p style={{ margin: 0, textAlign: "justify", lineHeight: 1.9 }}>
+                      {firData.brief_facts}
+                    </p>
+                  </div>
+
+                  {/* ── Witnesses ── */}
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "28px 220px 1fr",
+                      gap: "8px",
+                      marginBottom: "10px",
+                      paddingBottom: "10px",
+                      borderBottom: "1px dashed #ccc",
+                      alignItems: "start",
+                    }}
+                  >
+                    <span style={{ fontWeight: 700, color: "#555" }}>16.</span>
+                    <span style={{ fontWeight: 700 }}>Witnesses:</span>
+                    <span>{firData.witnesses || "None mentioned"}</span>
+                  </div>
+
+                  {/* ── Action requested ── */}
+                  <div
+                    style={{
+                      marginTop: "16px",
+                      marginBottom: "30px",
+                      padding: "12px 16px",
+                      border: "1px solid #bbb",
+                      background: "#f5f5f5",
+                      fontStyle: "italic",
+                    }}
+                  >
+                    <strong>Prayer / Action Requested: </strong>
+                    {firData.action_requested ||
+                      "I request you to kindly register this complaint and take necessary legal action to trace and apprehend the offender(s). I am ready to cooperate with the investigation."}
+                  </div>
+
+                  {/* ── Signature block ── */}
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr 1fr",
+                      gap: "30px",
+                      marginTop: "50px",
+                      paddingTop: "20px",
+                      borderTop: "1px solid #000",
+                    }}
+                  >
+                    <div style={{ textAlign: "center" }}>
+                      <div
+                        style={{
+                          borderBottom: "1px solid #000",
+                          marginBottom: "6px",
+                          height: "40px",
+                        }}
+                      />
+                      <div style={{ fontSize: "0.8rem", fontWeight: 700 }}>
+                        Signature / Thumb Impression
+                      </div>
+                      <div style={{ fontSize: "0.8rem" }}>
+                        of Complainant
+                      </div>
+                      <div style={{ fontSize: "0.85rem", marginTop: "4px" }}>
+                        ({complaint.isAnonymous ? "Anonymous" : firData.complainant_name})
+                      </div>
+                    </div>
+                    <div style={{ textAlign: "center" }}>
+                      <div
+                        style={{
+                          borderBottom: "1px solid #000",
+                          marginBottom: "6px",
+                          height: "40px",
+                        }}
+                      />
+                      <div style={{ fontSize: "0.8rem", fontWeight: 700 }}>
+                        Signature of Investigating
+                      </div>
+                      <div style={{ fontSize: "0.8rem" }}>Officer</div>
+                    </div>
+                    <div style={{ textAlign: "center" }}>
+                      <div
+                        style={{
+                          borderBottom: "1px solid #000",
+                          marginBottom: "6px",
+                          height: "40px",
+                        }}
+                      />
+                      <div style={{ fontSize: "0.8rem", fontWeight: 700 }}>Station SHO Seal</div>
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      marginTop: "20px",
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    <span><strong>Date:</strong> {firData.date_of_filing}</span>
+                    <span><strong>Place:</strong> {firData.place_of_filing}</span>
+                  </div>
+
+                  <div style={{ textAlign: "center", marginTop: "30px" }} className="no-print">
+                    <button className="btn btn-primary" onClick={handlePrint}>
+                      🖨️ Print Final FIR
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeView === "extraction" && (
+            <div className="card animate-fade-in no-print">
+              <h4 style={{ marginBottom: "16px", fontSize: "0.95rem" }}>
+                AI Forensic JSON Extraction
+              </h4>
+              <div style={{ display: "grid", gap: "12px" }}>
+                {Object.entries(structured).map(
+                  ([key, value]) =>
+                    value && (
+                      <div
+                        key={key}
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "180px 1fr",
+                          gap: "12px",
+                          paddingBottom: "12px",
+                          borderBottom: "1px solid var(--clr-border)",
+                        }}
+                      >
+                        <span
+                          style={{
+                            color: "var(--clr-text-faint)",
+                            fontSize: "0.82rem",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.05em",
+                            fontWeight: 600,
+                          }}
+                        >
+                          {key.replace(/_/g, " ")}
+                        </span>
+                        <div
+                          style={{
+                            fontSize: "0.88rem",
+                            color: "var(--clr-text)",
+                            wordBreak: "break-all",
+                            fontFamily:
+                              typeof value === "object"
+                                ? "monospace"
+                                : "inherit",
+                          }}
+                        >
+                          {typeof value === "object" ? (
+                            <pre
+                              style={{
+                                margin: 0,
+                                padding: "8px",
+                                background: "rgba(255,255,255,0.02)",
+                                borderRadius: "4px",
+                                overflowX: "auto",
+                              }}
+                            >
+                              {JSON.stringify(value, null, 2)}
+                            </pre>
+                          ) : (
+                            String(value)
+                          )}
+                        </div>
+                      </div>
+                    ),
+                )}
+                {Object.keys(structured).length === 0 && (
+                  <p
+                    style={{
+                      color: "var(--clr-text-muted)",
+                      fontSize: "0.88rem",
+                    }}
+                  >
+                    No structured data extracted
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeView === "timeline" && (
+            <div className="card no-print">
+              <h4 style={{ marginBottom: "16px", fontSize: "0.95rem" }}>
+                Activity Timeline
+              </h4>
+              <div style={{ position: "relative", paddingLeft: "20px" }}>
+                <div
+                  style={{
+                    position: "absolute",
+                    left: "7px",
+                    top: 0,
+                    bottom: 0,
+                    width: "2px",
+                    background: "var(--clr-border)",
+                  }}
+                />
+                {[
+                  {
+                    content: "Complaint filed by citizen",
+                    createdAt: complaint.createdAt,
+                    type: "FILED",
+                  },
+                  ...(complaint.updates || []),
+                ].map((u, i) => (
+                  <div
+                    key={i}
+                    style={{ marginBottom: "20px", position: "relative" }}
+                  >
+                    <div
+                      style={{
+                        position: "absolute",
+                        left: "-17px",
+                        width: "10px",
+                        height: "10px",
+                        borderRadius: "50%",
+                        background:
+                          u.type === "EMERGENCY_FLAG"
+                            ? "#ff3b30"
+                            : "var(--clr-primary)",
+                        top: "4px",
+                        boxShadow: `0 0 0 2px var(--clr-bg)`,
+                      }}
+                    />
+                    <div
+                      style={{
+                        fontSize: "0.75rem",
+                        color: "var(--clr-text-faint)",
+                        marginBottom: "3px",
+                      }}
+                    >
+                      {new Date(u.createdAt).toLocaleString("en-IN")}
+                      {u.updateType && (
+                        <span
+                          style={{
+                            marginLeft: "8px",
+                            background: "rgba(255,255,255,0.06)",
+                            padding: "1px 6px",
+                            borderRadius: "4px",
+                            fontSize: "0.7rem",
+                          }}
+                        >
+                          {u.updateType}
+                        </span>
+                      )}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "0.88rem",
+                        color: "var(--clr-text)",
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      {u.content}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Add Note */}
+          <div className="card no-print" style={{ marginTop: "16px" }}>
+            <h4 style={{ marginBottom: "12px", fontSize: "0.95rem" }}>
+              Add Internal Note
+            </h4>
+            <textarea
+              id="note-input"
+              className="input"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Add investigation notes, observations..."
+              rows={3}
+              style={{ resize: "vertical", marginBottom: "10px" }}
+            />
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={addNote}
+              disabled={submittingNote || !note.trim()}
+            >
+              {submittingNote ? "Adding..." : "Add Note"}
+            </button>
+          </div>
+        </div>
+
+        {/* Right panel */}
+        <div
+          className="no-print"
+          style={{ display: "flex", flexDirection: "column", gap: "16px" }}
+        >
+          {/* Complaint Info */}
+          <div className="card">
+            <h4 style={{ marginBottom: "16px", fontSize: "0.95rem" }}>
+              Details
+            </h4>
+            <div style={{ display: "grid", gap: "10px", fontSize: "0.85rem" }}>
+              <InfoRow
+                label="Incident Type"
+                value={complaint.incidentType || "General"}
+              />
+              <InfoRow
+                label="Location"
+                value={
+                  complaint.locationAddress ||
+                  `${complaint.locationLat?.toFixed(4)}, ${complaint.locationLng?.toFixed(4)}` ||
+                  "N/A"
+                }
+              />
+              <InfoRow
+                label="Filed"
+                value={new Date(complaint.createdAt).toLocaleString("en-IN")}
+              />
+              <InfoRow label="Station" value={complaint.station?.stationName} />
+              <InfoRow
+                label="Anonymous"
+                value={complaint.isAnonymous ? "Yes" : "No"}
+              />
+            </div>
+          </div>
+
+          {/* Citizen Info */}
+          {!complaint.isAnonymous && complaint.user && (
+            <div className="card">
+              <h4 style={{ marginBottom: "12px", fontSize: "0.95rem" }}>
+                Complainant
+              </h4>
+              <div style={{ display: "grid", gap: "8px", fontSize: "0.85rem" }}>
+                <InfoRow label="Name" value={complaint.user.name || "N/A"} />
+                <InfoRow label="Mobile" value={complaint.user.mobileNumber} />
+                <InfoRow
+                  label="Aadhaar"
+                  value={complaint.user.aadhaarMasked || "N/A"}
+                />
+                <InfoRow
+                  label="Total Complaints"
+                  value={complaint.user.complaintCount}
+                />
+                <InfoRow
+                  label="Risk Flags"
+                  value={complaint.user.riskFlagCount}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Jurisdiction Transfer (Migration) */}
+          {["STATION_ADMIN", "SUPER_ADMIN", "GLOBAL_ADMIN", "OFFICER"].includes(
+            policeUser?.role,
+          ) && (
+            <div
+              className="card"
+              style={{ border: "1px solid rgba(139, 92, 246, 0.2)" }}
+            >
+              <h4
+                style={{
+                  marginBottom: "12px",
+                  fontSize: "0.95rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
+                <span style={{ color: "var(--clr-primary)" }}>⇄</span>{" "}
+                Jurisdiction Transfer
+              </h4>
+              <p
+                style={{
+                  fontSize: "0.78rem",
+                  color: "var(--clr-text-muted)",
+                  marginBottom: "12px",
+                }}
+              >
+                Transfer this case to another police station if it falls outside
+                current jurisdiction.
+              </p>
+
+              <div style={{ display: "grid", gap: "10px" }}>
+                <select
+                  className="input sm"
+                  value={selectedTargetStation}
+                  onChange={(e) => setSelectedTargetStation(e.target.value)}
+                  style={{ fontSize: "0.85rem" }}
+                >
+                  <option value="">Select Target Station</option>
+                  {stations
+                    .filter((s) => s.id !== complaint.stationId)
+                    .map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.stationName} ({s.district})
+                      </option>
+                    ))}
+                </select>
+
+                <input
+                  type="text"
+                  className="input sm"
+                  placeholder="Reason for transfer..."
+                  value={migrationReason}
+                  onChange={(e) => setMigrationReason(e.target.value)}
+                  style={{ fontSize: "0.85rem" }}
+                />
+
+                <button
+                  className="btn btn-ghost btn-sm w-full"
+                  style={{
+                    borderColor: "var(--clr-primary)",
+                    color: "var(--clr-primary-light)",
+                    marginTop: "4px",
+                  }}
+                  onClick={handleMigrate}
+                  disabled={!selectedTargetStation || isMigrating}
+                >
+                  {isMigrating ? "Processing..." : "Transfer Case →"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Status Update */}
+          <div className="card">
+            <h4 style={{ marginBottom: "12px", fontSize: "0.95rem" }}>
+              Update Status
+            </h4>
+            <select
+              id="status-select"
+              className="input"
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              style={{ marginBottom: "10px" }}
+            >
+              {STATUS_ORDER.map((s) => (
+                <option key={s} value={s}>
+                  {s.replace("_", " ")}
+                </option>
+              ))}
+            </select>
+            <button
+              className="btn btn-primary btn-sm w-full"
+              onClick={handleStatusChange}
+              disabled={selectedStatus === complaint.status}
+            >
+              Update Status
+            </button>
+          </div>
+
+          {/* Officer Assignment */}
+          {["STATION_ADMIN", "SUPER_ADMIN", "GLOBAL_ADMIN"].includes(
+            policeUser?.role,
+          ) &&
+            officers.length > 0 && (
+              <div className="card">
+                <h4 style={{ marginBottom: "12px", fontSize: "0.95rem" }}>
+                  Assign Officer
+                </h4>
+                <p
+                  style={{
+                    fontSize: "0.8rem",
+                    color: "var(--clr-text-muted)",
+                    marginBottom: "10px",
+                  }}
+                >
+                  Currently: {complaint.assignedOfficer?.name || "Unassigned"}
+                </p>
+                <select
+                  id="officer-select"
+                  className="input"
+                  value={selectedOfficer}
+                  onChange={(e) => setSelectedOfficer(e.target.value)}
+                  style={{ marginBottom: "10px" }}
+                >
+                  <option value="">Select Officer</option>
+                  {officers.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.name} ({o._count?.assignedComplaints || 0} cases)
+                    </option>
+                  ))}
+                </select>
+                <button
+                  className="btn btn-primary btn-sm w-full"
+                  onClick={handleAssign}
+                  disabled={!selectedOfficer}
+                >
+                  Assign
+                </button>
+              </div>
+            )}
+
+          {/* Linked Cases */}
+          {(complaint.linksAsA?.length > 0 ||
+            complaint.linksAsB?.length > 0) && (
+            <div
+              className="card"
+              style={{ border: "1px solid rgba(139, 92, 246, 0.2)" }}
+            >
+              <h4
+                style={{
+                  marginBottom: "12px",
+                  fontSize: "0.95rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
+                <span style={{ color: "var(--clr-primary)" }}>🔗</span> Linked
+                Complaints
+              </h4>
+              <div style={{ display: "grid", gap: "8px" }}>
+                {[
+                  ...complaint.linksAsA.map((l) => ({
+                    ...l.complaintB,
+                    reason: l.linkReason,
+                  })),
+                  ...complaint.linksAsB.map((l) => ({
+                    ...l.complaintA,
+                    reason: l.linkReason,
+                  })),
+                ].map((c, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => router.push(`/police/complaints/${c.id}`)}
+                    style={{
+                      padding: "10px",
+                      borderRadius: "8px",
+                      background: "rgba(255,255,255,0.03)",
+                      border: "1px solid var(--clr-border)",
+                      fontSize: "0.82rem",
+                      cursor: "pointer",
+                      transition: "background 0.2s",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.background =
+                        "rgba(255,255,255,0.06)")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.background =
+                        "rgba(255,255,255,0.03)")
+                    }
+                  >
+                    <div
+                      style={{
+                        fontWeight: 600,
+                        color: "var(--clr-primary-light)",
+                      }}
+                    >
+                      {c.trackingId}
+                    </div>
+                    <div
+                      style={{
+                        color: "var(--clr-text-muted)",
+                        fontSize: "0.75rem",
+                      }}
+                    >
+                      {c.incidentType} • {c.status}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "0.7rem",
+                        color: "var(--clr-text-faint)",
+                        fontStyle: "italic",
+                        marginTop: "2px",
+                      }}
+                    >
+                      Reason: {c.reason}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Evidence */}
+          {complaint.evidence?.length > 0 && (
+            <div className="card">
+              <h4 style={{ marginBottom: "16px", fontSize: "0.95rem" }}>
+                Evidence ({complaint.evidence.length})
+              </h4>
+              {complaint.evidence.map((e, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    padding: "8px 0",
+                    borderBottom: "1px solid var(--clr-border)",
+                    fontSize: "0.82rem",
+                  }}
+                >
+                  <span style={{ color: "var(--clr-text-muted)" }}>
+                    {e.mediaCategory}
+                  </span>
+                  <span style={{ color: "var(--clr-text-faint)" }}>
+                    {new Date(e.uploadedAt).toLocaleDateString("en-IN")}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InfoRow({ label, value }) {
+  return (
+    <div
+      style={{ display: "flex", justifyContent: "space-between", gap: "8px" }}
+    >
+      <span style={{ color: "var(--clr-text-faint)", flexShrink: 0 }}>
+        {label}
+      </span>
+      <span
+        style={{
+          color: "var(--clr-text)",
+          textAlign: "right",
+          wordBreak: "break-word",
+        }}
+      >
+        {value || "—"}
+      </span>
+    </div>
+  );
+}
