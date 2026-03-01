@@ -41,23 +41,37 @@ import {
   FileText,
 } from "lucide-react";
 
+// ── Typewriter component for ChatGPT style ───────────────────────────
+const TypewriterText = ({ text, speed = 0.03 }) => {
+  const words = text.split(" ");
+  return (
+    <motion.div className="inline-block">
+      {words.map((word, i) => (
+        <motion.span
+          key={i}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{
+            duration: 0.8,
+            delay: i * speed,
+            ease: "easeOut"
+          }}
+          className="inline-block mr-[0.25em]"
+        >
+          {word}
+        </motion.span>
+      ))}
+    </motion.div>
+  );
+};
+
 export default function ComplaintPage() {
   const _auth = useAuth();
   const user = _auth?.user;
   const logoutCitizen = _auth?.logoutCitizen;
   const router = useRouter();
 
-  const [messages, setMessages] = useState([
-    {
-      id: "1",
-      text: `Hello${user?.name ? " " + user.name : ""}! I'm REVA, your AI Police Assistant. How can I help you today?`,
-      role: "ai",
-      timestamp: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    },
-  ]);
+  const [messages, setMessages] = useState([]);
 
   const [isLoading, setIsLoading] = useState(false);
   const [input, setInput] = useState("");
@@ -1194,6 +1208,25 @@ export default function ComplaintPage() {
         <main className="flex-1 overflow-y-auto px-6 pt-7 pb-[200px] relative z-[1]">
           <div className="max-w-[720px] mx-auto flex flex-col gap-5">
 
+            {messages.length === 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="flex flex-col items-center justify-center py-20 text-center"
+              >
+                <div className="w-16 h-16 flex items-center justify-center mb-6 ">
+
+                </div>
+                <h1 className="text-3xl font-extrabold text-slate-900 mb-3 tracking-tight">
+                  Hello{user?.name ? " " + user.name : ""}!
+                </h1>
+                <p className="text-neutral-500 max-w-[620px] leading-relaxed text-2xl">
+                  I'm <span className="text-neutral-900 font-bold tracking-tight">REVA</span>, your AI Police Assistant. How can I help you today?
+                </p>
+              </motion.div>
+            )}
+
             {messages.map((msg, idx) => (
               <motion.div
                 key={msg.id}
@@ -1203,7 +1236,7 @@ export default function ComplaintPage() {
                 transition={{ delay: idx < 3 ? idx * 0.08 : 0 }}
                 className={`flex w-full ${msg.role === "user" ? "justify-end" : "justify-start"}`}
               >
-                <div className={`flex items-end gap-2.5 max-w-[82%] ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+                <div className={`flex items-start gap-3.5 max-w-[85%] ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
                   {/* Avatar */}
                   <div className={`w-[30px] h-[30px] rounded-full shrink-0 flex items-center justify-center ${msg.role === "user" ? "bg-slate-800" : "bg-slate-100 border border-slate-200"
                     }`}>
@@ -1313,7 +1346,7 @@ export default function ComplaintPage() {
 
                   {/* Normal text bubble */}
                   {!msg.type && (
-                    <div className="relative">
+                    <div className="relative flex-1">
                       {editingMessageId === msg.id ? (
                         <div className="flex flex-col gap-2 min-w-[220px] max-w-[420px]">
                           <textarea
@@ -1335,13 +1368,17 @@ export default function ComplaintPage() {
                           </div>
                         </div>
                       ) : (
-                        <div className="relative">
-                          <div className={`px-[18px] py-3 text-[0.94rem] leading-[1.55] ${msg.role === "user"
-                            ? "rounded-[18px_18px_4px_18px] bg-slate-800 text-white shadow-md"
-                            : "rounded-[18px_18px_18px_4px] bg-white border border-slate-200 text-slate-800 shadow-sm"
+                        <div className="relative group">
+                          <div className={`text-[0.96rem] leading-[1.6] ${msg.role === "user"
+                            ? "px-[18px] py-2.5 rounded-[20px_20px_4px_20px] bg-slate-800 text-white shadow-sm self-end"
+                            : "py-1 text-slate-800"
                             }`}>
-                            {msg.text}
-                            <div className={`text-[10px] text-right mt-1 ${msg.role === "user" ? "text-white/50" : "text-slate-300"}`}>
+                            {msg.role === "ai" && idx === messages.length - 1 ? (
+                              <TypewriterText text={msg.text} />
+                            ) : (
+                              msg.text
+                            )}
+                            <div className={`text-[9px] uppercase tracking-wider mt-1.5 font-medium opacity-0 group-hover:opacity-100 transition-opacity ${msg.role === "user" ? "text-white/40 text-right" : "text-slate-300 text-left"}`}>
                               {msg.timestamp}
                             </div>
                           </div>
@@ -1351,7 +1388,7 @@ export default function ComplaintPage() {
                               title="Edit message"
                               initial={{ opacity: 0 }}
                               whileHover={{ opacity: 1, scale: 1.15 }}
-                              className="absolute -top-2.5 -left-2.5 w-6 h-6 rounded-full bg-slate-700 border border-slate-500 cursor-pointer flex items-center justify-center"
+                              className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-slate-700/80 backdrop-blur-sm border border-slate-500/50 cursor-pointer flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                             >
                               <Pencil size={11} color="white" />
                             </motion.button>
@@ -1374,13 +1411,13 @@ export default function ComplaintPage() {
                 <div className="w-[30px] h-[30px] rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center">
                   <Bot size={14} color="#475569" />
                 </div>
-                <div className="px-[18px] py-3.5 rounded-[18px_18px_18px_4px] bg-white border border-slate-200 shadow-sm flex gap-1.5 items-center">
+                <div className="px-1 py-3 flex gap-1 items-center">
                   {[0, 1, 2].map((i) => (
                     <motion.div
                       key={i}
-                      className="w-[7px] h-[7px] rounded-full bg-slate-400"
-                      animate={{ y: [0, -6, 0] }}
-                      transition={{ repeat: Infinity, duration: 0.9, delay: i * 0.18, ease: "easeInOut" }}
+                      className="w-[5px] h-[5px] rounded-full bg-slate-300"
+                      animate={{ opacity: [0.4, 1, 0.4] }}
+                      transition={{ repeat: Infinity, duration: 1.2, delay: i * 0.2 }}
                     />
                   ))}
                 </div>
@@ -1403,17 +1440,18 @@ export default function ComplaintPage() {
 
             <div ref={messagesEndRef} />
           </div>
-        </main>
+        </main >
 
         {/* ── Controls hub ───────────────────────────────────────────── */}
-        <motion.div
-          initial={{ y: 60, opacity: 0 }}
+        < motion.div
+          initial={{ y: 60, opacity: 0 }
+          }
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.25, type: "spring", stiffness: 280, damping: 28 }}
           className="fixed bottom-7 left-1/2 -translate-x-1/2 z-50 flex items-center justify-center gap-2.5 bg-white/90 backdrop-blur-2xl border border-slate-200 rounded-[56px] px-4 py-2 max-w-max shadow-xl shadow-black/5"
         >
           {/* Hidden file inputs */}
-          <input ref={imageFileRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleMediaUpload} />
+          < input ref={imageFileRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleMediaUpload} />
           <input ref={cameraPhotoRef} type="file" accept="image/*,video/*" capture="environment" className="hidden" onChange={handleMediaUpload} />
 
           {/* Settings */}
@@ -1564,10 +1602,10 @@ export default function ComplaintPage() {
               ))}
             </select>
           </div>
-        </motion.div>
+        </motion.div >
 
         {/* ── Settings Modal ─────────────────────────────────────────── */}
-        <AnimatePresence>
+        < AnimatePresence >
           {isSettingsOpen && (
             <motion.div
               key="settings-backdrop"
@@ -1628,10 +1666,10 @@ export default function ComplaintPage() {
               </motion.div>
             </motion.div>
           )}
-        </AnimatePresence>
+        </AnimatePresence >
 
         {/* ── Station Picker Modal ────────────────────────────────────── */}
-        <AnimatePresence>
+        < AnimatePresence >
           {showStationPicker && (
             <motion.div
               key="station-backdrop"
@@ -1701,11 +1739,11 @@ export default function ComplaintPage() {
               </motion.div>
             </motion.div>
           )}
-        </AnimatePresence>
-      </div>
+        </AnimatePresence >
+      </div >
 
       {/* ── Leave Confirmation Modal ────────────────────────────────── */}
-      <AnimatePresence>
+      < AnimatePresence >
         {showLeaveModal && (
           <motion.div
             key="leave-backdrop"
@@ -1739,10 +1777,10 @@ export default function ComplaintPage() {
             </motion.div>
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence >
 
       {/* ── Camera Modal ─────────────────────────────────────────────── */}
-      <AnimatePresence>
+      < AnimatePresence >
         {showCameraModal && (
           <motion.div
             key="camera"
@@ -1815,7 +1853,7 @@ export default function ComplaintPage() {
             </div>
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence >
     </>
   );
 }
