@@ -40,6 +40,14 @@ export function AuthProvider({ children }) {
         localStorage.setItem('reva_police_token', token);
     };
 
+    const updateUser = (partialUser) => {
+        setUser((prev) => {
+            const merged = { ...prev, ...partialUser };
+            localStorage.setItem('reva_user', JSON.stringify(merged));
+            return merged;
+        });
+    };
+
     const logoutCitizen = async () => {
         try {
             await api.post('/api/auth/logout');
@@ -69,6 +77,7 @@ export function AuthProvider({ children }) {
                 loginPolice,
                 logoutCitizen,
                 logoutPolice,
+                updateUser,
             }}
         >
             {children}

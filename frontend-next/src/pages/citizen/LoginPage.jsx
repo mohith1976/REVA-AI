@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/context/AuthContext";
@@ -38,9 +38,14 @@ export default function LoginPage() {
   const router = useRouter();
   const auth = useAuth();
   const loginCitizen = auth?.loginCitizen;
+  const updateUser = auth?.updateUser;
   const user = auth?.user;
   const authLoading = auth?.loading;
   const { t, i18n } = useTranslation();
+
+  const [nameInput, setNameInput] = useState("");
+  const [nameSaving, setNameSaving] = useState(false);
+  const pendingSessionRef = useRef(null);
 
   useEffect(() => {
     if (!authLoading && user) router.push("/complaint", { replace: true });
@@ -83,7 +88,12 @@ export default function LoginPage() {
     try {
       const res = await api.post("/api/auth/verify-otp", { aadhaar: rawAadhaar(), otp: fullOtp, language });
       loginCitizen(res.data.user, res.data.accessToken);
-      toast.success("Identity Verified Successfully"); router.push("/complaint");
+      if (!res.data.user.name) {
+        pendingSessionRef.current = { user: res.data.user, token: res.data.accessToken };
+        setStep("name");
+      } else {
+        toast.success("Identity Verified Successfully"); router.push("/complaint");
+      }
     } catch (err) { toast.error(err.response?.data?.error || "OTP Verification Failed"); }
     finally { setLoading(false); }
   };
@@ -116,7 +126,12 @@ export default function LoginPage() {
     try {
       const res = await api.post("/api/auth/pan/login", { pan, mobile, otp: fullOtp, name: verifiedDetails?.name, language });
       loginCitizen(res.data.user, res.data.accessToken);
-      toast.success("Login Successful"); router.push("/complaint");
+      if (!res.data.user.name) {
+        pendingSessionRef.current = { user: res.data.user, token: res.data.accessToken };
+        setStep("name");
+      } else {
+        toast.success("Login Successful"); router.push("/complaint");
+      }
     } catch (err) { toast.error(err.response?.data?.error || "Login failed"); }
     finally { setLoading(false); }
   };
@@ -128,9 +143,31 @@ export default function LoginPage() {
     try {
       const res = await api.post("/api/auth/mobile/login", { mobile, otp: fullOtp, language });
       loginCitizen(res.data.user, res.data.accessToken);
-      toast.success("Login Successful"); router.push("/complaint");
+      if (!res.data.user.name) {
+        pendingSessionRef.current = { user: res.data.user, token: res.data.accessToken };
+        setStep("name");
+      } else {
+        toast.success("Login Successful"); router.push("/complaint");
+      }
     } catch (err) { toast.error(err.response?.data?.error || "Login failed"); }
     finally { setLoading(false); }
+  };
+
+  const handleSaveName = async () => {
+    if (!nameInput.trim()) return toast.error("Please enter your name");
+    setNameSaving(true);
+    try {
+      const res = await api.patch("/api/users/profile", { name: nameInput.trim() });
+      updateUser({ name: res.data.user.name });
+      toast.success("Welcome, " + res.data.user.name + "!");
+      router.push("/complaint");
+    } catch (err) {
+      // Even if DB save fails, continue — name will be asked again next visit
+      toast.error("Couldn't save name, you can update it later.");
+      router.push("/complaint");
+    } finally {
+      setNameSaving(false);
+    }
   };
 
   const continueAnonymous = async () => {
@@ -314,6 +351,41 @@ export default function LoginPage() {
                 {loading ? t("login.verifying") : t("login.verifyOtp")}
               </button>
               <button className={`${BTN_GHOST} mt-3`} onClick={() => setStep("form")}>← Back</button>
+            </div>
+          )}
+
+          {/* ── NAME STEP ── */}
+          {step === "name" && (
+            <div className="animate-fade-in flex flex-col gap-4">
+              <div className="text-center mb-2">
+                <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Shield size={24} className="text-slate-700" />
+                </div>
+                <h2 className="text-lg font-extrabold text-slate-900 mb-1">One last thing!</h2>
+                <p className="text-sm text-slate-500">What should we call you during your complaint session?</p>
+              </div>
+              <input
+                type="text"
+                className={INPUT}
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); }}
+                placeholder="Your full name"
+                autoFocus
+              />
+              <button
+                className={BTN_PRIMARY}
+                onClick={handleSaveName}
+                disabled={nameSaving || !nameInput.trim()}
+              >
+                {nameSaving ? "Saving…" : "Continue →"}
+              </button>
+              <button
+                className={BTN_GHOST}
+                onClick={() => router.push("/complaint")}
+              >
+                Skip for now
+              </button>
             </div>
           )}
         </div>
