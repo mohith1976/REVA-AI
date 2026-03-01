@@ -4,176 +4,64 @@ import { useParams, useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import api from "@/utils/api";
 import toast from "react-hot-toast";
+import Link from "next/link";
+import { ArrowLeft, Shield, Search } from "lucide-react";
 
-const STATUS_COLORS = {
-  FILED: { bg: "rgba(59,130,246,0.15)", color: "#60a5fa" },
-  UNDER_REVIEW: { bg: "rgba(245,158,11,0.15)", color: "#fbbf24" },
-  ASSIGNED: { bg: "rgba(139,92,246,0.15)", color: "#a78bfa" },
-  IN_PROGRESS: { bg: "rgba(16,185,129,0.15)", color: "#34d399" },
-  ESCALATED: { bg: "rgba(239,68,68,0.15)", color: "#f87171" },
-  RESOLVED: { bg: "rgba(16,185,129,0.2)", color: "#10b981" },
-  CLOSED: { bg: "rgba(71,85,105,0.3)", color: "#94a3b8" },
-};
-
-// Maps backend status → which stage index is "active" (0-based out of 4)
-// Value of 4 means all 4 stages are complete
 const STATUS_STAGE_MAP = {
-  FILED: 0,
-  UNDER_REVIEW: 1,
-  ASSIGNED: 2,
-  IN_PROGRESS: 3,
-  ESCALATED: 4,
-  RESOLVED: 4,
-  CLOSED: 4,
-  REJECTED: -1,
+  FILED: 0, UNDER_REVIEW: 1, ASSIGNED: 2, IN_PROGRESS: 3,
+  ESCALATED: 4, RESOLVED: 4, CLOSED: 4, REJECTED: -1,
 };
 
-function ComplaintProgressTracker({ status, t }) {
-  const stages = [
-    t("tracking.stageSubmitted"),
-    t("tracking.stageUnderReview"),
-    t("tracking.stageForwarded"),
-    t("tracking.stageActionInitiated"),
-  ];
+const STAGES = ["Submitted", "Under Review", "Forwarded", "Action Initiated"];
 
+function ProgressTracker({ status }) {
   const activeIdx = STATUS_STAGE_MAP[status] ?? 0;
   const isRejected = status === "REJECTED";
+  const allDone = activeIdx === 4;
 
   return (
-    <div
-      style={{
-        background: "rgba(15,23,42,0.6)",
-        border: "1px solid rgba(139,92,246,0.25)",
-        borderRadius: "16px",
-        padding: "28px 24px 22px",
-        marginBottom: "16px",
-        backdropFilter: "blur(10px)",
-      }}
-    >
-      <div
-        style={{
-          fontSize: "0.75rem",
-          fontWeight: 700,
-          letterSpacing: "1.5px",
-          color: "rgba(167,139,250,0.8)",
-          textTransform: "uppercase",
-          marginBottom: "24px",
-        }}
-      >
-        {t("tracking.status")}
+    <div className="bg-white border border-slate-200 rounded-2xl p-7 mb-4">
+      <div className="text-[0.68rem] font-bold tracking-[2px] uppercase text-slate-500 mb-6">
+        Complaint Status
       </div>
 
       {isRejected ? (
-        <div
-          style={{
-            textAlign: "center",
-            padding: "16px",
-            background: "rgba(239,68,68,0.1)",
-            border: "1px solid rgba(239,68,68,0.3)",
-            borderRadius: "12px",
-            color: "#f87171",
-            fontWeight: 700,
-            fontSize: "1rem",
-            letterSpacing: "0.5px",
-          }}
-        >
-          ✕ Complaint Rejected
+        <div className="text-center py-3 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 font-semibold text-sm">
+          Complaint Rejected
         </div>
       ) : (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            gap: "0",
-          }}
-        >
-          {stages.map((label, i) => {
-            const isCompleted = i < activeIdx || activeIdx === 4;
-            const isActive = i === activeIdx && activeIdx !== 4;
-            const isFuture = !isCompleted && !isActive;
-
+        <div className="flex items-start justify-between">
+          {STAGES.map((label, i) => {
+            const isCompleted = i < activeIdx || allDone;
+            const isActive = i === activeIdx && !allDone;
             return (
-              <div
-                key={i}
-                style={{
-                  flex: 1,
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  position: "relative",
-                }}
-              >
-                {/* Connector line before (except first) */}
+              <div key={i} className="flex-1 flex flex-col items-center relative">
+                {/* Connector line */}
                 {i > 0 && (
                   <div
-                    style={{
-                      position: "absolute",
-                      top: "15px",
-                      left: "-50%",
-                      width: "100%",
-                      height: "2px",
-                      background: isCompleted
-                        ? "linear-gradient(90deg, #10b981, #34d399)"
-                        : "rgba(255,255,255,0.1)",
-                      transition: "background 0.4s ease",
-                      zIndex: 0,
-                    }}
+                    className="absolute top-4 -left-1/2 w-full h-px z-0 transition-all duration-500"
+                    style={{ background: isCompleted ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.08)" }}
                   />
                 )}
-
-                {/* Node circle */}
+                {/* Node */}
                 <div
-                  style={{
-                    width: "32px",
-                    height: "32px",
-                    borderRadius: "50%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    zIndex: 1,
-                    fontSize: "13px",
-                    fontWeight: 700,
-                    transition: "all 0.4s ease",
-                    ...(isCompleted
-                      ? {
-                          background: "linear-gradient(135deg, #10b981, #34d399)",
-                          boxShadow: "0 0 0 3px rgba(16,185,129,0.2)",
-                          color: "#fff",
-                        }
+                  className="w-8 h-8 rounded-full flex items-center justify-center z-10 text-[12px] font-bold transition-all duration-500"
+                  style={
+                    isCompleted
+                      ? { background: "rgba(255,255,255,0.9)", color: "#000" }
                       : isActive
-                      ? {
-                          background: "linear-gradient(135deg, #7c3aed, #3b82f6)",
-                          boxShadow:
-                            "0 0 0 4px rgba(124,58,237,0.25), 0 0 16px rgba(124,58,237,0.5)",
-                          color: "#fff",
-                          animation: "pulse-glow 2s ease-in-out infinite",
-                        }
-                      : {
-                          background: "rgba(255,255,255,0.05)",
-                          border: "2px solid rgba(255,255,255,0.12)",
-                          color: "rgba(255,255,255,0.25)",
-                        }),
-                  }}
+                        ? { background: "rgba(255,255,255,0.12)", border: "2px solid rgba(255,255,255,0.5)", color: "#fff" }
+                        : { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.2)" }
+                  }
                 >
                   {isCompleted ? "✓" : i + 1}
                 </div>
-
-                {/* Stage label */}
+                {/* Label */}
                 <div
+                  className="mt-2.5 text-[0.68rem] text-center leading-tight px-1 transition-colors duration-500"
                   style={{
-                    marginTop: "10px",
-                    fontSize: "0.72rem",
-                    fontWeight: isActive || isCompleted ? 700 : 400,
-                    textAlign: "center",
-                    lineHeight: 1.3,
-                    padding: "0 4px",
-                    color: isCompleted
-                      ? "#34d399"
-                      : isActive
-                      ? "#a78bfa"
-                      : "rgba(255,255,255,0.25)",
-                    transition: "color 0.4s ease",
+                    fontWeight: isActive || isCompleted ? 600 : 400,
+                    color: isCompleted ? "rgba(255,255,255,0.7)" : isActive ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.2)",
                   }}
                 >
                   {label}
@@ -183,14 +71,15 @@ function ComplaintProgressTracker({ status, t }) {
           })}
         </div>
       )}
+    </div>
+  );
+}
 
-      {/* Inject keyframes */}
-      <style>{`
-        @keyframes pulse-glow {
-          0%, 100% { box-shadow: 0 0 0 4px rgba(124,58,237,0.25), 0 0 16px rgba(124,58,237,0.5); }
-          50% { box-shadow: 0 0 0 6px rgba(124,58,237,0.15), 0 0 28px rgba(124,58,237,0.7); }
-        }
-      `}</style>
+function Row({ label, value }) {
+  return (
+    <div className="flex justify-between text-sm py-2.5 border-b border-slate-200 last:border-0">
+      <span className="text-slate-500">{label}</span>
+      <span className="font-medium text-slate-500">{value || "—"}</span>
     </div>
   );
 }
@@ -201,231 +90,109 @@ export default function TrackingPage() {
   const [trackingId, setTrackingId] = useState(paramId || "");
   const [complaint, setComplaint] = useState(null);
   const [loading, setLoading] = useState(!!paramId);
+  const { t } = useTranslation();
 
-  useState(() => {
-    if (paramId) fetchComplaint(paramId);
-  });
+  useState(() => { if (paramId) fetchComplaint(paramId); });
 
   async function fetchComplaint(id) {
     setLoading(true);
     try {
       const res = await api.get(`/api/complaints/track/${id}`);
       setComplaint(res.data);
-    } catch (err) {
-      toast.error("Complaint not found. Check your tracking ID.");
-      setComplaint(null);
-    } finally {
-      setLoading(false);
-    }
+    } catch { toast.error("Complaint not found. Check your tracking ID."); setComplaint(null); }
+    finally { setLoading(false); }
   }
 
-  const statusStyle = complaint
-    ? STATUS_COLORS[complaint.status] || STATUS_COLORS.FILED
-    : {};
-  const { t } = useTranslation();
-
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "var(--clr-bg)",
-        padding: "24px",
-      }}
-    >
-      {/* Floating Back Button */}
-      <button
-        onClick={() => router.back()}
-        style={{
-          position: "fixed",
-          top: "18px",
-          left: "20px",
-          zIndex: 9999,
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          background: "linear-gradient(135deg, rgba(139,92,246,0.55), rgba(37,99,235,0.45))",
-          border: "1px solid rgba(167,139,250,0.6)",
-          color: "#f3f0ff",
-          cursor: "pointer",
-          padding: "9px 18px",
-          borderRadius: "14px",
-          fontSize: "13px",
-          fontWeight: "800",
-          letterSpacing: "0.4px",
-          backdropFilter: "blur(12px)",
-          boxShadow: "0 4px 20px rgba(139,92,246,0.35)",
-          transition: "all 0.2s ease",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = "linear-gradient(135deg, rgba(139,92,246,0.8), rgba(37,99,235,0.7))";
-          e.currentTarget.style.boxShadow = "0 6px 28px rgba(139,92,246,0.55)";
-          e.currentTarget.style.transform = "translateX(-3px)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = "linear-gradient(135deg, rgba(139,92,246,0.55), rgba(37,99,235,0.45))";
-          e.currentTarget.style.boxShadow = "0 4px 20px rgba(139,92,246,0.35)";
-          e.currentTarget.style.transform = "translateX(0)";
-        }}
-      >
-        &#8592; {t("common.back").replace("← ", "")}
-      </button>
-      <div style={{ maxWidth: "640px", margin: "0 auto" }}>
-        <h1 style={{ marginBottom: "8px", fontSize: "1.75rem" }}>
-          {t("tracking.heading")}
-        </h1>
-        <p
-          style={{
-            color: "var(--clr-text-muted)",
-            marginBottom: "32px",
-            fontSize: "0.9rem",
-          }}
-        >
-          {t("tracking.subtitle")}
-        </p>
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
+      {/* Navbar */}
+      <nav className="sticky top-0 z-50 bg-slate-50/85 backdrop-blur-md border-b border-slate-200">
+        <div className="max-w-6xl mx-auto px-8 flex items-center justify-between h-[60px]">
+          <Link href="/" className="flex items-center gap-2.5 no-underline">
+            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
+              <Shield size={16} color="#000" strokeWidth={2.5} />
+            </div>
+            <span className="font-bold text-base tracking-wide text-slate-900">REVA AI</span>
+          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/login" className="px-3.5 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100 no-underline">Sign In</Link>
+          </div>
+        </div>
+      </nav>
 
-        <div style={{ display: "flex", gap: "12px", marginBottom: "32px" }}>
+      <div className="max-w-xl mx-auto py-16 px-6">
+        {/* Back */}
+        <button onClick={() => router.back()} className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-500 transition-colors mb-8">
+          <ArrowLeft size={15} />Back
+        </button>
+
+        {/* Header */}
+        <div className="mb-10">
+          <p className="text-[0.72rem] font-bold tracking-[2px] uppercase text-slate-500 mb-2">Public</p>
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">Track Complaint</h1>
+          <p className="text-sm text-slate-500">Enter your tracking ID to check the status of your complaint</p>
+        </div>
+
+        {/* Search */}
+        <div className="flex gap-3 mb-10">
           <input
             id="tracking-input"
             type="text"
-            className="input"
             value={trackingId}
             onChange={(e) => setTrackingId(e.target.value.toUpperCase())}
             onKeyDown={(e) => e.key === "Enter" && fetchComplaint(trackingId)}
             placeholder="REVA-2024-XXXXXXXX"
-            style={{ fontFamily: "monospace", flex: 1 }}
+            className="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-900 font-mono text-sm placeholder:text-slate-500 outline-none focus:border-slate-200 focus:bg-white transition-colors"
           />
           <button
             id="track-btn"
-            className="btn btn-primary"
             onClick={() => fetchComplaint(trackingId)}
             disabled={loading || !trackingId}
+            className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white font-bold text-sm rounded-xl hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            {loading ? "..." : t("tracking.trackBtn")}
+            <Search size={15} strokeWidth={2.5} />
+            {loading ? "..." : "Track"}
           </button>
         </div>
 
+        {/* Results */}
         {complaint && (
-          <div style={{ animation: "fadeIn 0.4s ease" }}>
-            {/* Progress Tracker */}
-            <ComplaintProgressTracker status={complaint.status} t={t} />
+          <div className="space-y-4 animate-fade-in">
+            <ProgressTracker status={complaint.status} />
 
-            {/* Status Card */}
-            <div className="card" style={{ marginBottom: "16px" }}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                  marginBottom: "16px",
-                }}
-              >
+            {/* Detail card */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-6">
+              <div className="flex justify-between items-start mb-5">
                 <div>
-                  <div
-                    style={{
-                      fontFamily: "monospace",
-                      fontWeight: 700,
-                      color: "var(--clr-primary-light)",
-                      fontSize: "1.1rem",
-                      marginBottom: "4px",
-                    }}
-                  >
-                    {complaint.trackingId}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "0.85rem",
-                      color: "var(--clr-text-muted)",
-                    }}
-                  >
-                  {t("tracking.filedOn")}{" "}
-                    {new Date(complaint.createdAt).toLocaleDateString("en-IN", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </div>
+                  <div className="font-mono font-bold text-slate-500 text-xs tracking-widest mb-1">{complaint.trackingId}</div>
+                  <div className="font-bold text-slate-900 text-lg">{complaint.incidentType || "General"}</div>
                 </div>
-                <span
-                  style={{
-                    padding: "6px 14px",
-                    borderRadius: "20px",
-                    fontSize: "0.8rem",
-                    fontWeight: 600,
-                    background: statusStyle.bg,
-                    color: statusStyle.color,
-                  }}
-                >
+                <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-500 border border-slate-200 uppercase tracking-wide">
                   {complaint.status?.replace("_", " ")}
                 </span>
               </div>
 
-              <div className="divider" />
-
-              <div style={{ display: "grid", gap: "12px", fontSize: "0.9rem" }}>
-                <Row
-                  label={t("tracking.type")}
-                  value={complaint.incidentType || t("tracking.general")}
-                />
-                <Row label={t("tracking.station")} value={complaint.station?.stationName} />
-                <Row label={t("tracking.district")} value={complaint.station?.district} />
-                <Row label={t("tracking.priority")} value={complaint.priorityLevel} />
-                {complaint.locationAddress && (
-                  <Row label={t("tracking.location")} value={complaint.locationAddress} />
-                )}
-                <Row
-                  label={t("tracking.lastUpdated")}
-                  value={new Date(complaint.updatedAt).toLocaleString("en-IN")}
-                />
+              <div className="space-y-0">
+                <Row label="Filed On" value={new Date(complaint.createdAt).toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" })} />
+                <Row label="Station" value={complaint.station?.stationName} />
+                <Row label="District" value={complaint.station?.district} />
+                <Row label="Priority" value={complaint.priorityLevel} />
+                {complaint.locationAddress && <Row label="Location" value={complaint.locationAddress} />}
+                <Row label="Last Updated" value={new Date(complaint.updatedAt).toLocaleString("en-IN")} />
               </div>
             </div>
 
-            {/* Timeline */}
+            {/* Activity timeline */}
             {complaint.updates?.length > 0 && (
-              <div className="card">
-                <h4 style={{ marginBottom: "16px", fontSize: "1rem" }}>
-                  {t("tracking.activityTimeline")}
-                </h4>
-                <div style={{ position: "relative", paddingLeft: "20px" }}>
-                  <div
-                    style={{
-                      position: "absolute",
-                      left: "7px",
-                      top: 0,
-                      bottom: 0,
-                      width: "2px",
-                      background: "var(--clr-border)",
-                    }}
-                  />
+              <div className="bg-white border border-slate-200 rounded-2xl p-6">
+                <h4 className="text-[0.72rem] font-bold tracking-[2px] uppercase text-slate-500 mb-5">Activity Timeline</h4>
+                <div className="relative pl-5">
+                  <div className="absolute left-[7px] top-0 bottom-0 w-px bg-slate-100" />
                   {complaint.updates.map((update, i) => (
-                    <div
-                      key={i}
-                      style={{ marginBottom: "16px", position: "relative" }}
-                    >
-                      <div
-                        style={{
-                          position: "absolute",
-                          left: "-17px",
-                          width: "10px",
-                          height: "10px",
-                          borderRadius: "50%",
-                          background: "var(--clr-primary)",
-                          top: "4px",
-                        }}
-                      />
-                      <div
-                        style={{
-                          fontSize: "0.8rem",
-                          color: "var(--clr-text-faint)",
-                          marginBottom: "2px",
-                        }}
-                      >
-                        {new Date(update.createdAt).toLocaleString("en-IN")}
-                      </div>
-                      <div
-                        style={{ fontSize: "0.9rem", color: "var(--clr-text)" }}
-                      >
-                        {update.content}
-                      </div>
+                    <div key={i} className="mb-4 relative">
+                      <div className="absolute -left-[17px] w-2 h-2 rounded-full bg-slate-100 top-1.5" />
+                      <div className="text-[0.68rem] text-slate-500 mb-1">{new Date(update.createdAt).toLocaleString("en-IN")}</div>
+                      <div className="text-sm text-slate-500">{update.content}</div>
                     </div>
                   ))}
                 </div>
@@ -434,15 +201,6 @@ export default function TrackingPage() {
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-function Row({ label, value }) {
-  return (
-    <div style={{ display: "flex", justifyContent: "space-between" }}>
-      <span style={{ color: "var(--clr-text-muted)" }}>{label}</span>
-      <span style={{ fontWeight: 500 }}>{value || "—"}</span>
     </div>
   );
 }

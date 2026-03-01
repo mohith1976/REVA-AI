@@ -4,12 +4,15 @@ import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/utils/api";
+import Link from "next/link";
+import { MapPin, FileText, ArrowLeft, LogOut, Plus, Shield } from "lucide-react";
 
-const PRIORITY_STYLES = {
-  EMERGENCY: { bg: "rgba(255,59,48,0.15)", color: "#ff3b30" },
-  HIGH: { bg: "rgba(239,68,68,0.15)", color: "#f87171" },
-  MODERATE: { bg: "rgba(245,158,11,0.15)", color: "#fbbf24" },
-  INFORMATIONAL: { bg: "rgba(16,185,129,0.15)", color: "#34d399" },
+// Priority — monochrome style (white/opacity only, no colors)
+const PRIORITY_STYLE = {
+  EMERGENCY: "bg-slate-100 text-slate-900 border border-slate-200",
+  HIGH: "bg-slate-100  text-slate-500 border border-slate-200",
+  MODERATE: "bg-slate-100  text-slate-500 border border-slate-200",
+  INFORMATIONAL: "bg-slate-100 text-slate-500 border border-slate-200",
 };
 
 export default function MyComplaintsPage() {
@@ -21,9 +24,7 @@ export default function MyComplaintsPage() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
 
-  useEffect(() => {
-    fetchComplaints();
-  }, [page]);
+  useEffect(() => { fetchComplaints(); }, [page]);
 
   const fetchComplaints = async () => {
     setLoading(true);
@@ -31,260 +32,116 @@ export default function MyComplaintsPage() {
       const res = await api.get(`/api/complaints/my?page=${page}&limit=10`);
       setComplaints(res.data.complaints);
       setPagination(res.data.pagination);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--clr-bg)" }}>
-      {/* Floating Back Button */}
-      <button
-        onClick={() => router.back()}
-        style={{
-          position: "fixed",
-          top: "18px",
-          left: "20px",
-          zIndex: 9999,
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          background: "linear-gradient(135deg, rgba(139,92,246,0.55), rgba(37,99,235,0.45))",
-          border: "1px solid rgba(167,139,250,0.6)",
-          color: "#f3f0ff",
-          cursor: "pointer",
-          padding: "9px 18px",
-          borderRadius: "14px",
-          fontSize: "13px",
-          fontWeight: "800",
-          letterSpacing: "0.4px",
-          backdropFilter: "blur(12px)",
-          boxShadow: "0 4px 20px rgba(139,92,246,0.35)",
-          transition: "all 0.2s ease",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = "linear-gradient(135deg, rgba(139,92,246,0.8), rgba(37,99,235,0.7))";
-          e.currentTarget.style.boxShadow = "0 6px 28px rgba(139,92,246,0.55)";
-          e.currentTarget.style.transform = "translateX(-3px)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = "linear-gradient(135deg, rgba(139,92,246,0.55), rgba(37,99,235,0.45))";
-          e.currentTarget.style.boxShadow = "0 4px 20px rgba(139,92,246,0.35)";
-          e.currentTarget.style.transform = "translateX(0)";
-        }}
-      >
-        &#8592; {t("common.back").replace("← ", "")}
-      </button>
-      <div
-        style={{
-          background: "rgba(8,12,20,0.9)",
-          backdropFilter: "blur(12px)",
-          borderBottom: "1px solid var(--clr-border)",
-          padding: "0 24px",
-          height: "60px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <div style={{ fontFamily: "var(--font-display)", fontWeight: 700 }}>
-          {t("myComplaints.navTitle")}
-        </div>
-        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-          <Link href="/profile" className="btn btn-ghost btn-sm">
-            {t("nav.profile")}
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
+      {/* Navbar */}
+      <nav className="sticky top-0 z-50 bg-slate-50/85 backdrop-blur-md border-b border-slate-200">
+        <div className="max-w-6xl mx-auto px-8 flex items-center justify-between h-[60px]">
+          <Link href="/" className="flex items-center gap-2.5 no-underline">
+            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
+              <Shield size={16} color="#000" strokeWidth={2.5} />
+            </div>
+            <span className="font-bold text-base tracking-wide text-slate-900">REVA AI</span>
           </Link>
-          <Link href="/complaint" className="btn btn-primary btn-sm">
-            + {t("nav.fileComplaint")}
-          </Link>
-          <button className="btn btn-ghost btn-sm" onClick={logoutCitizen}>
-            {t("common.logout")}
-          </button>
+          <div className="flex items-center gap-2">
+            <Link href="/profile" className="px-3.5 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100 no-underline">Profile</Link>
+            <Link href="/complaint" className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-semibold text-black bg-white rounded-lg hover:bg-slate-100 transition-colors no-underline">
+              <Plus size={14} strokeWidth={2.5} /> File Complaint
+            </Link>
+            <button onClick={logoutCitizen} className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors">
+              <LogOut size={14} /> Logout
+            </button>
+          </div>
         </div>
-      </div>
+      </nav>
 
-      <div
-        style={{ maxWidth: "800px", margin: "32px auto", padding: "0 24px" }}
-      >
-        <h2 style={{ marginBottom: "24px" }}>{t("myComplaints.heading")}</h2>
+      <div className="max-w-2xl mx-auto py-14 px-6">
+        {/* Back */}
+        <button onClick={() => router.back()} className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-500 transition-colors mb-8">
+          <ArrowLeft size={15} />Back
+        </button>
 
+        {/* Header */}
+        <div className="mb-10">
+          <p className="text-[0.72rem] font-bold tracking-[2px] uppercase text-slate-500 mb-2">Your Cases</p>
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">My Complaints</h1>
+        </div>
+
+        {/* Loading skeletons */}
         {loading ? (
-          <div style={{ display: "grid", gap: "16px" }}>
+          <div className="grid gap-3">
             {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="skeleton"
-                style={{ height: "100px", borderRadius: "12px" }}
-              />
+              <div key={i} className="h-28 rounded-2xl bg-white animate-pulse border border-slate-200" />
             ))}
           </div>
         ) : complaints.length === 0 ? (
-          <div
-            style={{
-              textAlign: "center",
-              padding: "60px 24px",
-              color: "var(--clr-text-muted)",
-            }}
-          >
-            <div style={{ fontSize: "3rem", marginBottom: "12px" }}>📋</div>
-            <h3 style={{ marginBottom: "8px", fontSize: "1.1rem" }}>
-              {t("myComplaints.noComplaints")}
-            </h3>
-            <p style={{ fontSize: "0.85rem", marginBottom: "20px" }}>
-              {t("myComplaints.noComplaintsStart")}
-            </p>
-            <Link href="/complaint" className="btn btn-primary">
-              {t("myComplaints.fileFirst")}
+          /* Empty state */
+          <div className="text-center py-20">
+            <div className="w-14 h-14 bg-white border border-slate-200 rounded-2xl flex items-center justify-center mx-auto mb-5">
+              <FileText size={24} className="text-slate-500" />
+            </div>
+            <h3 className="text-lg font-semibold text-slate-500 mb-2">No complaints yet</h3>
+            <p className="text-sm text-slate-500 mb-7">File your first complaint to get started</p>
+            <Link href="/complaint" className="inline-flex items-center gap-2 px-6 py-3 bg-slate-900 text-white font-bold text-sm rounded-xl hover:bg-slate-800 transition-colors no-underline">
+              <Plus size={15} strokeWidth={2.5} /> File a Complaint
             </Link>
           </div>
         ) : (
-          <div
-            style={{
-              display: "grid",
-              gap: "12px",
-              animation: "fadeIn 0.4s ease",
-            }}
-          >
-            {complaints.map((c) => {
-              const pStyle =
-                PRIORITY_STYLES[c.priorityLevel] ||
-                PRIORITY_STYLES.INFORMATIONAL;
-              return (
-                <Link
-                  key={c.trackingId}
-                  href={`/track/${c.trackingId}`}
-                  style={{ textDecoration: "none" }}
-                >
-                  <div className="card" style={{ cursor: "pointer" }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "flex-start",
-                        marginBottom: "8px",
-                      }}
-                    >
-                      <div>
-                        <div
-                          style={{
-                            fontFamily: "monospace",
-                            fontWeight: 700,
-                            color: "var(--clr-primary-light)",
-                            fontSize: "0.9rem",
-                          }}
-                        >
-                          {c.trackingId}
-                        </div>
-                        <div
-                          style={{
-                            fontWeight: 600,
-                            color: "var(--clr-text)",
-                            marginTop: "2px",
-                          }}
-                        >
-                          {c.incidentType || t("myComplaints.generalComplaint")}
-                        </div>
-                      </div>
-                      <div
-                        style={{ display: "flex", gap: "6px", flexShrink: 0 }}
-                      >
-                        {c.isEmergency && (
-                          <span
-                            style={{
-                              fontSize: "0.7rem",
-                              fontWeight: 700,
-                              padding: "2px 8px",
-                              borderRadius: "20px",
-                              background: "rgba(255,59,48,0.2)",
-                              color: "#ff3b30",
-                              border: "1px solid rgba(255,59,48,0.3)",
-                            }}
-                          >
-                            {t("myComplaints.emergency")}
-                          </span>
-                        )}
-                        <span
-                          style={{
-                            fontSize: "0.75rem",
-                            fontWeight: 600,
-                            padding: "4px 10px",
-                            borderRadius: "20px",
-                            background: pStyle.bg,
-                            color: pStyle.color,
-                          }}
-                        >
-                          {c.priorityLevel}
-                        </span>
-                      </div>
+          /* Complaint list */
+          <div className="grid gap-3">
+            {complaints.map((c) => (
+              <Link key={c.trackingId} href={`/track/${c.trackingId}`} className="no-underline group">
+                <div className="bg-white border border-slate-200 rounded-2xl p-5 hover:bg-white hover:border-slate-200 transition-all">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <div className="font-mono font-bold text-slate-500 text-xs mb-1 tracking-widest">{c.trackingId}</div>
+                      <div className="font-semibold text-slate-900">{c.incidentType || "General Complaint"}</div>
                     </div>
-                    <p
-                      style={{
-                        fontSize: "0.82rem",
-                        color: "var(--clr-text-muted)",
-                        lineHeight: 1.5,
-                        marginBottom: "8px",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                      }}
-                    >
-                      {c.summaryText || t("myComplaints.noSummary")}
-                    </p>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        fontSize: "0.78rem",
-                        color: "var(--clr-text-faint)",
-                      }}
-                    >
-                      <span>📍 {c.station?.stationName}</span>
-                      <span>
-                        {new Date(c.createdAt).toLocaleDateString("en-IN")}
+                    <div className="flex gap-1.5 flex-shrink-0">
+                      {c.isEmergency && (
+                        <span className="text-[0.68rem] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-900 border border-slate-200 uppercase tracking-wide">
+                          Emergency
+                        </span>
+                      )}
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${PRIORITY_STYLE[c.priorityLevel] || PRIORITY_STYLE.INFORMATIONAL}`}>
+                        {c.priorityLevel}
                       </span>
                     </div>
                   </div>
-                </Link>
-              );
-            })}
+                  <p className="text-[0.82rem] text-slate-500 leading-relaxed mb-3 line-clamp-2">
+                    {c.summaryText || "No summary available"}
+                  </p>
+                  <div className="flex justify-between text-xs text-slate-500">
+                    <span className="flex items-center gap-1"><MapPin size={11} />{c.station?.stationName}</span>
+                    <span>{new Date(c.createdAt).toLocaleDateString("en-IN")}</span>
+                  </div>
+                </div>
+              </Link>
+            ))}
           </div>
         )}
 
+        {/* Pagination */}
         {pagination && pagination.pages > 1 && (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              gap: "8px",
-              marginTop: "24px",
-            }}
-          >
+          <div className="flex justify-center items-center gap-3 mt-8">
             <button
-              className="btn btn-outline btn-sm"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
+              className="px-5 py-2 text-sm font-medium text-slate-500 border border-slate-200 rounded-xl hover:bg-slate-100 hover:text-slate-900 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
-              {t("myComplaints.prevPage")}
+              ← Prev
             </button>
-            <span
-              style={{
-                padding: "6px 12px",
-                color: "var(--clr-text-muted)",
-                fontSize: "0.85rem",
-              }}
-            >
-              {page} / {pagination.pages}
-            </span>
+            <span className="text-sm text-slate-500">{page} / {pagination.pages}</span>
             <button
-              className="btn btn-outline btn-sm"
               onClick={() => setPage((p) => Math.min(pagination.pages, p + 1))}
               disabled={page === pagination.pages}
+              className="px-5 py-2 text-sm font-medium text-slate-500 border border-slate-200 rounded-xl hover:bg-slate-100 hover:text-slate-900 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
-              {t("myComplaints.nextPage")}
+              Next →
             </button>
           </div>
         )}

@@ -987,7 +987,7 @@ export default function ComplaintPage() {
       formData.append("image", file);
       if (user?.id) formData.append("uploaderId", user.id);
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/image-analysis/analyze`,
+        `/api/image-analysis/analyze`,
         { method: "POST", body: formData },
       );
       const result = await response.json();
@@ -1054,7 +1054,7 @@ export default function ComplaintPage() {
       if (user?.id) formData.append("uploaderId", user.id);
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/image-analysis/analyze`,
+        `/api/image-analysis/analyze`,
         { method: "POST", body: formData },
       );
       const result = await response.json();

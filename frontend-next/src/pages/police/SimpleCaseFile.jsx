@@ -3,6 +3,9 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import api from "@/utils/api";
 import toast from "react-hot-toast";
+import { Link2 } from "lucide-react";
+
+const INPUT = "w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 text-sm placeholder:text-slate-400 outline-none focus:border-blue-500 transition-colors";
 
 export default function SimpleCaseFile() {
   const { id } = useParams();
@@ -19,9 +22,7 @@ export default function SimpleCaseFile() {
       try {
         const [cRes, sRes] = await Promise.all([
           api.get(`/api/police/complaints/${id}`, {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("reva_police_token")}`,
-            },
+            headers: { Authorization: `Bearer ${localStorage.getItem("reva_police_token")}` },
           }),
           api.get("/api/stations"),
         ]);
@@ -30,9 +31,7 @@ export default function SimpleCaseFile() {
       } catch (err) {
         console.error("Simple View Error:", err.response?.data || err.message);
         toast.error(err.response?.data?.error || "Access Denied / Not Found");
-      } finally {
-        setLoading(false);
-      }
+      } finally { setLoading(false); }
     };
     fetchData();
   }, [id]);
@@ -41,166 +40,65 @@ export default function SimpleCaseFile() {
     if (!selectedTargetStation) return toast.error("Select target station");
     setIsMigrating(true);
     try {
-      await api.patch(
-        `/api/police/complaints/${id}/migrate`,
-        { targetStationId: selectedTargetStation, reason: migrationReason },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("reva_police_token")}`,
-          },
-        },
-      );
+      await api.patch(`/api/police/complaints/${id}/migrate`, { targetStationId: selectedTargetStation, reason: migrationReason }, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("reva_police_token")}` },
+      });
       toast.success("Complaint migrated successfully");
       router.push("/police/dashboard");
-    } catch (err) {
-      toast.error(err.response?.data?.error || "Migration failed");
-    } finally {
-      setIsMigrating(false);
-    }
+    } catch (err) { toast.error(err.response?.data?.error || "Migration failed"); }
+    finally { setIsMigrating(false); }
   };
 
-  if (loading)
-    return (
-      <div style={{ padding: "40px", textAlign: "center", color: "#fff" }}>
-        Loading Case Data...
-      </div>
-    );
-  if (!complaint)
-    return (
-      <div style={{ padding: "40px", textAlign: "center", color: "#fff" }}>
-        <h3>Error loading case data.</h3>
-        <button
-          className="btn btn-primary"
-          onClick={() => router.push("/police/dashboard")}
-        >
-          Back to Dashboard
-        </button>
-      </div>
-    );
+  if (loading) return <div className="min-h-screen bg-[#0a0c10] flex items-center justify-center text-slate-900 text-sm">Loading Case Data...</div>;
+  if (!complaint) return (
+    <div className="min-h-screen bg-[#0a0c10] flex flex-col items-center justify-center text-slate-900 gap-4">
+      <h3>Error loading case data.</h3>
+      <button onClick={() => router.push("/police/dashboard")} className="px-5 py-2.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors">Back to Dashboard</button>
+    </div>
+  );
+
+  const sectionTitle = (text) => (
+    <h3 className="font-bold text-slate-900 border-b border-slate-200 pb-2.5 mb-4 mt-8">{text}</h3>
+  );
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#0a0c10",
-        color: "#fff",
-        padding: "40px",
-      }}
-    >
-      <button
-        className="btn btn-ghost"
-        onClick={() => router.push("/police/dashboard")}
-        style={{ marginBottom: "20px" }}
-      >
+    <div className="min-h-screen bg-[#0a0c10] text-slate-900 p-10">
+      <button onClick={() => router.push("/police/dashboard")} className="text-sm text-slate-500 hover:text-slate-900 hover:bg-slate-100 px-3 py-1.5 rounded-lg transition-colors mb-5">
         ← Dashboard
       </button>
 
-      <div
-        className="card"
-        style={{
-          maxWidth: "800px",
-          margin: "0 auto",
-          padding: "30px",
-          border: "1px solid #1e293b",
-        }}
-      >
-        <h2 style={{ color: "var(--clr-primary-light)", marginBottom: "20px" }}>
-          Case: {complaint.trackingId}
-        </h2>
+      <div className="max-w-3xl mx-auto bg-white border border-slate-200 rounded-2xl p-7">
+        <h2 className="text-xl font-bold text-blue-400 mb-5">Case: {complaint.trackingId}</h2>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "150px 1fr",
-            gap: "15px",
-            marginBottom: "30px",
-          }}
-        >
-          <span style={{ color: "#94a3b8" }}>Status:</span>
-          <span style={{ fontWeight: 700 }}>{complaint.status}</span>
-
-          <span style={{ color: "#94a3b8" }}>Type:</span>
-          <span>{complaint.incidentType}</span>
-
-          <span style={{ color: "#94a3b8" }}>Priority:</span>
-          <span
-            style={{ color: complaint.isEmergency ? "#f87171" : "inherit" }}
-          >
-            {complaint.priorityLevel}
-          </span>
-
-          <span style={{ color: "#94a3b8" }}>Date:</span>
-          <span>{new Date(complaint.createdAt).toLocaleString()}</span>
-
-          <span style={{ color: "#94a3b8" }}>Station:</span>
-          <span>{complaint.station?.stationName}</span>
+        {/* Meta grid */}
+        <div className="grid grid-cols-[150px_1fr] gap-3 mb-7 text-sm">
+          <span className="text-slate-500">Status:</span><span className="font-bold text-slate-900">{complaint.status}</span>
+          <span className="text-slate-500">Type:</span><span className="text-slate-800">{complaint.incidentType}</span>
+          <span className="text-slate-500">Priority:</span><span style={{ color: complaint.isEmergency ? "#f87171" : undefined }} className="text-slate-800">{complaint.priorityLevel}</span>
+          <span className="text-slate-500">Date:</span><span className="text-slate-800">{new Date(complaint.createdAt).toLocaleString()}</span>
+          <span className="text-slate-500">Station:</span><span className="text-slate-800">{complaint.station?.stationName}</span>
         </div>
 
-        <h3
-          style={{
-            borderBottom: "1px solid #1e293b",
-            paddingBottom: "10px",
-            marginBottom: "15px",
-          }}
-        >
-          Summary
-        </h3>
-        <p style={{ lineHeight: 1.6, color: "#cbd5e1" }}>
-          {complaint.summaryText}
-        </p>
+        {sectionTitle("Summary")}
+        <p className="text-slate-700 leading-relaxed">{complaint.summaryText}</p>
 
+        {/* Linked cases */}
         {(complaint.linksAsA?.length > 0 || complaint.linksAsB?.length > 0) && (
-          <div
-            style={{
-              marginTop: "30px",
-              padding: "15px",
-              background: "rgba(139, 92, 246, 0.1)",
-              border: "1px solid rgba(139, 92, 246, 0.2)",
-              borderRadius: "8px",
-            }}
-          >
-            <h3 style={{ fontSize: "1.1rem", marginBottom: "12px" }}>
-              🔗 Linked Cases
+          <div className="mt-7 p-4 bg-violet-500/10 border border-violet-500/20 rounded-xl">
+            <h3 className="flex items-center gap-2 font-bold text-slate-900 mb-3">
+              <Link2 size={16} className="text-violet-400" /> Linked Cases
             </h3>
-            <div style={{ display: "grid", gap: "10px" }}>
+            <div className="grid gap-2.5">
               {[
-                ...complaint.linksAsA.map((l) => ({
-                  ...l.complaintB,
-                  reason: l.linkReason,
-                })),
-                ...complaint.linksAsB.map((l) => ({
-                  ...l.complaintA,
-                  reason: l.linkReason,
-                })),
+                ...complaint.linksAsA.map(l => ({ ...l.complaintB, reason: l.linkReason })),
+                ...complaint.linksAsB.map(l => ({ ...l.complaintA, reason: l.linkReason })),
               ].map((c, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    background: "#0f172a",
-                    padding: "10px",
-                    borderRadius: "6px",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
+                <div key={idx} className="bg-slate-50 rounded-lg px-3 py-2.5 flex justify-between items-center">
                   <div>
-                    <div
-                      style={{
-                        fontWeight: 600,
-                        color: "var(--clr-primary-light)",
-                      }}
-                    >
-                      {c.trackingId}
-                    </div>
-                    <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>
-                      {c.incidentType} • {c.status}
-                    </div>
+                    <div className="font-semibold text-blue-400 text-sm">{c.trackingId}</div>
+                    <div className="text-xs text-slate-500">{c.incidentType} • {c.status}</div>
                   </div>
-                  <button
-                    className="btn btn-ghost btn-xs"
-                    onClick={() => router.push(`/police/view/${c.id}`)}
-                  >
+                  <button onClick={() => router.push(`/police/view/${c.id}`)} className="text-xs text-slate-500 hover:text-slate-900 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors">
                     View Case
                   </button>
                 </div>
@@ -209,90 +107,35 @@ export default function SimpleCaseFile() {
           </div>
         )}
 
+        {/* Transcript */}
         {complaint.transcript && (
           <>
-            <h3
-              style={{
-                borderBottom: "1px solid #1e293b",
-                paddingBottom: "10px",
-                marginBottom: "15px",
-                marginTop: "30px",
-              }}
-            >
-              Transcript
-            </h3>
-            <pre
-              style={{
-                background: "#0f172a",
-                padding: "15px",
-                borderRadius: "8px",
-                fontSize: "0.85rem",
-                whiteSpace: "pre-wrap",
-                color: "#94a3b8",
-                fontFamily: "monospace",
-              }}
-            >
-              {complaint.transcript}
-            </pre>
+            {sectionTitle("Transcript")}
+            <pre className="bg-slate-50 rounded-xl p-4 text-sm text-slate-500 font-mono whitespace-pre-wrap leading-relaxed">{complaint.transcript}</pre>
           </>
         )}
 
+        {/* Evidence */}
         {complaint.evidence?.length > 0 && (
           <>
-            <h3
-              style={{
-                borderBottom: "1px solid #1e293b",
-                paddingBottom: "10px",
-                marginBottom: "15px",
-                marginTop: "30px",
-              }}
-            >
-              Evidence Attachments
-            </h3>
-            <div style={{ display: "grid", gap: "10px" }}>
-              {complaint.evidence.map((ev) => (
-                <div
-                  key={ev.id}
-                  style={{
-                    background: "#0f172a",
-                    padding: "12px",
-                    borderRadius: "8px",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
+            {sectionTitle("Evidence Attachments")}
+            <div className="grid gap-2.5">
+              {complaint.evidence.map(ev => (
+                <div key={ev.id} className="bg-slate-50 rounded-xl p-3 flex justify-between items-center">
                   <div>
-                    <div style={{ fontSize: "0.9rem", fontWeight: 600 }}>
-                      {ev.fileName}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "0.75rem",
-                        color: "var(--clr-text-faint)",
-                      }}
-                    >
-                      {ev.mediaCategory} •{" "}
-                      {(ev.fileSizeBytes / 1024).toFixed(1)} KB
-                    </div>
+                    <div className="font-semibold text-slate-800 text-sm">{ev.fileName}</div>
+                    <div className="text-xs text-slate-500">{ev.mediaCategory} • {(ev.fileSizeBytes / 1024).toFixed(1)} KB</div>
                   </div>
                   <button
-                    className="btn btn-ghost btn-xs"
                     onClick={async () => {
                       try {
-                        const res = await api.get(
-                          `/api/evidence/${ev.id}/url`,
-                          {
-                            headers: {
-                              Authorization: `Bearer ${localStorage.getItem("reva_police_token")}`,
-                            },
-                          },
-                        );
+                        const res = await api.get(`/api/evidence/${ev.id}/url`, {
+                          headers: { Authorization: `Bearer ${localStorage.getItem("reva_police_token")}` },
+                        });
                         window.open(res.data.url, "_blank");
-                      } catch (e) {
-                        toast.error("Failed to load evidence URL");
-                      }
+                      } catch { toast.error("Failed to load evidence URL"); }
                     }}
+                    className="text-xs text-slate-500 hover:text-slate-900 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
                   >
                     View File
                   </button>
@@ -302,63 +145,21 @@ export default function SimpleCaseFile() {
           </>
         )}
 
-        <div
-          style={{
-            marginTop: "40px",
-            paddingTop: "20px",
-            borderTop: "1px solid #1e293b",
-          }}
-        >
-          <h3 style={{ marginBottom: "15px" }}>Jurisdiction Transfer</h3>
-          <p
-            style={{
-              fontSize: "0.85rem",
-              color: "#94a3b8",
-              marginBottom: "15px",
-            }}
-          >
-            Transfer this case to another station if it falls outside your
-            jurisdiction.
-          </p>
-          <div style={{ display: "grid", gap: "10px", maxWidth: "400px" }}>
-            <select
-              style={{
-                background: "#0f172a",
-                border: "1px solid #1e293b",
-                color: "#fff",
-                padding: "8px",
-                borderRadius: "4px",
-              }}
-              value={selectedTargetStation}
-              onChange={(e) => setSelectedTargetStation(e.target.value)}
-            >
+        {/* Jurisdiction Transfer */}
+        <div className="mt-10 pt-5 border-t border-slate-200">
+          <h3 className="font-bold text-slate-900 mb-2">Jurisdiction Transfer</h3>
+          <p className="text-sm text-slate-500 mb-4">Transfer this case to another station if it falls outside your jurisdiction.</p>
+          <div className="grid gap-3 max-w-sm">
+            <select className={INPUT} value={selectedTargetStation} onChange={e => setSelectedTargetStation(e.target.value)}>
               <option value="">Select Target Station</option>
-              {stations
-                .filter((s) => s.id !== complaint.stationId)
-                .map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.stationName} ({s.district})
-                  </option>
-                ))}
+              {stations.filter(s => s.id !== complaint.stationId).map(s => (
+                <option key={s.id} value={s.id}>{s.stationName} ({s.district})</option>
+              ))}
             </select>
-            <input
-              type="text"
-              placeholder="Reason for transfer..."
-              style={{
-                background: "#0f172a",
-                border: "1px solid #1e293b",
-                color: "#fff",
-                padding: "8px",
-                borderRadius: "4px",
-              }}
-              value={migrationReason}
-              onChange={(e) => setMigrationReason(e.target.value)}
-            />
-            <button
-              className="btn btn-primary"
-              onClick={handleMigrate}
-              disabled={!selectedTargetStation || isMigrating}
-            >
+            <input type="text" className={INPUT} placeholder="Reason for transfer..."
+              value={migrationReason} onChange={e => setMigrationReason(e.target.value)} />
+            <button onClick={handleMigrate} disabled={!selectedTargetStation || isMigrating}
+              className="py-2.5 bg-gradient-to-r from-blue-600 to-violet-600 text-white font-semibold text-sm rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity">
               {isMigrating ? "Transferring..." : "Transfer Case"}
             </button>
           </div>

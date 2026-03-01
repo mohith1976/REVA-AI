@@ -1,511 +1,186 @@
 'use client';
 import { useState, useEffect } from "react";
-import { useRouter, useLocation } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/utils/api";
 import toast from "react-hot-toast";
+import { LayoutDashboard, Folder, Map, BarChart2, Users, Link2, Building } from "lucide-react";
 
 const PRIORITY_COLORS = {
-  EMERGENCY: "#ff3b30",
-  HIGH: "#f87171",
-  MODERATE: "#fbbf24",
-  INFORMATIONAL: "#34d399",
+  EMERGENCY: "#ff3b30", HIGH: "#f87171", MODERATE: "#fbbf24", INFORMATIONAL: "#34d399",
+};
+const STATUS_COLORS = {
+  FILED: "#60a5fa", UNDER_REVIEW: "#fbbf24", ASSIGNED: "#a78bfa",
+  IN_PROGRESS: "#34d399", ESCALATED: "#f87171", RESOLVED: "#10b981", CLOSED: "#94a3b8",
 };
 
-const STATUS_COLORS = {
-  FILED: "#60a5fa",
-  UNDER_REVIEW: "#fbbf24",
-  ASSIGNED: "#a78bfa",
-  IN_PROGRESS: "#34d399",
-  ESCALATED: "#f87171",
-  RESOLVED: "#10b981",
-  CLOSED: "#94a3b8",
-};
+const INPUT_CLASS = "w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm placeholder:text-slate-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-colors";
 
 export default function ComplaintsListPage() {
   const { policeUser, logoutPolice } = useAuth();
   const router = useRouter();
-  const location = useLocation();
+  const pathname = usePathname();
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [filters, setFilters] = useState({
-    status: "",
-    priority: "",
-    search: "",
-  });
+  const [filters, setFilters] = useState({ status: "", priority: "", search: "" });
 
-  const token = localStorage.getItem("reva_police_token");
+  const token = typeof window !== "undefined" ? localStorage.getItem("reva_police_token") : "";
   const headers = { Authorization: `Bearer ${token}` };
 
-  useEffect(() => {
-    fetchComplaints();
-  }, [page, filters.status, filters.priority]);
+  useEffect(() => { fetchComplaints(); }, [page, filters.status, filters.priority]);
 
   const fetchComplaints = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        page,
-        limit: 15,
-        status: filters.status,
-        priority: filters.priority,
-        search: filters.search,
-      });
-      const res = await api.get(`/api/police/complaints?${params}`, {
-        headers,
-      });
+      const params = new URLSearchParams({ page, limit: 15, status: filters.status, priority: filters.priority, search: filters.search });
+      const res = await api.get(`/api/police/complaints?${params}`, { headers });
       setComplaints(res.data.complaints);
       setTotal(res.data.pagination.total);
-    } catch (err) {
-      toast.error("Failed to load complaints");
-    } finally {
-      setLoading(false);
-    }
+    } catch { toast.error("Failed to load complaints"); }
+    finally { setLoading(false); }
   };
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    setPage(1);
-    fetchComplaints();
-  };
+  const handleSearch = (e) => { e.preventDefault(); setPage(1); fetchComplaints(); };
 
   const navItems = [
-    { to: "/police/dashboard", icon: "📊", label: "Dashboard" },
-    { to: "/police/complaints", icon: "📁", label: "All Cases" },
-    { to: "/police/map", icon: "🗺️", label: "Crime Map" },
-    { to: "/police/analytics", icon: "📈", label: "Analytics" },
-    { to: "/police/officers", icon: "👥", label: "Officers" },
-    { to: "/police/linked-complaints", icon: "🔗", label: "Joint Complaints" },
-    ...(policeUser?.role === "GLOBAL_ADMIN"
-      ? [{ to: "/police/stations", icon: "🏢", label: "Stations" }]
-      : []),
+    { to: "/police/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+    { to: "/police/complaints", icon: Folder, label: "All Cases" },
+    { to: "/police/map", icon: Map, label: "Crime Map" },
+    { to: "/police/analytics", icon: BarChart2, label: "Analytics" },
+    { to: "/police/officers", icon: Users, label: "Officers" },
+    { to: "/police/linked-complaints", icon: Link2, label: "Joint Complaints" },
+    ...(policeUser?.role === "GLOBAL_ADMIN" ? [{ to: "/police/stations", icon: Building, label: "Stations" }] : []),
   ];
 
+  const ThCell = ({ children }) => (
+    <th className="px-4 py-4 text-[0.7rem] font-semibold uppercase text-slate-400 text-left">{children}</th>
+  );
+
   return (
-    <div
-      style={{
-        display: "flex",
-        minHeight: "100vh",
-        background: "var(--clr-bg)",
-      }}
-    >
-      {/* Sidebar - Consistent with Dashboard */}
-      <aside
-        style={{
-          width: "260px",
-          background: "rgba(8,12,20,0.8)",
-          backdropFilter: "blur(20px)",
-          borderRight: "1px solid var(--clr-border)",
-          display: "flex",
-          flexDirection: "column",
-          padding: "24px 16px",
-          position: "sticky",
-          top: 0,
-          height: "100vh",
-        }}
-      >
-        <div style={{ padding: "0 12px 32px" }}>
-          <h1
-            style={{
-              fontSize: "1.4rem",
-              fontWeight: 800,
-              color: "#fff",
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-            }}
-          >
-            <span style={{ color: "var(--clr-primary)" }}>REVA</span>
-            <span
-              style={{
-                fontSize: "0.8rem",
-                background: "var(--grad-primary)",
-                padding: "2px 8px",
-                borderRadius: "4px",
-                textTransform: "uppercase",
-              }}
-            >
-              Police
-            </span>
+    <div className="flex min-h-screen bg-slate-50">
+      {/* Sidebar */}
+      <aside className="w-64 bg-slate-50/80 backdrop-blur-xl border-r border-slate-200 flex flex-col p-6 sticky top-0 h-screen">
+        <div className="pb-8 px-3">
+          <h1 className="text-xl font-extrabold text-slate-900 flex items-center gap-2.5">
+            <span className="text-blue-400">REVA</span>
+            <span className="text-xs bg-gradient-to-r from-blue-600 to-violet-600 px-2 py-0.5 rounded uppercase font-bold">Police</span>
           </h1>
         </div>
-
-        <nav style={{ flex: 1 }}>
-          {navItems.map((item) => (
-            <Link
-              key={item.to}
-              href={item.to}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                padding: "12px 14px",
-                borderRadius: "10px",
-                marginBottom: "6px",
-                textDecoration: "none",
-                fontSize: "0.9rem",
-                transition: "all 0.2s",
-                background:
-                  location.pathname === item.to
-                    ? "rgba(59,130,246,0.15)"
-                    : "transparent",
-                color:
-                  location.pathname === item.to
-                    ? "var(--clr-primary-light)"
-                    : "var(--clr-text-muted)",
-                fontWeight: location.pathname === item.to ? 600 : 500,
-                border:
-                  location.pathname === item.to
-                    ? "1px solid rgba(59,130,246,0.2)"
-                    : "1px solid transparent",
-              }}
-            >
-              <span style={{ fontSize: "1.2rem" }}>{item.icon}</span>
-              {item.label}
-            </Link>
-          ))}
+        <nav className="flex-1">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const active = pathname === item.to;
+            return (
+              <Link key={item.to} href={item.to}
+                className={`flex items-center gap-2.5 px-3.5 py-3 rounded-xl mb-1.5 text-[0.9rem] transition-all no-underline ${active ? "bg-blue-500/15 text-blue-400 font-semibold border border-blue-500/20"
+                    : "text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-transparent"
+                  }`}
+              >
+                <Icon size={16} />
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
-
-        <div
-          style={{ padding: "16px", borderTop: "1px solid var(--clr-border)" }}
-        >
-          <div
-            style={{
-              fontSize: "0.75rem",
-              color: "var(--clr-text-faint)",
-              marginBottom: "4px",
-            }}
-          >
-            Logged in as
-          </div>
-          <div
-            style={{
-              fontSize: "0.85rem",
-              fontWeight: 600,
-              color: "var(--clr-text)",
-              marginBottom: "12px",
-            }}
-          >
-            {policeUser?.name}
-          </div>
-          <button
-            onClick={logoutPolice}
-            className="btn btn-ghost btn-sm w-full"
-            style={{ justifyContent: "flex-start", color: "#f87171" }}
-          >
-            🚫 Logout
+        <div className="pt-4 border-t border-slate-200">
+          <div className="text-xs text-slate-400 mb-0.5">Logged in as</div>
+          <div className="text-sm font-semibold text-slate-800 mb-3">{policeUser?.name}</div>
+          <button onClick={logoutPolice} className="w-full text-left text-sm text-red-400 hover:text-red-300 hover:bg-slate-100 px-3 py-2 rounded-xl transition-colors">
+            Logout
           </button>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main style={{ flex: 1, padding: "32px", overflowY: "auto" }}>
-        <header
-          style={{
-            marginBottom: "32px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-end",
-          }}
-        >
+      {/* Main */}
+      <main className="flex-1 p-8 overflow-y-auto">
+        <header className="flex justify-between items-end mb-8">
           <div>
-            <h2 style={{ fontSize: "1.8rem", marginBottom: "8px" }}>
-              Case Management
-            </h2>
-            <p style={{ color: "var(--clr-text-muted)" }}>
-              Manage all registered complaints and legal proceedings.
-            </p>
+            <h2 className="text-3xl font-bold text-slate-900 mb-2">Case Management</h2>
+            <p className="text-slate-500">Manage all registered complaints and legal proceedings.</p>
           </div>
-          <div style={{ textAlign: "right" }}>
-            <div
-              style={{
-                fontSize: "2rem",
-                fontWeight: 800,
-                color: "var(--clr-primary-light)",
-              }}
-            >
-              {total}
-            </div>
-            <div
-              style={{
-                fontSize: "0.7rem",
-                color: "var(--clr-text-faint)",
-                textTransform: "uppercase",
-                letterSpacing: "1px",
-              }}
-            >
-              Total Records
-            </div>
+          <div className="text-right">
+            <div className="text-3xl font-extrabold text-blue-400">{total}</div>
+            <div className="text-[0.7rem] text-slate-400 uppercase tracking-widest">Total Records</div>
           </div>
         </header>
 
         {/* Filters */}
-        <div className="card" style={{ marginBottom: "24px", padding: "20px" }}>
-          <form
-            onSubmit={handleSearch}
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 180px 180px 120px",
-              gap: "16px",
-            }}
-          >
-            <div style={{ position: "relative" }}>
-              <input
-                type="text"
-                placeholder="Search by Tracking ID, Incident Type..."
-                className="input"
-                value={filters.search}
-                onChange={(e) =>
-                  setFilters({ ...filters, search: e.target.value })
-                }
-                style={{ paddingLeft: "40px" }}
-              />
-              <span
-                style={{
-                  position: "absolute",
-                  left: "14px",
-                  top: "10px",
-                  color: "var(--clr-text-faint)",
-                }}
-              >
-                🔍
-              </span>
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
+          <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-[1fr_180px_180px_120px] gap-4">
+            <div className="relative">
+              <span className="absolute left-3.5 top-3.5 text-slate-500 text-sm">🔍</span>
+              <input type="text" placeholder="Search by Tracking ID, Incident Type..."
+                className={`${INPUT_CLASS} pl-9`}
+                value={filters.search} onChange={e => setFilters({ ...filters, search: e.target.value })} />
             </div>
-            <select
-              className="input"
-              value={filters.status}
-              onChange={(e) => {
-                setFilters({ ...filters, status: e.target.value });
-                setPage(1);
-              }}
-            >
+            <select className={INPUT_CLASS} value={filters.status}
+              onChange={e => { setFilters({ ...filters, status: e.target.value }); setPage(1); }}>
               <option value="">All Statuses</option>
-              {Object.keys(STATUS_COLORS).map((s) => (
-                <option key={s} value={s}>
-                  {s.replace("_", " ")}
-                </option>
-              ))}
+              {Object.keys(STATUS_COLORS).map(s => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
             </select>
-            <select
-              className="input"
-              value={filters.priority}
-              onChange={(e) => {
-                setFilters({ ...filters, priority: e.target.value });
-                setPage(1);
-              }}
-            >
+            <select className={INPUT_CLASS} value={filters.priority}
+              onChange={e => { setFilters({ ...filters, priority: e.target.value }); setPage(1); }}>
               <option value="">All Priorities</option>
-              {Object.keys(PRIORITY_COLORS).map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
+              {Object.keys(PRIORITY_COLORS).map(p => <option key={p} value={p}>{p}</option>)}
             </select>
-            <button type="submit" className="btn btn-primary">
+            <button type="submit" className="px-4 py-3 bg-gradient-to-r from-blue-600 to-violet-600 text-white font-bold text-sm rounded-xl hover:opacity-90 transition-opacity">
               Search
             </button>
           </form>
         </div>
 
-        {/* Complaints Table */}
-        <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-          <div style={{ overflowX: "auto" }}>
-            <table
-              style={{
-                width: "100%",
-                borderCollapse: "collapse",
-                textAlign: "left",
-              }}
-            >
+        {/* Table */}
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr
-                  style={{
-                    background: "rgba(255,255,255,0.02)",
-                    borderBottom: "1px solid var(--clr-border)",
-                  }}
-                >
-                  <th
-                    style={{
-                      padding: "16px",
-                      fontSize: "0.75rem",
-                      textTransform: "uppercase",
-                      color: "var(--clr-text-faint)",
-                    }}
-                  >
-                    Case ID
-                  </th>
-                  <th
-                    style={{
-                      padding: "16px",
-                      fontSize: "0.75rem",
-                      textTransform: "uppercase",
-                      color: "var(--clr-text-faint)",
-                    }}
-                  >
-                    Incident
-                  </th>
-                  <th
-                    style={{
-                      padding: "16px",
-                      fontSize: "0.75rem",
-                      textTransform: "uppercase",
-                      color: "var(--clr-text-faint)",
-                    }}
-                  >
-                    Priority
-                  </th>
-                  <th
-                    style={{
-                      padding: "16px",
-                      fontSize: "0.75rem",
-                      textTransform: "uppercase",
-                      color: "var(--clr-text-faint)",
-                    }}
-                  >
-                    Status
-                  </th>
-                  <th
-                    style={{
-                      padding: "16px",
-                      fontSize: "0.75rem",
-                      textTransform: "uppercase",
-                      color: "var(--clr-text-faint)",
-                    }}
-                  >
-                    Date Filed
-                  </th>
-                  <th
-                    style={{
-                      padding: "16px",
-                      fontSize: "0.75rem",
-                      textTransform: "uppercase",
-                      color: "var(--clr-text-faint)",
-                    }}
-                  >
-                    Action
-                  </th>
+                <tr className="bg-white border-b border-slate-200">
+                  <ThCell>Case ID</ThCell>
+                  <ThCell>Incident</ThCell>
+                  <ThCell>Priority</ThCell>
+                  <ThCell>Status</ThCell>
+                  <ThCell>Date Filed</ThCell>
+                  <ThCell>Action</ThCell>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr>
-                    <td
-                      colSpan="6"
-                      style={{ padding: "60px", textAlign: "center" }}
-                    >
-                      <div
-                        className="skeleton-text"
-                        style={{ width: "100px", margin: "0 auto" }}
-                      >
-                        Loading cases...
-                      </div>
-                    </td>
-                  </tr>
+                  <tr><td colSpan="6" className="py-16 text-center text-slate-500 text-sm">Loading cases...</td></tr>
                 ) : complaints.length > 0 ? (
-                  complaints.map((c) => (
-                    <tr
-                      key={c.id}
-                      style={{
-                        borderBottom: "1px solid var(--clr-border)",
-                        transition: "background 0.2s",
-                      }}
-                      className="table-row-hover"
-                    >
-                      <td style={{ padding: "16px" }}>
-                        <div
-                          style={{
-                            fontFamily: "monospace",
-                            fontWeight: 700,
-                            color: "var(--clr-primary-light)",
-                          }}
-                        >
-                          {c.trackingId}
-                        </div>
-                        {c.isEmergency && (
-                          <span
-                            style={{
-                              fontSize: "0.65rem",
-                              color: "#ff3b30",
-                              fontWeight: 800,
-                            }}
-                          >
-                            🚨 EMERGENCY
-                          </span>
-                        )}
+                  complaints.map(c => (
+                    <tr key={c.id} className="border-b border-white/[0.04] hover:bg-white transition-colors">
+                      <td className="px-4 py-4">
+                        <div className="font-mono font-bold text-blue-400">{c.trackingId}</div>
+                        {c.isEmergency && <span className="text-[0.65rem] text-red-400 font-extrabold">🚨 EMERGENCY</span>}
                       </td>
-                      <td style={{ padding: "16px" }}>
-                        <div style={{ fontWeight: 600 }}>
-                          {c.incidentType || "General"}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: "0.75rem",
-                            color: "var(--clr-text-muted)",
-                          }}
-                        >
-                          {c.locationAddress?.slice(0, 30)}...
-                        </div>
+                      <td className="px-4 py-4">
+                        <div className="font-semibold text-slate-800">{c.incidentType || "General"}</div>
+                        <div className="text-xs text-slate-500">{c.locationAddress?.slice(0, 30)}…</div>
                       </td>
-                      <td style={{ padding: "16px" }}>
-                        <span
-                          style={{
-                            padding: "4px 10px",
-                            borderRadius: "12px",
-                            fontSize: "0.7rem",
-                            fontWeight: 700,
-                            background: `${PRIORITY_COLORS[c.priorityLevel]}20`,
-                            color: PRIORITY_COLORS[c.priorityLevel],
-                            border: `1px solid ${PRIORITY_COLORS[c.priorityLevel]}40`,
-                          }}
-                        >
+                      <td className="px-4 py-4">
+                        <span className="px-2.5 py-1 rounded-xl text-[0.7rem] font-bold border"
+                          style={{ background: `${PRIORITY_COLORS[c.priorityLevel]}20`, color: PRIORITY_COLORS[c.priorityLevel], borderColor: `${PRIORITY_COLORS[c.priorityLevel]}40` }}>
                           {c.priorityLevel}
                         </span>
                       </td>
-                      <td style={{ padding: "16px" }}>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
-                          }}
-                        >
-                          <div
-                            style={{
-                              width: 8,
-                              height: 8,
-                              borderRadius: "50%",
-                              background: STATUS_COLORS[c.status],
-                            }}
-                          />
-                          <span style={{ fontSize: "0.85rem" }}>
-                            {c.status.replace("_", " ")}
-                          </span>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: STATUS_COLORS[c.status] }} />
+                          <span className="text-sm text-slate-800">{c.status.replace("_", " ")}</span>
                         </div>
                       </td>
-                      <td
-                        style={{
-                          padding: "16px",
-                          color: "var(--clr-text-faint)",
-                          fontSize: "0.85rem",
-                        }}
-                      >
-                        {new Date(c.createdAt).toLocaleDateString("en-IN")}
-                      </td>
-                      <td style={{ padding: "16px" }}>
-                        <div style={{ display: "flex", gap: "8px" }}>
-                          <Link
-                            href={`/police/complaints/${c.id}`}
-                            className="btn btn-primary btn-sm"
-                          >
+                      <td className="px-4 py-4 text-sm text-slate-500">{new Date(c.createdAt).toLocaleDateString("en-IN")}</td>
+                      <td className="px-4 py-4">
+                        <div className="flex gap-2">
+                          <Link href={`/police/complaints/${c.id}`}
+                            className="text-xs font-bold text-slate-900 bg-gradient-to-r from-blue-600 to-violet-600 px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity no-underline">
                             Full Case File →
                           </Link>
-                          <Link
-                            href={`/police/map?id=${c.id}`}
-                            className="btn btn-ghost btn-sm"
-                            title="View on map"
-                          >
+                          <Link href={`/police/map?id=${c.id}`}
+                            className="text-xs text-slate-500 hover:text-slate-800 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 transition-colors no-underline">
                             📍
                           </Link>
                         </div>
@@ -513,18 +188,7 @@ export default function ComplaintsListPage() {
                     </tr>
                   ))
                 ) : (
-                  <tr>
-                    <td
-                      colSpan="6"
-                      style={{
-                        padding: "48px",
-                        textAlign: "center",
-                        color: "var(--clr-text-muted)",
-                      }}
-                    >
-                      No complaints found matching your filters.
-                    </td>
-                  </tr>
+                  <tr><td colSpan="6" className="py-12 text-center text-slate-500">No complaints found matching your filters.</td></tr>
                 )}
               </tbody>
             </table>
@@ -533,47 +197,19 @@ export default function ComplaintsListPage() {
 
         {/* Pagination */}
         {total > 15 && (
-          <div
-            style={{
-              marginTop: "24px",
-              display: "flex",
-              justifyContent: "center",
-              gap: "8px",
-            }}
-          >
-            <button
-              className="btn btn-ghost btn-sm"
-              disabled={page === 1}
-              onClick={() => setPage(page - 1)}
-            >
+          <div className="mt-6 flex justify-center items-center gap-3">
+            <button onClick={() => setPage(page - 1)} disabled={page === 1}
+              className="text-sm text-slate-500 hover:text-slate-900 px-4 py-2 hover:bg-slate-100 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
               Previous
             </button>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                px: "16px",
-                fontSize: "0.9rem",
-              }}
-            >
-              Page {page} of {Math.ceil(total / 15)}
-            </div>
-            <button
-              className="btn btn-ghost btn-sm"
-              disabled={page >= Math.ceil(total / 15)}
-              onClick={() => setPage(page + 1)}
-            >
+            <span className="text-sm text-slate-500">Page {page} of {Math.ceil(total / 15)}</span>
+            <button onClick={() => setPage(page + 1)} disabled={page >= Math.ceil(total / 15)}
+              className="text-sm text-slate-500 hover:text-slate-900 px-4 py-2 hover:bg-slate-100 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
               Next
             </button>
           </div>
         )}
       </main>
-
-      <style>{`
-        .table-row-hover:hover {
-          background: rgba(255,255,255,0.03);
-        }
-      `}</style>
     </div>
   );
 }

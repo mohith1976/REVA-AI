@@ -115,6 +115,15 @@ export const useSpeechRecognition = (language = 'en-US', autoStop = false) => {
                 },
                 (err) => {
                     console.error('Start Error: ' + err);
+                    if (err.includes("NotAllowedError") || err.includes("Permission denied")) {
+                        import('react-hot-toast').then(({ toast }) => {
+                            toast.error("Microphone access denied. Please allow microphone permissions in your browser.");
+                        });
+                    } else {
+                        import('react-hot-toast').then(({ toast }) => {
+                            toast.error("Could not start microphone. Please check your settings.");
+                        });
+                    }
                     setIsListening(false);
                     setIsInitializing(false);
                     isStartingRef.current = false;
@@ -123,6 +132,15 @@ export const useSpeechRecognition = (language = 'en-US', autoStop = false) => {
             );
         } catch (error) {
             console.error('Error starting recognition:', error);
+            if (error.name === "NotAllowedError") {
+                import('react-hot-toast').then(({ toast }) => {
+                    toast.error("Microphone access denied. Please allow microphone permissions in your browser.");
+                });
+            } else {
+                import('react-hot-toast').then(({ toast }) => {
+                    toast.error("Microphone initialization failed.");
+                });
+            }
             setIsListening(false);
             setIsInitializing(false);
             isStartingRef.current = false;

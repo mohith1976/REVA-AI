@@ -3,17 +3,26 @@ import Link from "next/link";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/context/AuthContext";
+import {
+  Shield, Mic, MapPin, Zap, FileText, Lock,
+  Phone, ArrowRight, AlertTriangle,
+} from "lucide-react";
 
-const STATS_VALUES = ["2.4M+", "98%", "11", "< 2.5s"];
-const STATS_KEYS = [
-  "stats.complaintsLabel",
-  "stats.resolutionLabel",
-  "stats.languagesLabel",
-  "stats.responseLabel",
+const STATS = [
+  { value: "2.4M+", labelKey: "stats.complaintsLabel" },
+  { value: "98%", labelKey: "stats.resolutionLabel" },
+  { value: "11", labelKey: "stats.languagesLabel" },
+  { value: "< 2.5s", labelKey: "stats.responseLabel" },
 ];
 
-const FEATURES_ICONS = ["🎙️", "🛡️", "📍", "⚡", "📋", "🔒"];
-const FEATURES_KEYS = ["voice", "aadhaar", "geofence", "risk", "fir", "security"];
+const FEATURES = [
+  { key: "voice", Icon: Mic },
+  { key: "aadhaar", Icon: Shield },
+  { key: "geofence", Icon: MapPin },
+  { key: "risk", Icon: Zap },
+  { key: "fir", Icon: FileText },
+  { key: "security", Icon: Lock },
+];
 
 const LANGUAGES = [
   { label: "English", code: "en" },
@@ -33,6 +42,7 @@ export default function LandingPage() {
   const { user } = useAuth();
   const { t, i18n } = useTranslation();
   const [activeLang, setActiveLang] = useState(i18n.language || "en");
+  const [hoverFeature, setHoverFeature] = useState(null);
 
   function handleLangChange(code) {
     i18n.changeLanguage(code);
@@ -41,88 +51,42 @@ export default function LandingPage() {
   }
 
   return (
-    <div style={{ background: "var(--clr-bg)", minHeight: "100vh" }}>
-      {/* Navbar */}
-      <nav
-        style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 100,
-          background: "rgba(8, 12, 20, 0.85)",
-          backdropFilter: "blur(12px)",
-          borderBottom: "1px solid var(--clr-border)",
-          padding: "0 24px",
-        }}
-      >
-        <div
-          style={{
-            maxWidth: "1200px",
-            margin: "0 auto",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            height: "64px",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                background: "var(--grad-primary)",
-                borderRadius: "8px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "18px",
-              }}
-            >
-              🛡️
+    <div className="bg-slate-50 min-h-screen text-slate-900 font-sans">
+
+      {/* ── Navbar ── */}
+      <nav className="sticky top-0 z-50 bg-slate-50/85 backdrop-blur-md border-b border-slate-200">
+        <div className="max-w-6xl mx-auto px-8 flex items-center justify-between h-[60px]">
+          {/* Logo */}
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
+              <Shield size={16} color="#000" strokeWidth={2.5} />
             </div>
-            <span
-              style={{
-                fontFamily: "var(--font-display)",
-                fontWeight: 700,
-                fontSize: "1.2rem",
-              }}
-            >
-              REVA AI
-            </span>
+            <span className="font-bold text-base tracking-wide text-slate-900">REVA AI</span>
           </div>
-          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-            <Link href="/track" className="btn btn-ghost btn-sm">
+
+          {/* Links */}
+          <div className="flex items-center gap-2">
+            <Link href="/track" className="px-3.5 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100">
               {t("nav.track")}
             </Link>
             {user ? (
               <>
-                <Link href="/profile" className="btn btn-ghost btn-sm">
+                <Link href="/profile" className="px-3.5 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100">
                   {t("nav.profile")}
                 </Link>
-                <Link href="/my-complaints" className="btn btn-ghost btn-sm">
+                <Link href="/my-complaints" className="px-3.5 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100">
                   {t("nav.myCases")}
                 </Link>
-                <Link
-                  href="/complaint"
-                  className="btn btn-primary btn-sm"
-                  id="file-complaint-nav"
-                >
+                <Link href="/complaint" id="file-complaint-nav" className="px-4 py-1.5 text-sm font-semibold text-black bg-white rounded-lg hover:bg-slate-100 transition-colors">
                   {t("nav.fileComplaint")}
                 </Link>
               </>
             ) : (
               <>
-                <Link
-                  href="/login"
-                  className="btn btn-outline btn-sm"
-                  id="login-nav"
-                >
+                <Link href="/login" id="login-nav" className="px-4 py-1.5 text-sm font-semibold text-slate-900 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors">
                   {t("nav.signIn")}
                 </Link>
-                <Link
-                  href="/police/login"
-                  className="btn btn-ghost btn-sm"
-                  id="police-login-nav"
-                >
+                <Link href="/police/login" id="police-login-nav" className="px-3.5 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100">
                   {t("nav.policePortal")}
                 </Link>
               </>
@@ -131,164 +95,57 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* Hero */}
-      <section
-        style={{
-          minHeight: "90vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          textAlign: "center",
-          padding: "80px 24px",
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
-        {/* Gradient orbs */}
-        <div
-          style={{
-            position: "absolute",
-            top: "10%",
-            left: "15%",
-            width: "500px",
-            height: "500px",
-            background:
-              "radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 70%)",
-            pointerEvents: "none",
-            borderRadius: "50%",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            bottom: "10%",
-            right: "15%",
-            width: "400px",
-            height: "400px",
-            background:
-              "radial-gradient(circle, rgba(139,92,246,0.08) 0%, transparent 70%)",
-            pointerEvents: "none",
-            borderRadius: "50%",
-          }}
-        />
+      {/* ── Hero ── */}
+      <section className="min-h-[88vh] flex items-center justify-center text-center px-6 py-20 relative overflow-hidden">
+        {/* Subtle radial glow */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,rgba(255,255,255,0.04)_0%,transparent_70%)] pointer-events-none" />
 
-        <div style={{ maxWidth: "860px", animation: "fadeIn 0.7s ease" }}>
-          {/* Badge */}
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "8px",
-              padding: "6px 16px",
-              background: "rgba(59,130,246,0.1)",
-              border: "1px solid rgba(59,130,246,0.2)",
-              borderRadius: "9999px",
-              marginBottom: "28px",
-              fontSize: "0.8rem",
-              color: "var(--clr-primary-light)",
-            }}
-          >
-            <span
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                background: "#10b981",
-                animation: "pulse 2s infinite",
-                display: "inline-block",
-              }}
-            />
+        <div className="max-w-3xl relative z-10">
+          {/* Live badge */}
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-slate-100 border border-white/12 rounded-full mb-8 text-xs font-medium text-slate-500 tracking-widest uppercase">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
             {t("hero.badge")}
           </div>
 
-          <h1
-            style={{
-              fontSize: "clamp(2.5rem, 6vw, 4rem)",
-              fontFamily: "var(--font-display)",
-              fontWeight: 900,
-              lineHeight: 1.1,
-              marginBottom: "24px",
-              background: "linear-gradient(135deg, #f1f5f9 0%, #94a3b8 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-            }}
-          >
+          <h1 className="text-[clamp(2.8rem,6vw,4.5rem)] font-extrabold leading-[1.08] tracking-[-1.5px] mb-6 text-slate-900">
             {t("hero.title1")}
             <br />
-            <span
-              style={{
-                background: "var(--grad-primary)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-            >
-              {t("hero.title2")}
-            </span>
+            <span className="text-slate-500">{t("hero.title2")}</span>
           </h1>
 
-          <p
-            style={{
-              fontSize: "1.15rem",
-              color: "var(--clr-text-muted)",
-              maxWidth: "600px",
-              margin: "0 auto 40px",
-              lineHeight: 1.7,
-            }}
-          >
+          <p className="text-lg text-slate-500 max-w-[560px] mx-auto mb-10 leading-relaxed">
             {t("hero.subtitle")}
           </p>
 
-          <div
-            style={{
-              display: "flex",
-              gap: "16px",
-              justifyContent: "center",
-              flexWrap: "wrap",
-            }}
-          >
+          <div className="flex gap-3 justify-center flex-wrap">
             <Link
               href={user ? "/complaint" : "/login"}
-              className="btn btn-primary btn-lg"
               id="hero-file-btn"
+              className="inline-flex items-center gap-2 px-7 py-3.5 bg-slate-900 text-white font-bold text-sm rounded-[10px] hover:bg-slate-800 transition-opacity"
             >
+              <Mic size={16} strokeWidth={2.5} />
               {t("hero.fileBtn")}
             </Link>
             <Link
               href="/track"
-              className="btn btn-outline btn-lg"
               id="hero-track-btn"
+              className="inline-flex items-center gap-2 px-7 py-3.5 bg-transparent text-slate-900 font-semibold text-sm rounded-[10px] border border-slate-200 hover:border-white/40 transition-colors"
             >
               {t("hero.trackBtn")}
+              <ArrowRight size={16} />
             </Link>
           </div>
 
           {/* Language pills */}
-          <div
-            style={{
-              marginTop: "48px",
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "8px",
-              justifyContent: "center",
-            }}
-          >
+          <div className="mt-14 flex flex-wrap gap-2 justify-center">
             {LANGUAGES.map(({ label, code }) => (
               <button
                 key={code}
                 onClick={() => handleLangChange(code)}
-                style={{
-                  padding: "4px 12px",
-                  background: activeLang === code ? "rgba(59,130,246,0.2)" : "rgba(255,255,255,0.04)",
-                  border: activeLang === code ? "1px solid rgba(59,130,246,0.5)" : "1px solid var(--clr-border)",
-                  borderRadius: "9999px",
-                  fontSize: "0.8rem",
-                  color: activeLang === code ? "var(--clr-primary-light)" : "var(--clr-text-muted)",
-                  cursor: "pointer",
-                  transition: "all 0.15s",
-                  fontFamily: "inherit",
-                }}
+                className={`px-3 py-1 text-xs rounded-full border transition-all font-sans cursor-pointer ${activeLang === code
+                  ? "bg-slate-100 border-slate-200 text-slate-900 font-semibold"
+                  : "bg-transparent border-slate-200 text-slate-500 hover:text-slate-500 hover:border-slate-200 font-normal"
+                  }`}
               >
                 {label}
               </button>
@@ -297,204 +154,94 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Stats */}
-      <section
-        style={{
-          padding: "32px 24px",
-          borderTop: "1px solid var(--clr-border)",
-          borderBottom: "1px solid var(--clr-border)",
-        }}
-      >
-        <div
-          style={{
-            maxWidth: "1200px",
-            margin: "0 auto",
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            gap: "24px",
-            textAlign: "center",
-          }}
-        >
-          {STATS_VALUES.map((value, i) => (
-            <div key={STATS_KEYS[i]}>
-              <div
-                style={{
-                  fontFamily: "var(--font-display)",
-                  fontSize: "2.2rem",
-                  fontWeight: 800,
-                  background: "var(--grad-primary)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                }}
-              >
-                {value}
-              </div>
-              <div
-                style={{
-                  color: "var(--clr-text-muted)",
-                  fontSize: "0.9rem",
-                  marginTop: "4px",
-                }}
-              >
-                {t(STATS_KEYS[i])}
-              </div>
+      {/* ── Stats ── */}
+      <section className="py-12 px-8 border-t border-b border-white/7">
+        <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+          {STATS.map(({ value, labelKey }) => (
+            <div key={labelKey}>
+              <div className="text-[2.4rem] font-extrabold tracking-[-1px] text-slate-900 leading-none mb-1.5">{value}</div>
+              <div className="text-xs font-medium text-slate-500 uppercase tracking-[0.4px]">{t(labelKey)}</div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Features */}
-      <section style={{ padding: "80px 24px" }}>
-        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: "56px" }}>
-            <h2>{t("features.heading")}</h2>
-            <p
-              style={{
-                marginTop: "12px",
-                fontSize: "1rem",
-                maxWidth: "500px",
-                margin: "12px auto 0",
-              }}
-            >
-              {t("features.subheading")}
-            </p>
+      {/* ── Features ── */}
+      <section className="py-24 px-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <div className="text-[0.72rem] font-bold tracking-[2px] uppercase text-slate-500 mb-3">Platform Features</div>
+            <h2 className="text-[clamp(1.8rem,3.5vw,2.6rem)] font-extrabold tracking-[-0.8px] text-slate-900 mb-3">
+              {t("features.heading")}
+            </h2>
+            <p className="text-sm text-slate-500 max-w-sm mx-auto leading-relaxed">{t("features.subheading")}</p>
           </div>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-              gap: "20px",
-            }}
-          >
-            {FEATURES_KEYS.map((key, i) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-slate-100 border border-white/7 rounded-2xl overflow-hidden">
+            {FEATURES.map(({ key, Icon }, i) => (
               <div
                 key={key}
-                className="card"
-                style={{ animationDelay: `${i * 0.1}s` }}
+                className={`p-8 transition-colors duration-200 cursor-default ${hoverFeature === i ? "bg-white" : "bg-slate-50"}`}
+                onMouseEnter={() => setHoverFeature(i)}
+                onMouseLeave={() => setHoverFeature(null)}
               >
-                <div style={{ fontSize: "2rem", marginBottom: "12px" }}>
-                  {FEATURES_ICONS[i]}
+                <div className="w-10 h-10 rounded-[10px] bg-slate-100 border border-slate-200 flex items-center justify-center mb-4">
+                  <Icon size={18} color="rgba(255,255,255,0.7)" strokeWidth={1.75} />
                 </div>
-                <h4 style={{ marginBottom: "8px", fontSize: "1.05rem" }}>
+                <div className="font-bold text-[0.95rem] text-slate-900 mb-2 tracking-[-0.2px]">
                   {t(`features.${key}.title`)}
-                </h4>
-                <p style={{ fontSize: "0.88rem", lineHeight: 1.6 }}>
-                  {t(`features.${key}.desc`)}
-                </p>
+                </div>
+                <p className="text-[0.84rem] text-slate-500 leading-relaxed">{t(`features.${key}.desc`)}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Emergency CTA */}
-      <section style={{ padding: "40px 24px" }}>
-        <div style={{ maxWidth: "800px", margin: "0 auto" }}>
-          <div
-            className="emergency-banner"
-            style={{ textAlign: "center", padding: "32px" }}
-          >
-            <div style={{ fontSize: "2.5rem", marginBottom: "8px" }}>🚨</div>
-            <h3 style={{ color: "#ff3b30", marginBottom: "8px" }}>
-              {t("emergency.title")}
-            </h3>
-            <p
-              style={{
-                color: "var(--clr-text-muted)",
-                marginBottom: "20px",
-                fontSize: "0.9rem",
-              }}
+      {/* ── Emergency CTA ── */}
+      <section className="pb-20 px-8">
+        <div className="max-w-3xl mx-auto bg-white border border-white/9 rounded-2xl p-10 text-center">
+          <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-5">
+            <AlertTriangle size={22} color="#f87171" strokeWidth={2} />
+          </div>
+          <h3 className="text-xl font-extrabold text-slate-900 tracking-[-0.4px] mb-2">{t("emergency.title")}</h3>
+          <p className="text-sm text-slate-500 mb-7 leading-relaxed">{t("emergency.subtitle")}</p>
+          <div className="flex gap-3 justify-center flex-wrap">
+            <a
+              href="tel:112"
+              id="emergency-call-112"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-red-500/12 text-red-400 font-bold text-sm rounded-[10px] border border-red-500/30 hover:bg-red-500/20 transition-colors"
             >
-              {t("emergency.subtitle")}
-            </p>
-            <div
-              style={{
-                display: "flex",
-                gap: "12px",
-                justifyContent: "center",
-                flexWrap: "wrap",
-              }}
+              <Phone size={15} strokeWidth={2.5} />
+              {t("emergency.call112")}
+            </a>
+            <a
+              href="tel:100"
+              id="emergency-call-100"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-transparent text-slate-900 font-semibold text-sm rounded-[10px] border border-slate-200 hover:border-white/40 transition-colors"
             >
-              <a
-                href="tel:112"
-                className="btn btn-danger btn-lg"
-                id="emergency-call-112"
-              >
-                {t("emergency.call112")}
-              </a>
-              <a
-                href="tel:100"
-                className="btn btn-outline btn-lg"
-                id="emergency-call-100"
-              >
-                {t("emergency.call100")}
-              </a>
-            </div>
+              <Phone size={15} strokeWidth={2.5} />
+              {t("emergency.call100")}
+            </a>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer
-        style={{
-          borderTop: "1px solid var(--clr-border)",
-          padding: "40px 24px",
-          textAlign: "center",
-        }}
-      >
-        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              justifyContent: "center",
-              marginBottom: "16px",
-            }}
-          >
-            <span style={{ fontSize: "1.5rem" }}>🛡️</span>
-            <span
-              style={{ fontFamily: "var(--font-display)", fontWeight: 700 }}
-            >
-              REVA AI
-            </span>
+      {/* ── Footer ── */}
+      <footer className="border-t border-white/7 py-10 px-8">
+        <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <Shield size={14} color="rgba(255,255,255,0.25)" strokeWidth={2} />
+            <span className="font-bold text-sm text-slate-500">REVA AI</span>
           </div>
-          <p style={{ fontSize: "0.8rem", color: "var(--clr-text-faint)" }}>
-            {t("footer.copyright")}
-          </p>
-          <div
-            style={{
-              display: "flex",
-              gap: "24px",
-              justifyContent: "center",
-              marginTop: "16px",
-            }}
-          >
-            <Link
-              href="/police/login"
-              style={{
-                fontSize: "0.8rem",
-                color: "var(--clr-text-faint)",
-                textDecoration: "none",
-              }}
-            >
-              {t("footer.policePortal")}
-            </Link>
-            <Link
-              href="/track"
-              style={{
-                fontSize: "0.8rem",
-                color: "var(--clr-text-faint)",
-                textDecoration: "none",
-              }}
-            >
-              {t("footer.track")}
-            </Link>
+          <span className="text-xs text-slate-500">{t("footer.copyright")}</span>
+          <div className="flex gap-6">
+            <Link href="/police/login" className="text-xs text-slate-500 hover:text-slate-500 transition-colors">{t("footer.policePortal")}</Link>
+            <Link href="/track" className="text-xs text-slate-500 hover:text-slate-500 transition-colors">{t("footer.track")}</Link>
           </div>
         </div>
       </footer>
+
     </div>
   );
 }
