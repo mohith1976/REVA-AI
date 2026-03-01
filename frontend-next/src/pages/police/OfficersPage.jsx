@@ -15,7 +15,8 @@ const ROLE_COLORS = {
 const INPUT = "w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm placeholder:text-slate-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-colors";
 
 export default function OfficersPage() {
-  const { policeUser } = useAuth();
+  const auth = useAuth();
+  const policeUser = auth?.policeUser;
   const router = useRouter();
   const [officers, setOfficers] = useState([]);
   const [loading, setLoading] = useState(true);

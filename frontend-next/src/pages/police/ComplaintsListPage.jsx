@@ -18,7 +18,9 @@ const STATUS_COLORS = {
 const INPUT_CLASS = "w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm placeholder:text-slate-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-colors";
 
 export default function ComplaintsListPage() {
-  const { policeUser, logoutPolice } = useAuth();
+  const auth = useAuth();
+  const policeUser = auth?.policeUser;
+  const logoutPolice = auth?.logoutPolice;
   const router = useRouter();
   const pathname = usePathname();
   const [complaints, setComplaints] = useState([]);
@@ -76,7 +78,7 @@ export default function ComplaintsListPage() {
             return (
               <Link key={item.to} href={item.to}
                 className={`flex items-center gap-2.5 px-3.5 py-3 rounded-xl mb-1.5 text-[0.9rem] transition-all no-underline ${active ? "bg-blue-500/15 text-blue-400 font-semibold border border-blue-500/20"
-                    : "text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-transparent"
+                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-transparent"
                   }`}
               >
                 <Icon size={16} />

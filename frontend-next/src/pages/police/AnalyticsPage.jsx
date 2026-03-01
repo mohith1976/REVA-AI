@@ -8,7 +8,8 @@ const PRIORITY_COLORS = { EMERGENCY: "#ff3b30", HIGH: "#f87171", MODERATE: "#fbb
 const STATUS_COLORS = { FILED: "#60a5fa", UNDER_REVIEW: "#fbbf24", ASSIGNED: "#a78bfa", IN_PROGRESS: "#34d399", ESCALATED: "#f87171", RESOLVED: "#10b981", CLOSED: "#94a3b8" };
 
 export default function AnalyticsPage() {
-  const { policeUser } = useAuth();
+  const auth = useAuth();
+  const policeUser = auth?.policeUser;
   const router = useRouter();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);

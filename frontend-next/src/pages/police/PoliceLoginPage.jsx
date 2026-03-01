@@ -11,7 +11,8 @@ export default function PoliceLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const { loginPolice } = useAuth();
+  const auth = useAuth();
+  const loginPolice = auth?.loginPolice;
   const router = useRouter();
 
   const handleLogin = async () => {

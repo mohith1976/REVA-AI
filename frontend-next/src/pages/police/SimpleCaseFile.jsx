@@ -8,7 +8,8 @@ import { Link2 } from "lucide-react";
 const INPUT = "w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 text-sm placeholder:text-slate-400 outline-none focus:border-blue-500 transition-colors";
 
 export default function SimpleCaseFile() {
-  const { id } = useParams();
+  const params = useParams();
+  const id = params?.id;
   const router = useRouter();
   const [complaint, setComplaint] = useState(null);
   const [loading, setLoading] = useState(true);

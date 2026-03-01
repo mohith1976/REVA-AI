@@ -167,8 +167,10 @@ function EvidenceCard({ item }) {
 }
 
 export default function ComplaintDetailPage() {
-  const { id } = useParams();
-  const { policeUser } = useAuth();
+  const params = useParams();
+  const id = params?.id;
+  const auth = useAuth();
+  const policeUser = auth?.policeUser;
   const router = useRouter();
   const [complaint, setComplaint] = useState(null);
   const [officers, setOfficers] = useState([]);
@@ -187,7 +189,7 @@ export default function ComplaintDetailPage() {
   const [firError, setFirError] = useState(null);
   const firGeneratedRef = useRef(false);
 
-  const token = localStorage.getItem("reva_police_token");
+  const token = typeof window !== "undefined" ? localStorage.getItem("reva_police_token") : "";
   const headers = { Authorization: `Bearer ${token}` };
 
   useEffect(() => {
@@ -623,8 +625,7 @@ export default function ComplaintDetailPage() {
                   }}
                 >
                   {complaint.transcript ? (
-                    complaint.transcript.split("
-").map((line, i) => {
+                    complaint.transcript.split("\n").map((line, i) => {
                       const isAi = line.startsWith("REVA:");
                       const isUser = line.startsWith("USER:");
                       return (
@@ -1321,74 +1322,74 @@ export default function ComplaintDetailPage() {
           {["STATION_ADMIN", "SUPER_ADMIN", "GLOBAL_ADMIN", "OFFICER"].includes(
             policeUser?.role,
           ) && (
-            <div
-              className="card"
-              style={{ border: "1px solid rgba(139, 92, 246, 0.2)" }}
-            >
-              <h4
-                style={{
-                  marginBottom: "12px",
-                  fontSize: "0.95rem",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                }}
+              <div
+                className="card"
+                style={{ border: "1px solid rgba(139, 92, 246, 0.2)" }}
               >
-                <span style={{ color: "var(--clr-primary)" }}>⇄</span>{" "}
-                Jurisdiction Transfer
-              </h4>
-              <p
-                style={{
-                  fontSize: "0.78rem",
-                  color: "var(--clr-text-muted)",
-                  marginBottom: "12px",
-                }}
-              >
-                Transfer this case to another police station if it falls outside
-                current jurisdiction.
-              </p>
-
-              <div style={{ display: "grid", gap: "10px" }}>
-                <select
-                  className="input sm"
-                  value={selectedTargetStation}
-                  onChange={(e) => setSelectedTargetStation(e.target.value)}
-                  style={{ fontSize: "0.85rem" }}
-                >
-                  <option value="">Select Target Station</option>
-                  {stations
-                    .filter((s) => s.id !== complaint.stationId)
-                    .map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.stationName} ({s.district})
-                      </option>
-                    ))}
-                </select>
-
-                <input
-                  type="text"
-                  className="input sm"
-                  placeholder="Reason for transfer..."
-                  value={migrationReason}
-                  onChange={(e) => setMigrationReason(e.target.value)}
-                  style={{ fontSize: "0.85rem" }}
-                />
-
-                <button
-                  className="btn btn-ghost btn-sm w-full"
+                <h4
                   style={{
-                    borderColor: "var(--clr-primary)",
-                    color: "var(--clr-primary-light)",
-                    marginTop: "4px",
+                    marginBottom: "12px",
+                    fontSize: "0.95rem",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
                   }}
-                  onClick={handleMigrate}
-                  disabled={!selectedTargetStation || isMigrating}
                 >
-                  {isMigrating ? "Processing..." : "Transfer Case →"}
-                </button>
+                  <span style={{ color: "var(--clr-primary)" }}>⇄</span>{" "}
+                  Jurisdiction Transfer
+                </h4>
+                <p
+                  style={{
+                    fontSize: "0.78rem",
+                    color: "var(--clr-text-muted)",
+                    marginBottom: "12px",
+                  }}
+                >
+                  Transfer this case to another police station if it falls outside
+                  current jurisdiction.
+                </p>
+
+                <div style={{ display: "grid", gap: "10px" }}>
+                  <select
+                    className="input sm"
+                    value={selectedTargetStation}
+                    onChange={(e) => setSelectedTargetStation(e.target.value)}
+                    style={{ fontSize: "0.85rem" }}
+                  >
+                    <option value="">Select Target Station</option>
+                    {stations
+                      .filter((s) => s.id !== complaint.stationId)
+                      .map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.stationName} ({s.district})
+                        </option>
+                      ))}
+                  </select>
+
+                  <input
+                    type="text"
+                    className="input sm"
+                    placeholder="Reason for transfer..."
+                    value={migrationReason}
+                    onChange={(e) => setMigrationReason(e.target.value)}
+                    style={{ fontSize: "0.85rem" }}
+                  />
+
+                  <button
+                    className="btn btn-ghost btn-sm w-full"
+                    style={{
+                      borderColor: "var(--clr-primary)",
+                      color: "var(--clr-primary-light)",
+                      marginTop: "4px",
+                    }}
+                    onClick={handleMigrate}
+                    disabled={!selectedTargetStation || isMigrating}
+                  >
+                    {isMigrating ? "Processing..." : "Transfer Case →"}
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Status Update */}
           <div className="card">
@@ -1462,85 +1463,85 @@ export default function ComplaintDetailPage() {
           {/* Linked Cases */}
           {(complaint.linksAsA?.length > 0 ||
             complaint.linksAsB?.length > 0) && (
-            <div
-              className="card"
-              style={{ border: "1px solid rgba(139, 92, 246, 0.2)" }}
-            >
-              <h4
-                style={{
-                  marginBottom: "12px",
-                  fontSize: "0.95rem",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                }}
+              <div
+                className="card"
+                style={{ border: "1px solid rgba(139, 92, 246, 0.2)" }}
               >
-                <span style={{ color: "var(--clr-primary)" }}>🔗</span> Linked
-                Complaints
-              </h4>
-              <div style={{ display: "grid", gap: "8px" }}>
-                {[
-                  ...complaint.linksAsA.map((l) => ({
-                    ...l.complaintB,
-                    reason: l.linkReason,
-                  })),
-                  ...complaint.linksAsB.map((l) => ({
-                    ...l.complaintA,
-                    reason: l.linkReason,
-                  })),
-                ].map((c, idx) => (
-                  <div
-                    key={idx}
-                    onClick={() => router.push(`/police/complaints/${c.id}`)}
-                    style={{
-                      padding: "10px",
-                      borderRadius: "8px",
-                      background: "rgba(255,255,255,0.03)",
-                      border: "1px solid var(--clr-border)",
-                      fontSize: "0.82rem",
-                      cursor: "pointer",
-                      transition: "background 0.2s",
-                    }}
-                    onMouseEnter={(e) =>
+                <h4
+                  style={{
+                    marginBottom: "12px",
+                    fontSize: "0.95rem",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                  }}
+                >
+                  <span style={{ color: "var(--clr-primary)" }}>🔗</span> Linked
+                  Complaints
+                </h4>
+                <div style={{ display: "grid", gap: "8px" }}>
+                  {[
+                    ...complaint.linksAsA.map((l) => ({
+                      ...l.complaintB,
+                      reason: l.linkReason,
+                    })),
+                    ...complaint.linksAsB.map((l) => ({
+                      ...l.complaintA,
+                      reason: l.linkReason,
+                    })),
+                  ].map((c, idx) => (
+                    <div
+                      key={idx}
+                      onClick={() => router.push(`/police/complaints/${c.id}`)}
+                      style={{
+                        padding: "10px",
+                        borderRadius: "8px",
+                        background: "rgba(255,255,255,0.03)",
+                        border: "1px solid var(--clr-border)",
+                        fontSize: "0.82rem",
+                        cursor: "pointer",
+                        transition: "background 0.2s",
+                      }}
+                      onMouseEnter={(e) =>
                       (e.currentTarget.style.background =
                         "rgba(255,255,255,0.06)")
-                    }
-                    onMouseLeave={(e) =>
+                      }
+                      onMouseLeave={(e) =>
                       (e.currentTarget.style.background =
                         "rgba(255,255,255,0.03)")
-                    }
-                  >
-                    <div
-                      style={{
-                        fontWeight: 600,
-                        color: "var(--clr-primary-light)",
-                      }}
+                      }
                     >
-                      {c.trackingId}
+                      <div
+                        style={{
+                          fontWeight: 600,
+                          color: "var(--clr-primary-light)",
+                        }}
+                      >
+                        {c.trackingId}
+                      </div>
+                      <div
+                        style={{
+                          color: "var(--clr-text-muted)",
+                          fontSize: "0.75rem",
+                        }}
+                      >
+                        {c.incidentType} • {c.status}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "0.7rem",
+                          color: "var(--clr-text-faint)",
+                          fontStyle: "italic",
+                          marginTop: "2px",
+                        }}
+                      >
+                        Reason: {c.reason}
+                      </div>
                     </div>
-                    <div
-                      style={{
-                        color: "var(--clr-text-muted)",
-                        fontSize: "0.75rem",
-                      }}
-                    >
-                      {c.incidentType} • {c.status}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "0.7rem",
-                        color: "var(--clr-text-faint)",
-                        fontStyle: "italic",
-                        marginTop: "2px",
-                      }}
-                    >
-                      Reason: {c.reason}
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Evidence */}
           {complaint.evidence?.length > 0 && (

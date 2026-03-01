@@ -36,7 +36,10 @@ export default function LoginPage() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const router = useRouter();
-  const { loginCitizen, user, loading: authLoading } = useAuth();
+  const auth = useAuth();
+  const loginCitizen = auth?.loginCitizen;
+  const user = auth?.user;
+  const authLoading = auth?.loading;
   const { t, i18n } = useTranslation();
 
   useEffect(() => {

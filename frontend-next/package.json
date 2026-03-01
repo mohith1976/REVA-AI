@@ -11,6 +11,7 @@
     "axios": "^1.13.6",
     "chart.js": "^4.5.1",
     "date-fns": "^4.1.0",
+    "framer-motion": "^12.34.3",
     "i18next": "^25.8.13",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.575.0",

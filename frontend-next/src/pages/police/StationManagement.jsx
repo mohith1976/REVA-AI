@@ -4,13 +4,12 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/utils/api";
 import toast from "react-hot-toast";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
 
 const INPUT = "w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm placeholder:text-slate-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-colors";
 
 export default function StationManagement() {
-  const { policeUser } = useAuth();
+  const auth = useAuth();
+  const policeUser = auth?.policeUser;
   const router = useRouter();
   const [stations, setStations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +24,7 @@ export default function StationManagement() {
   const mapInstanceRef = useRef(null);
   const markerRef = useRef(null);
   const circleRef = useRef(null);
+  const LRef = useRef(null);
 
   useEffect(() => {
     if (policeUser?.role !== "GLOBAL_ADMIN") { router.push("/police/dashboard"); return; }
@@ -40,27 +40,36 @@ export default function StationManagement() {
   };
 
   useEffect(() => {
-    if (showAddForm && mapContainerRef.current && !mapInstanceRef.current) {
-      delete L.Icon.Default.prototype._getIconUrl;
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
-        iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
-        shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
-      });
-      const map = L.map(mapContainerRef.current).setView([form.latitude, form.longitude], 13);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap" }).addTo(map);
-      const marker = L.marker([form.latitude, form.longitude], { draggable: false }).addTo(map);
-      const circle = L.circle([form.latitude, form.longitude], { radius: form.radiusKm * 1000, color: "#3b82f6", fillColor: "#3b82f6", fillOpacity: 0.2 }).addTo(map);
-      map.on("click", (e) => {
-        const { lat, lng } = e.latlng;
-        setForm(prev => ({ ...prev, latitude: lat, longitude: lng }));
-        reverseGeocode(lat, lng);
-      });
-      mapInstanceRef.current = map; markerRef.current = marker; circleRef.current = circle;
+    if (!showAddForm) {
+      if (mapInstanceRef.current) { mapInstanceRef.current.remove(); mapInstanceRef.current = null; }
+      return;
     }
-    return () => {
-      if (!showAddForm && mapInstanceRef.current) { mapInstanceRef.current.remove(); mapInstanceRef.current = null; }
-    };
+    if (mapContainerRef.current && !mapInstanceRef.current) {
+      const initMap = async () => {
+        if (!LRef.current) {
+          await import("leaflet/dist/leaflet.css");
+          LRef.current = (await import("leaflet")).default;
+        }
+        const L = LRef.current;
+        delete L.Icon.Default.prototype._getIconUrl;
+        L.Icon.Default.mergeOptions({
+          iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
+          iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
+          shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+        });
+        const map = L.map(mapContainerRef.current).setView([form.latitude, form.longitude], 13);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap" }).addTo(map);
+        const marker = L.marker([form.latitude, form.longitude], { draggable: false }).addTo(map);
+        const circle = L.circle([form.latitude, form.longitude], { radius: form.radiusKm * 1000, color: "#3b82f6", fillColor: "#3b82f6", fillOpacity: 0.2 }).addTo(map);
+        map.on("click", (e) => {
+          const { lat, lng } = e.latlng;
+          setForm(prev => ({ ...prev, latitude: lat, longitude: lng }));
+          reverseGeocode(lat, lng);
+        });
+        mapInstanceRef.current = map; markerRef.current = marker; circleRef.current = circle;
+      };
+      initMap();
+    }
   }, [showAddForm]);
 
   useEffect(() => {

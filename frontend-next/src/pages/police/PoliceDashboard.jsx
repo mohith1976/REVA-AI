@@ -29,7 +29,9 @@ function StatCard({ label, value, color, icon: Icon }) {
 }
 
 export default function PoliceDashboard() {
-  const { policeUser, logoutPolice } = useAuth();
+  const auth = useAuth();
+  const policeUser = auth?.policeUser;
+  const logoutPolice = auth?.logoutPolice;
   const router = useRouter();
   const pathname = usePathname();
   const [data, setData] = useState(null);
@@ -108,7 +110,7 @@ export default function PoliceDashboard() {
             return (
               <Link key={item.to} href={item.to}
                 className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl mb-1 text-[0.88rem] transition-all no-underline ${active ? "bg-blue-500/15 text-blue-400 font-semibold"
-                    : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+                  : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
                   }`}
               >
                 <Icon size={15} />
@@ -231,8 +233,8 @@ export default function PoliceDashboard() {
           ].map(tab => (
             <button key={tab.id} onClick={() => { setActiveTab(tab.id); setPage(1); }}
               className={`px-4 py-2.5 text-sm border-b-2 transition-all ${activeTab === tab.id
-                  ? "text-slate-900 font-semibold border-blue-500"
-                  : "text-slate-500 font-normal border-transparent hover:text-slate-700"
+                ? "text-slate-900 font-semibold border-blue-500"
+                : "text-slate-500 font-normal border-transparent hover:text-slate-700"
                 }`}
             >
               {tab.label}

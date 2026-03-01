@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@/context/AuthContext";
 import {
   Shield, Mic, MapPin, Zap, FileText, Lock,
-  Phone, ArrowRight, AlertTriangle,
+  Phone, ArrowRight, AlertTriangle, User, ChevronDown
 } from "lucide-react";
 
 const STATS = [
@@ -39,7 +39,8 @@ const LANGUAGES = [
 ];
 
 export default function LandingPage() {
-  const { user } = useAuth();
+  const auth = useAuth();
+  const user = auth?.user;
   const { t, i18n } = useTranslation();
   const [activeLang, setActiveLang] = useState(i18n.language || "en");
   const [hoverFeature, setHoverFeature] = useState(null);
@@ -57,30 +58,43 @@ export default function LandingPage() {
       <nav className="sticky top-0 z-50 bg-slate-50/85 backdrop-blur-md border-b border-slate-200">
         <div className="max-w-6xl mx-auto px-8 flex items-center justify-between h-[60px]">
           {/* Logo */}
-          <div className="flex items-center gap-2.5">
+          <Link href="/" className="flex items-center gap-2.5 no-underline">
             <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
               <Shield size={16} color="#000" strokeWidth={2.5} />
             </div>
             <span className="font-bold text-base tracking-wide text-slate-900">REVA AI</span>
-          </div>
+          </Link>
 
           {/* Links */}
           <div className="flex items-center gap-2">
-            <Link href="/track" className="px-3.5 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100">
-              {t("nav.track")}
-            </Link>
+            {/* Services Dropdown */}
+            <div className="relative group">
+              <button className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100">
+                Complaints <ChevronDown size={14} className="transition-transform duration-200 group-hover:rotate-180" />
+              </button>
+
+              <div className="absolute top-full mt-1 -right-4 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top scale-95 group-hover:scale-100 bg-white/95 backdrop-blur-md border border-slate-200 shadow-xl rounded-xl overflow-hidden py-1.5 z-50">
+                <Link href="/track" className="block px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors">
+                  {t("nav.track")}
+                </Link>
+                {user && (
+                  <>
+                    <div className="h-px bg-slate-100 my-1 mx-2" />
+                    <Link href="/my-complaints" className="block px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors">
+                      {t("nav.myCases")}
+                    </Link>
+                    <Link href="/complaint" className="block px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors">
+                      {t("nav.fileComplaint")}
+                    </Link>
+                  </>
+                )}
+              </div>
+            </div>
+
             {user ? (
-              <>
-                <Link href="/profile" className="px-3.5 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100">
-                  {t("nav.profile")}
-                </Link>
-                <Link href="/my-complaints" className="px-3.5 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100">
-                  {t("nav.myCases")}
-                </Link>
-                <Link href="/complaint" id="file-complaint-nav" className="px-4 py-1.5 text-sm font-semibold text-black bg-white rounded-lg hover:bg-slate-100 transition-colors">
-                  {t("nav.fileComplaint")}
-                </Link>
-              </>
+              <Link href="/profile" className="px-3.5 py-1.5 text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors rounded-lg hover:bg-slate-100">
+                <User size={16} strokeWidth={2.5} />
+              </Link>
             ) : (
               <>
                 <Link href="/login" id="login-nav" className="px-4 py-1.5 text-sm font-semibold text-slate-900 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors">

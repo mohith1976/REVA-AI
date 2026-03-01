@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/utils/api";
 import Link from "next/link";
-import { MapPin, FileText, ArrowLeft, LogOut, Plus, Shield } from "lucide-react";
+import { MapPin, FileText, ArrowLeft, LogOut, Shield, ChevronDown, User } from "lucide-react";
 
 // Priority — monochrome style (white/opacity only, no colors)
 const PRIORITY_STYLE = {
@@ -17,7 +17,9 @@ const PRIORITY_STYLE = {
 
 export default function MyComplaintsPage() {
   const router = useRouter();
-  const { user, logoutCitizen } = useAuth();
+  const auth = useAuth();
+  const user = auth?.user;
+  const logoutCitizen = auth?.logoutCitizen;
   const { t } = useTranslation();
   const [complaints, setComplaints] = useState([]);
   const [pagination, setPagination] = useState(null);
@@ -48,9 +50,31 @@ export default function MyComplaintsPage() {
             <span className="font-bold text-base tracking-wide text-slate-900">REVA AI</span>
           </Link>
           <div className="flex items-center gap-2">
-            <Link href="/profile" className="px-3.5 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100 no-underline">Profile</Link>
-            <Link href="/complaint" className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-semibold text-black bg-white rounded-lg hover:bg-slate-100 transition-colors no-underline">
-              <Plus size={14} strokeWidth={2.5} /> File Complaint
+            <div className="relative group">
+              <button className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100">
+                Complaints <ChevronDown size={14} className="transition-transform duration-200 group-hover:rotate-180" />
+              </button>
+
+              <div className="absolute top-full mt-1 -right-4 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top scale-95 group-hover:scale-100 bg-white/95 backdrop-blur-md border border-slate-200 shadow-xl rounded-xl overflow-hidden py-1.5 z-50">
+                <Link href="/track" className="block px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors">
+                  Track Complaint
+                </Link>
+                {user && (
+                  <>
+                    <div className="h-px bg-slate-100 my-1 mx-2" />
+                    <Link href="/my-complaints" className="block px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors">
+                      My Cases
+                    </Link>
+                    <Link href="/complaint" className="block px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors">
+                      File a Complaint
+                    </Link>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <Link href="/profile" className="px-3.5 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100">
+              <User size={16} strokeWidth={2.5} />
             </Link>
             <button onClick={logoutCitizen} className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors">
               <LogOut size={14} /> Logout
@@ -60,9 +84,12 @@ export default function MyComplaintsPage() {
       </nav>
 
       <div className="max-w-2xl mx-auto py-14 px-6">
-        {/* Back */}
-        <button onClick={() => router.back()} className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-500 transition-colors mb-8">
-          <ArrowLeft size={15} />Back
+        {/* Fixed Back Button */}
+        <button
+          onClick={() => router.back()}
+          className="fixed top-22 left-8 z-40 flex items-center gap-2 px-4 py-2  backdrop-blur-md  text-sm font-semibold text-neutral-600 hover:text-neutral-900  rounded-lg  transition-all duration-300"
+        >
+          <ArrowLeft size={16} />Back
         </button>
 
         {/* Header */}
