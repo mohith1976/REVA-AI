@@ -22,9 +22,7 @@ export default function SimpleCaseFile() {
     const fetchData = async () => {
       try {
         const [cRes, sRes] = await Promise.all([
-          api.get(`/api/police/complaints/${id}`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem("reva_police_token")}` },
-          }),
+          api.get(`/api/police/complaints/${id}`),
           api.get("/api/stations"),
         ]);
         setComplaint(cRes.data);
@@ -41,9 +39,7 @@ export default function SimpleCaseFile() {
     if (!selectedTargetStation) return toast.error("Select target station");
     setIsMigrating(true);
     try {
-      await api.patch(`/api/police/complaints/${id}/migrate`, { targetStationId: selectedTargetStation, reason: migrationReason }, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("reva_police_token")}` },
-      });
+      await api.patch(`/api/police/complaints/${id}/migrate`, { targetStationId: selectedTargetStation, reason: migrationReason });
       toast.success("Complaint migrated successfully");
       router.push("/police/dashboard");
     } catch (err) { toast.error(err.response?.data?.error || "Migration failed"); }
@@ -130,9 +126,7 @@ export default function SimpleCaseFile() {
                   <button
                     onClick={async () => {
                       try {
-                        const res = await api.get(`/api/evidence/${ev.id}/url`, {
-                          headers: { Authorization: `Bearer ${localStorage.getItem("reva_police_token")}` },
-                        });
+                        const res = await api.get(`/api/evidence/${ev.id}/url`);
                         window.open(res.data.url, "_blank");
                       } catch { toast.error("Failed to load evidence URL"); }
                     }}

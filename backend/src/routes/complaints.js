@@ -14,7 +14,7 @@ const { linkComplaintsForEvidence } = require('../services/evidenceMatchingServi
 router.post('/start-session', authenticateUser, async (req, res, next) => {
   try {
     const { language = 'en', latitude, longitude, isAnonymous = false } = req.body;
-    
+
     let stationId = null;
     let locationAddress = null;
 
@@ -53,7 +53,7 @@ router.post('/start-session', authenticateUser, async (req, res, next) => {
 router.post('/chat', authenticateUser, async (req, res, next) => {
   try {
     const { sessionId, message, audioBase64, language } = req.body;
-    
+
     if (!sessionId) throw new AppError('Session ID required', 400, 'NO_SESSION');
 
     const payload = {
@@ -92,11 +92,11 @@ router.post('/chat', authenticateUser, async (req, res, next) => {
 // Final submission after AI conversation
 router.post('/submit', authenticateUser, async (req, res, next) => {
   try {
-    const { 
-      sessionId, 
+    const {
+      sessionId,
       transcript,
       structuredJson,
-      latitude, 
+      latitude,
       longitude,
       locationAddress,
       legalConfirmed,
@@ -109,7 +109,7 @@ router.post('/submit', authenticateUser, async (req, res, next) => {
     }
 
     const crypto = require('crypto');
-    
+
     // AI-generated summary logic
     const aiSummary = {
       summary: transcript?.slice(0, 500) || 'Manual complaint submission',
@@ -128,7 +128,7 @@ router.post('/submit', authenticateUser, async (req, res, next) => {
       userId: req.user.id
     });
     const integrityHash = crypto.createHash('sha256').update(integritySnapshot).digest('hex');
-    
+
     // Embed the hash into the structured data for audit/verification
     aiSummary.structuredData.integrity_envelope = {
       hash: integrityHash,
@@ -152,8 +152,8 @@ router.post('/submit', authenticateUser, async (req, res, next) => {
 
     // --- CYBER SECURITY: THREAT INTELLIGENCE & AUDIT VAULT ---
     const cyberKeywords = ['phishing', 'fraud', 'hacker', 'scam', 'otp', 'link', 'bullying', 'harassment', 'financial', 'bank'];
-    const isCyberRelated = cyberKeywords.some(k => 
-      (transcript || '').toLowerCase().includes(k) || 
+    const isCyberRelated = cyberKeywords.some(k =>
+      (transcript || '').toLowerCase().includes(k) ||
       (structuredJson?.incidentType || '').toLowerCase().includes(k)
     );
 
@@ -258,7 +258,7 @@ router.post('/submit', authenticateUser, async (req, res, next) => {
       logger.info(`[complaints] Linked ${evidenceIds.length} evidence record(s) to complaint ${complaint.id}`);
 
       // Fire-and-forget: link any complaints with matching evidence (police intelligence only)
-      linkComplaintsForEvidence(evidenceIds).catch(() => {});
+      linkComplaintsForEvidence(evidenceIds).catch(() => { });
     }
 
     res.status(201).json({
@@ -267,6 +267,7 @@ router.post('/submit', authenticateUser, async (req, res, next) => {
       complaintId: complaint.id,
       station: complaint.station.stationName,
       priority: complaint.priorityLevel,
+      status: complaint.status,
       isEmergency: complaint.isEmergency,
     });
   } catch (error) {
@@ -278,7 +279,7 @@ router.post('/submit', authenticateUser, async (req, res, next) => {
 router.get('/track/:trackingId', async (req, res, next) => {
   try {
     const { trackingId } = req.params;
-    
+
     const complaint = await prisma.complaint.findUnique({
       where: { trackingId },
       select: {
@@ -398,10 +399,10 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLon/2) * Math.sin(dLon/2);
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 module.exports = router;

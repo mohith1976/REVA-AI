@@ -14,6 +14,9 @@ import {
   Mic,
   MicOff,
   Settings,
+  Settings2,
+  Plus,
+  ArrowUp,
   Globe,
   StopCircle,
   Send,
@@ -40,6 +43,19 @@ import {
   Check,
   FileText,
 } from "lucide-react";
+
+const LANGUAGES = [
+  { label: "English", code: "en" },
+  { label: "हिंदी", code: "hi" },
+  { label: "తెలుగు", code: "te" },
+  { label: "தமிழ்", code: "ta" },
+  { label: "ಕನ್ನಡ", code: "kn" },
+  { label: "मराठी", code: "mr" },
+  { label: "বাংলা", code: "bn" },
+  { label: "ગુજરાતી", code: "gu" },
+  { label: "മലയാളം", code: "ml" },
+  { label: "ਪੰਜਾਬੀ", code: "pa" },
+];
 
 // ── Typewriter component for ChatGPT style ───────────────────────────
 const TypewriterText = ({ text, speed = 0.03 }) => {
@@ -95,10 +111,12 @@ export default function ComplaintPage() {
   const [showCameraModal, setShowCameraModal] = useState(false);
   const [cameraMode, setCameraMode] = useState("photo"); // "photo" | "video"
   const [isRecording, setIsRecording] = useState(false);
+  const [showLangMenu, setShowLangMenu] = useState(false);
   const [isTextChatEnabled, setIsTextChatEnabled] = useState(false);
   const [textInput, setTextInput] = useState("");
   const [pendingEvidenceIds, setPendingEvidenceIds] = useState([]);
   const lastAiDataRef = useRef(null);
+  const geofenceCheckInProgressRef = useRef(false);
 
 
   // ── Age-adaptive state ─────────────────────────────────────────────────
@@ -214,34 +232,32 @@ export default function ComplaintPage() {
     resetTranscript,
   ]);
 
-  const [isSecureHandshakeComplete, setIsSecureHandshakeComplete] =
-    useState(false);
+  const [isSecureHandshakeComplete, setIsSecureHandshakeComplete] = useState(true);
+  const [micPermission, setMicPermission] = useState("prompt"); // "granted", "denied", "prompt"
+
+  // Monitor Microphone Permissions
+  useEffect(() => {
+    if (typeof window !== "undefined" && navigator.permissions) {
+      navigator.permissions.query({ name: "microphone" }).then((result) => {
+        setMicPermission(result.state);
+        result.onchange = () => setMicPermission(result.state);
+      });
+    }
+  }, []);
   const [handshakeStep, setHandshakeStep] = useState(0);
 
 
-  useEffect(() => {
-    const steps = [
-      "ESTABLISHING E2EE CHANNEL...",
-      "SCANNING FOR VPN LEAKS...",
-      "VERIFYING DEVICE INTEGRITY...",
-      "CYBER-SEC PROTOCOL ACTIVE",
-    ];
-
-    let currentStep = 0;
-    const interval = setInterval(() => {
-      if (currentStep < steps.length - 1) {
-        currentStep++;
-        setHandshakeStep(currentStep);
-      } else {
-        clearInterval(interval);
-        setTimeout(() => setIsSecureHandshakeComplete(true), 800);
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   const handleToggleListening = () => {
+    if (micPermission === "denied") {
+      setIsSettingsOpen(true);
+      toast("Microphone access is blocked. Please enable it in your browser settings.", {
+        icon: "🎙️",
+        duration: 4000
+      });
+      return;
+    }
+
     if (isListening) {
       shouldProcessRef.current = true;
       stopSTT();
@@ -255,6 +271,10 @@ export default function ComplaintPage() {
 
   useEffect(() => {
     const fetchLocationAndGeofence = async () => {
+      // Prevent redundant checks (e.g. React StrictMode double-fire)
+      if (geofenceCheckInProgressRef.current) return;
+      geofenceCheckInProgressRef.current = true;
+
       setIsCheckingGeofence(true);
       if ("geolocation" in navigator) {
         navigator.geolocation.getCurrentPosition(
@@ -273,7 +293,11 @@ export default function ComplaintPage() {
                 setIsWithinGeofence(false);
               }
             } catch (err) {
-              console.error("Geofence check failed", err);
+              if (err.response?.status === 429) {
+                console.warn("Geofence check rate-limited (429). Skipping for this session.");
+              } else {
+                console.error("Geofence check failed", err);
+              }
             } finally {
               setIsCheckingGeofence(false);
             }
@@ -345,7 +369,7 @@ export default function ComplaintPage() {
         evidenceIds: pendingEvidenceIds,
       });
 
-      const { trackingId, station, priority, isEmergency } = response.data;
+      const { trackingId, station, priority, isEmergency, status } = response.data;
 
       // Build a summary by parsing user messages from the conversation
       const userTexts = messages
@@ -364,6 +388,7 @@ export default function ComplaintPage() {
           station: station || activeStation?.stationName,
           district: activeStation?.district,
           priority,
+          status,
           isEmergency,
           incidentType: aiData?.incidentType || "AI Assistant Report",
           location: aiData?.location || activeStation ? `${activeStation.stationName}, ${activeStation.district}` : "Detected",
@@ -585,9 +610,9 @@ export default function ComplaintPage() {
           kn: "ದಯವಿಟ್ಟು ಮನೆ ಸಂಖ್ಯೆ, ಬೀದಿ ಮತ್ತು ನಗರ ಸೇರಿದಂತೆ ನಿಮ್ಮ ಸಂಪೂರ್ಣ ವಿಳಾಸ ನೀಡಿ.",
           mr: "कृपया घर क्रमांक, रस्ता आणि शहरासह तुमचा पूर्ण पत्ता द्या.",
           bn: "দয়া করে বাড়ির নম্বর, রাস্তা এবং শহরসহ আপনার সম্পূর্ণ ঠিকানা দিন।",
-          gu: "કૃપા કરી ઘર નંબર, ગલી અને શહેર સહિત તમારું સંપૂર્ণ સરનામું આપો.",
+          gu: "કૃપા કરી ઘર નંબર, ગલી અને શહેર સહિત તમારું સંપૂર્ણ સરનામું આપો.",
           ml: "ദയവായി വീട് നമ്പർ, തെരുവ്, നഗരം ഉൾക്കൊള്ളുന്ന നിങ്ങളുടെ പൂർണ്ണ വിലാസം നൽകൂ.",
-          pa: "ਕਿਰਪਾ ਕਰਕੇ ਮਕਾਨ ਨੰਬਰ, ਗਲੀ ਅਤੇ ਸ਼ਹਿਰ ਸਮੇਤ ਆਪਣਾ ਪੂਰਾ ਪਤਾ ਦਿਓ।",
+          pa: "ਕਿਰਪਾ ਕਰਕੇ ਆਪਣਾ ਪੂਰਾ ਰਿਹਾਇਸ਼ੀ ਪਤਾ ਦਿਓ।",
         };
         const r = retryAddr[language] || retryAddr.en;
         addAIMsg(r);
@@ -1098,45 +1123,8 @@ export default function ComplaintPage() {
   return (
     <>
       {/* ── Root shell ───────────────────────────────────────────────── */}
-      <div className="relative flex flex-col h-screen bg-slate-50 text-slate-900 overflow-hidden font-[Inter,system-ui,sans-serif]">
+      <div className="relative flex flex-col h-screen bg-neutral-50 text-neutral-900 overflow-hidden font-[Inter,system-ui,sans-serif]">
 
-        {/* ── Handshake overlay ──────────────────────────────────────── */}
-        <AnimatePresence>
-          {!isSecureHandshakeComplete && (
-            <motion.div
-              key="handshake"
-              initial={{ opacity: 1 }}
-              exit={{ opacity: 0, transition: { duration: 0.6 } }}
-              className="fixed inset-0 z-[9999] flex flex-col items-center justify-center gap-7 bg-slate-50"
-            >
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ repeat: Infinity, duration: 1.2, ease: "linear" }}
-                className="w-22 h-22 rounded-full flex items-center justify-center"
-                style={{ border: "2.5px solid #e2e8f0", borderTop: "2.5px solid #334155" }}
-              >
-                <Shield size={40} color="#334155" />
-              </motion.div>
-              <div className="text-center">
-                <motion.div
-                  key={handshakeStep}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="font-mono text-slate-700 text-[11px] tracking-[2px] mb-3.5 font-bold"
-                >
-                  {["ESTABLISHING E2EE CHANNEL…", "SCANNING FOR LEAKS…", "VERIFYING INTEGRITY…", "CYBER-SEC ACTIVE"][handshakeStep]}
-                </motion.div>
-                <div className="w-[200px] h-0.5 bg-slate-200 rounded-full overflow-hidden">
-                  <motion.div
-                    animate={{ width: `${(handshakeStep + 1) * 25}%` }}
-                    transition={{ ease: "easeOut", duration: 0.4 }}
-                    className="h-full bg-slate-800 rounded-full"
-                  />
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* ── Ambient gradient blobs (must stay inline — radial-gradient) */}
         <div className="absolute top-[-15%] left-[-10%] w-[55%] h-[55%] pointer-events-none"
@@ -1149,80 +1137,61 @@ export default function ComplaintPage() {
           onClick={handleBackClick}
           initial={{ opacity: 0, x: -12 }}
           animate={{ opacity: 1, x: 0 }}
-          whileHover={{ x: -3 }}
+          whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.95 }}
-          className="fixed top-[22px] left-7 z-40 flex items-center gap-1.5 bg-white/85 backdrop-blur-md border border-slate-200 rounded-[10px] px-3.5 py-[7px] text-[13px] font-semibold text-slate-600 cursor-pointer shadow-sm"
+          className="fixed top-[22px] left-7 z-40 flex items-center gap-1.5 bg-white/85 backdrop-blur-md border border-neutral-200 rounded-[10px] px-3.5 py-[7px] text-[13px] font-semibold text-neutral-600 cursor-pointer shadow-sm"
         >
           <ArrowLeft size={15} />Back
         </motion.button>
 
-        {/* ── Header ─────────────────────────────────────────────────── */}
+        {/* ── Header (Ultra Minimal) ─────────────────────────────────── */}
         <motion.header
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.1, type: "spring", stiffness: 300, damping: 28 }}
-          className="relative z-10 flex justify-between items-center pl-[90px] pr-7 py-3.5 border-b border-slate-100 bg-slate-50/90 backdrop-blur-xl"
+          className="relative z-10 flex justify-between items-center pl-[90px] pr-7 py-3 border-b border-neutral-100 bg-white/60 backdrop-blur-xl"
         >
-          {/* Status chips */}
           <div className="flex items-center gap-2.5 ml-auto">
             <AnimatePresence mode="wait">
               <motion.div
                 key={isListening ? "listening" : isInitializing ? "init" : isLoading ? "thinking" : "ready"}
-                initial={{ opacity: 0, scale: 0.85 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.85 }}
-                className={`text-[10px] font-bold px-3 py-1 rounded-full tracking-[0.5px] border ${isListening
-                  ? "border-red-300 text-red-500 bg-red-50"
-                  : "border-slate-300 text-slate-600 bg-slate-100"
-                  }`}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="text-[9px] font-bold text-neutral-400 tracking-widest flex items-center gap-1.5"
               >
-                {isInitializing ? "CONNECTING…" : isListening ? "● LISTENING" : isLoading ? "THINKING…" : "READY"}
+                <div className={`w-1.5 h-1.5 rounded-full ${isListening ? "bg-red-500 animate-pulse" : "bg-neutral-300"}`} />
+                {isInitializing ? "CONNECTING" : isListening ? "LISTENING" : isLoading ? "THINKING" : "REVA ACTIVE"}
               </motion.div>
             </AnimatePresence>
 
             <motion.div
-              whileHover={{ scale: 1.05 }}
               onClick={() => setShowStationPicker(true)}
-              className={`text-[10px] font-bold px-3 py-1 rounded-full flex items-center gap-1 cursor-pointer border ${activeStation
-                ? "border-emerald-300 text-emerald-700 bg-emerald-50"
-                : "border-amber-300 text-amber-600 bg-amber-50"
-                }`}
+              className="text-[10px] font-bold px-3 py-1 bg-neutral-100 rounded-full text-neutral-600 cursor-pointer hover:bg-neutral-200 transition-colors"
             >
-              {activeStation
-                ? <><Shield size={10} /> {activeStation.stationName}</>
-                : isCheckingGeofence ? "Locating…"
-                  : <><AlertCircle size={10} /> Select Station</>}
+              {activeStation ? activeStation.stationName : "Select Station"}
             </motion.div>
 
-            <motion.button
-              onClick={logoutCitizen}
-              whileHover={{ color: "#ef4444" }}
-              className="bg-transparent border-none text-xs text-slate-400 cursor-pointer font-semibold"
-            >
-              Logout
-            </motion.button>
+            <button onClick={logoutCitizen} className="bg-transparent border-none text-[10px] text-neutral-400 hover:text-red-500 font-bold ml-1 cursor-pointer">
+              LOGOUT
+            </button>
           </div>
         </motion.header>
 
         {/* ── Message list ───────────────────────────────────────────── */}
         <main className="flex-1 overflow-y-auto px-6 pt-7 pb-[200px] relative z-[1]">
-          <div className="max-w-[720px] mx-auto flex flex-col gap-5">
+          <div className="max-w-[520px] mx-auto flex flex-col gap-5">
 
             {messages.length === 0 && (
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                className="flex flex-col items-center justify-center py-20 text-center"
+                initial={{  opacity: 0, filter: "blur(10px)" }}
+                animate={{  opacity: 1, filter: "blur(0px)" }}
+                transition={{ duration: 1.5, ease: "easeInOut" }}
+                className={`flex flex-col transition-all duration-700 ease-in-out ${(isListening || sttTranscript || interimTranscript || textInput) ? "mt-10 mb-8" : "mt-38"} items-start justify-center pt-16 pb-8 text-left`}
               >
-                <div className="w-16 h-16 flex items-center justify-center mb-6 ">
-
-                </div>
-                <h1 className="text-3xl font-extrabold text-slate-900 mb-3 tracking-tight">
-                  Hello{user?.name ? " " + user.name : ""}!
+                <h1 className="text-[28px] font-light text-neutral-900  tracking-tight">
+                  Hi{user?.name ? " " + user.name : ""}
                 </h1>
-                <p className="text-neutral-500 max-w-[620px] leading-relaxed text-2xl">
-                  I'm <span className="text-neutral-900 font-bold tracking-tight">REVA</span>, your AI Police Assistant. How can I help you today?
+                <p className="text-neutral-900 max-w-[620px] leading-relaxed text-[32px] font-medium">
+                  How can I help you today?
                 </p>
               </motion.div>
             )}
@@ -1238,9 +1207,9 @@ export default function ComplaintPage() {
               >
                 <div className={`flex items-start gap-3.5 max-w-[85%] ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
                   {/* Avatar */}
-                  <div className={`w-[30px] h-[30px] rounded-full shrink-0 flex items-center justify-center ${msg.role === "user" ? "bg-slate-800" : "bg-slate-100 border border-slate-200"
+                  <div className={`w-[30px] h-[30px] rounded-full shrink-0 flex items-center justify-center ${msg.role === "user" ? "bg-neutral-800" : "bg-neutral-100 border border-neutral-200"
                     }`}>
-                    {msg.role === "user" ? <User size={14} color="white" /> : <Bot size={14} color="#475569" />}
+                    {msg.role === "user" ? <User size={14} color="white" /> : <Bot size={14} />}
                   </div>
 
                   {/* Image message */}
@@ -1250,24 +1219,24 @@ export default function ComplaintPage() {
                         <img
                           src={msg.imageUrl}
                           alt={msg.fileName}
-                          className={`max-w-[240px] max-h-[240px] rounded-[16px_16px_4px_16px] border-2 border-slate-200 object-cover block transition-all duration-300 ${msg.loading ? "brightness-50" : ""}`}
+                          className={`max-w-[240px] max-h-[240px] rounded-[16px_16px_4px_16px] border-2 border-neutral-200 object-cover block transition-all duration-300 ${msg.loading ? "brightness-50" : ""}`}
                         />
                         {msg.loading && (
                           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
                             <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
                               <Loader2 size={26} color="#94a3b8" />
                             </motion.div>
-                            <span className="text-[10px] text-slate-400 font-bold tracking-[1px]">ANALYZING…</span>
+                            <span className="text-[10px] text-neutral-400 font-bold tracking-[1px]">ANALYZING…</span>
                           </div>
                         )}
                       </div>
-                      <div className="text-[10px] text-slate-400 text-right">{msg.fileName} · {msg.timestamp}</div>
+                      <div className="text-[10px] text-neutral-400 text-right">{msg.fileName} · {msg.timestamp}</div>
                     </div>
                   )}
 
                   {/* Image analysis result */}
                   {msg.type === "imageResult" && msg.analysisData && (
-                    <div className="p-[14px_18px] rounded-[16px_16px_16px_4px] bg-white border border-slate-200 shadow-sm text-[0.85rem] max-w-[340px]">
+                    <div className="p-[14px_18px] rounded-[16px_16px_16px_4px] bg-white border border-neutral-200 shadow-sm text-[0.85rem] max-w-[340px]">
                       <div className="flex items-center gap-2 mb-2.5">
                         <div className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-[0.5px] border ${msg.analysisData.forensicAnalysis?.analysis?.riskLevel === "Critical"
                           ? "bg-red-50 text-red-500 border-red-200"
@@ -1275,18 +1244,18 @@ export default function ComplaintPage() {
                           }`}>
                           {msg.analysisData.isAiGenerated ? "🤖 AI GENERATED" : `⚠ ${msg.analysisData.forensicAnalysis?.analysis?.riskLevel?.toUpperCase() || "UNKNOWN"} RISK`}
                         </div>
-                        <div className="text-[10px] text-slate-400">Forensic Analysis</div>
+                        <div className="text-[10px] text-neutral-400">Forensic Analysis</div>
                       </div>
                       {msg.analysisData.forensicAnalysis?.overview && (
-                        <p className="text-slate-700 leading-[1.55] m-0 mb-2">{msg.analysisData.forensicAnalysis.overview}</p>
+                        <p className="text-neutral-700 leading-[1.55] m-0 mb-2">{msg.analysisData.forensicAnalysis.overview}</p>
                       )}
                       {msg.analysisData.isAiGenerated && (
                         <p className="text-red-400 text-[0.8rem] m-0">{msg.analysisData.reason}</p>
                       )}
                       {!msg.analysisData.isAiGenerated && msg.analysisData.forensicAnalysis?.analysis?.riskReason && (
-                        <p className="text-slate-400 text-[0.78rem] m-0 mt-1 border-t border-slate-100 pt-2">{msg.analysisData.forensicAnalysis.analysis.riskReason}</p>
+                        <p className="text-neutral-400 text-[0.78rem] m-0 mt-1 border-t border-neutral-100 pt-2">{msg.analysisData.forensicAnalysis.analysis.riskReason}</p>
                       )}
-                      <div className="text-[10px] text-slate-300 mt-2">{msg.timestamp} · {msg.analysisData.processingTimeMs}ms</div>
+                      <div className="text-[10px] text-neutral-300 mt-2">{msg.timestamp} · {msg.analysisData.processingTimeMs}ms</div>
                     </div>
                   )}
 
@@ -1305,30 +1274,38 @@ export default function ComplaintPage() {
                         <CheckCircle2 size={20} color="#10b981" />
                         <span className="font-bold text-emerald-700 text-[0.9rem]">Complaint Filed Successfully</span>
                       </div>
-                      <div className="bg-slate-50 rounded-[10px] p-3 mb-3.5 text-center">
-                        <div className="text-[0.65rem] text-slate-400 tracking-[1px] uppercase mb-1">Tracking ID</div>
-                        <div className="text-xl font-extrabold text-slate-800 tracking-[2px]">{msg.receipt.trackingId}</div>
+                      <div className="bg-neutral-50 rounded-[10px] p-3 mb-3.5 text-center">
+                        <div className="text-[0.65rem] text-neutral-400 tracking-[1px] uppercase mb-1">Tracking ID</div>
+                        <div className="text-xl font-extrabold text-neutral-800 tracking-[2px]">{msg.receipt.trackingId}</div>
                       </div>
                       <div className="flex flex-col gap-2 mb-3.5">
                         {msg.receipt.station && (
-                          <div className="flex gap-2 text-slate-600 items-start">
+                          <div className="flex gap-2 text-neutral-600 items-start">
                             <MapPin size={14} color="#94a3b8" className="shrink-0 mt-0.5" />
                             <span>{msg.receipt.station}{msg.receipt.district ? `, ${msg.receipt.district}` : ""}</span>
                           </div>
                         )}
                         {msg.receipt.incidentType && (
-                          <div className="flex gap-2 text-slate-600 items-start">
+                          <div className="flex gap-2 text-neutral-600 items-start">
                             <FileText size={14} color="#94a3b8" className="shrink-0 mt-0.5" />
                             <span>{msg.receipt.incidentType}</span>
                           </div>
                         )}
                         {msg.receipt.priority && (
-                          <div className="flex gap-2 text-slate-600 items-start">
-                            <AlertCircle size={14} color={msg.receipt.priority === "URGENT" ? "#f87171" : "#fbbf24"} className="shrink-0 mt-0.5" />
+                          <div className="flex gap-2 text-neutral-600 items-start">
+                            <AlertCircle size={14} color={msg.receipt.priority === "URGENT" || msg.receipt.priority === "EMERGENCY" ? "#f87171" : "#fbbf24"} className="shrink-0 mt-0.5" />
                             <span>Priority: {msg.receipt.priority}</span>
                           </div>
                         )}
-                        <div className="flex gap-2 text-slate-600 items-start">
+                        {msg.receipt.status && (
+                          <div className="flex gap-2 text-neutral-600 items-start">
+                            <div className="w-3.5 h-3.5 rounded-full bg-emerald-500 shrink-0 mt-0.5 flex items-center justify-center">
+                              <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                            </div>
+                            <span className="font-bold text-emerald-600">Status: {msg.receipt.status.replace("_", " ")}</span>
+                          </div>
+                        )}
+                        <div className="flex gap-2 text-neutral-600 items-start">
                           <Clock size={14} color="#94a3b8" className="shrink-0 mt-0.5" />
                           <span>Filed at {msg.receipt.filedAt}</span>
                         </div>
@@ -1337,7 +1314,7 @@ export default function ComplaintPage() {
                         onClick={() => router.push(`/track/${msg.receipt.trackingId}`)}
                         whileHover={{ scale: 1.02, backgroundColor: "#f1f5f9" }}
                         whileTap={{ scale: 0.97 }}
-                        className="w-full py-2.5 rounded-[10px] bg-slate-100 border border-slate-200 text-slate-700 font-bold text-[0.85rem] cursor-pointer flex items-center justify-center gap-1.5"
+                        className="w-full py-2.5 rounded-[10px] bg-neutral-100 border border-neutral-200 text-neutral-700 font-bold text-[0.85rem] cursor-pointer flex items-center justify-center gap-1.5"
                       >
                         Track Complaint <ChevronRight size={14} />
                       </motion.button>
@@ -1354,31 +1331,31 @@ export default function ComplaintPage() {
                             onChange={(e) => setEditedText(e.target.value)}
                             autoFocus
                             rows={3}
-                            className="p-3 rounded-[14px] bg-slate-50 border border-slate-300 text-slate-900 text-[0.95rem] leading-[1.55] resize-none outline-none w-full focus:border-slate-500"
+                            className="p-3 rounded-[14px] bg-neutral-50 border border-neutral-300 text-neutral-900 text-[0.95rem] leading-[1.55] resize-none outline-none w-full focus:border-neutral-500"
                           />
                           <div className="flex justify-end gap-2">
                             <button
                               onClick={() => setEditingMessageId(null)}
-                              className="px-3.5 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-slate-600 text-[0.8rem] cursor-pointer"
+                              className="px-3.5 py-1.5 rounded-lg bg-neutral-100 border border-neutral-200 text-neutral-600 text-[0.8rem] cursor-pointer"
                             >Cancel</button>
                             <button
                               onClick={() => handleSaveEdit(msg.id)}
-                              className="px-3.5 py-1.5 rounded-lg bg-slate-900 border-none text-white text-[0.8rem] cursor-pointer flex items-center gap-1"
+                              className="px-3.5 py-1.5 rounded-lg bg-neutral-900 border-none text-white text-[0.8rem] cursor-pointer flex items-center gap-1"
                             ><Check size={13} />Save</button>
                           </div>
                         </div>
                       ) : (
                         <div className="relative group">
                           <div className={`text-[0.96rem] leading-[1.6] ${msg.role === "user"
-                            ? "px-[18px] py-2.5 rounded-[20px_20px_4px_20px] bg-slate-800 text-white shadow-sm self-end"
-                            : "py-1 text-slate-800"
+                            ? "px-[18px] py-2.5 rounded-[20px_20px_4px_20px] bg-neutral-800 text-white shadow-sm self-end"
+                            : "py-1 text-neutral-800"
                             }`}>
                             {msg.role === "ai" && idx === messages.length - 1 ? (
                               <TypewriterText text={msg.text} />
                             ) : (
                               msg.text
                             )}
-                            <div className={`text-[9px] uppercase tracking-wider mt-1.5 font-medium opacity-0 group-hover:opacity-100 transition-opacity ${msg.role === "user" ? "text-white/40 text-right" : "text-slate-300 text-left"}`}>
+                            <div className={`text-[9px] uppercase tracking-wider mt-1.5 font-medium opacity-0 group-hover:opacity-100 transition-opacity ${msg.role === "user" ? "text-white/40 text-right" : "text-neutral-300 text-left"}`}>
                               {msg.timestamp}
                             </div>
                           </div>
@@ -1388,7 +1365,7 @@ export default function ComplaintPage() {
                               title="Edit message"
                               initial={{ opacity: 0 }}
                               whileHover={{ opacity: 1, scale: 1.15 }}
-                              className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-slate-700/80 backdrop-blur-sm border border-slate-500/50 cursor-pointer flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-neutral-700/80 backdrop-blur-sm border border-neutral-500/50 cursor-pointer flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                             >
                               <Pencil size={11} color="white" />
                             </motion.button>
@@ -1408,14 +1385,14 @@ export default function ComplaintPage() {
                 animate={{ opacity: 1, y: 0 }}
                 className="flex gap-3 items-end"
               >
-                <div className="w-[30px] h-[30px] rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center">
+                <div className="w-[30px] h-[30px] rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center">
                   <Bot size={14} color="#475569" />
                 </div>
                 <div className="px-1 py-3 flex gap-1 items-center">
                   {[0, 1, 2].map((i) => (
                     <motion.div
                       key={i}
-                      className="w-[5px] h-[5px] rounded-full bg-slate-300"
+                      className="w-[5px] h-[5px] rounded-full bg-neutral-300"
                       animate={{ opacity: [0.4, 1, 0.4] }}
                       transition={{ repeat: Infinity, duration: 1.2, delay: i * 0.2 }}
                     />
@@ -1431,7 +1408,7 @@ export default function ComplaintPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
-                  className="self-end px-4 py-2.5 bg-slate-100 rounded-[14px_14px_4px_14px] border border-dashed border-slate-300 text-slate-600 text-[0.9rem] max-w-[80%] break-words leading-[1.55]"
+                  className="self-end px-4 py-2.5 bg-neutral-100 rounded-[14px_14px_4px_14px] border border-dashed border-neutral-300 text-neutral-600 text-[0.9rem] max-w-[80%] break-words leading-[1.55]"
                 >
                   {sttTranscript}{interimTranscript ? (sttTranscript ? " " + interimTranscript : interimTranscript) : ""}…
                 </motion.div>
@@ -1442,167 +1419,186 @@ export default function ComplaintPage() {
           </div>
         </main >
 
-        {/* ── Controls hub ───────────────────────────────────────────── */}
-        < motion.div
-          initial={{ y: 60, opacity: 0 }
-          }
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.25, type: "spring", stiffness: 280, damping: 28 }}
-          className="fixed bottom-7 left-1/2 -translate-x-1/2 z-50 flex items-center justify-center gap-2.5 bg-white/90 backdrop-blur-2xl border border-slate-200 rounded-[56px] px-4 py-2 max-w-max shadow-xl shadow-black/5"
-        >
-          {/* Hidden file inputs */}
-          < input ref={imageFileRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleMediaUpload} />
-          <input ref={cameraPhotoRef} type="file" accept="image/*,video/*" capture="environment" className="hidden" onChange={handleMediaUpload} />
-
-          {/* Settings */}
-          <motion.button
-            onClick={() => setIsSettingsOpen(true)}
-            whileHover={{ scale: 1.15, color: "#0f172a" }}
-            whileTap={{ scale: 0.9 }}
-            title="Settings"
-            className="bg-transparent border-none text-slate-400 cursor-pointer p-[6px_8px] rounded-[10px]"
+        {/* ── Ultra-Minimalist Control Hub ──────────────────────────── */}
+        <div className={`fixed left-1/2 -translate-x-1/2 z-50 transition-all duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] pointer-events-none ${(messages.length === 0 && !isListening && !sttTranscript && !interimTranscript && !textInput) ? "bottom-1/2 translate-y-1/2" : "bottom-8"}`}>
+          <motion.div
+            layout
+            initial={{ blur: 20, opacity: 0 }}
+            animate={{ blur: 0, opacity: 1 }}
+            transition={{ duration: 0.4, ease: "easeInOut" }}
+            className="pointer-events-auto"
           >
-            <Settings size={18} />
-          </motion.button>
-
-          {/* Media */}
-          <div className="relative">
-            <motion.button
-              onClick={() => setShowMediaMenu((v) => !v)}
-              disabled={isMediaUploading}
-              whileHover={{ scale: 1.1, color: "#0f172a" }}
-              whileTap={{ scale: 0.92 }}
-              title="Attach media"
-              className={`bg-transparent border-none p-[6px_8px] rounded-[10px] flex items-center justify-center ${isMediaUploading ? "text-slate-300 cursor-not-allowed" : "text-slate-400 cursor-pointer"
-                }`}
+            <motion.div
+              layout
+              className={`bg-white/70 backdrop-blur-2xl border border-neutral-200/60 shadow-[0_8px_32px_rgba(0,0,0,0.06)] flex items-center p-1.5 rounded-full gap-2 transition-all ${messages.length === 0 ? "w-full max-w-[720px]" : ""}`}
             >
-              {isMediaUploading
-                ? <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}><Loader2 size={18} /></motion.div>
-                : <ImageIcon size={18} />}
-            </motion.button>
+              {/* Hidden file inputs */}
+              <input ref={imageFileRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleMediaUpload} />
+              <input ref={cameraPhotoRef} type="file" accept="image/*,video/*" capture="environment" className="hidden" onChange={handleMediaUpload} />
 
-            <AnimatePresence>
-              {showMediaMenu && !isMediaUploading && (
-                <>
-                  <div onClick={() => setShowMediaMenu(false)} className="fixed inset-0 z-40" />
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9, y: 8 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9, y: 8 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    className="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 bg-white border border-slate-200 rounded-[14px] p-2 min-w-[160px] z-50 shadow-xl shadow-black/10 flex flex-col gap-0.5"
+              <div className="flex items-center gap-0.5 ml-1">
+                <div className="relative">
+                  <motion.button
+                    onClick={() => setShowMediaMenu((v) => !v)}
+                    whileHover={{ scale: 1.1, }}
+                    whileTap={{ scale: 0.95 }}
+                    className="w-9 h-9 rounded-full bg-transparent border-none text-neutral-400 hover:text-neutral-900 flex items-center justify-center cursor-pointer relative"
                   >
-                    {[
-                      { icon: <Camera size={15} color="#475569" />, label: "Camera", action: openCameraModal },
-                      { icon: <FolderOpen size={15} color="#475569" />, label: "From Device", action: () => { setShowMediaMenu(false); imageFileRef.current?.click(); } },
-                    ].map(({ icon, label, action }) => (
-                      <motion.button
-                        key={label}
-                        onClick={action}
-                        whileHover={{ backgroundColor: "#f8fafc" }}
-                        className="flex items-center gap-2.5 bg-transparent border-none text-slate-600 cursor-pointer p-[9px_12px] rounded-[10px] text-[13px] font-medium text-left"
+                    <Plus size={18} className={showMediaMenu ? "rotate-45" : ""} />
+                  </motion.button>
+
+                  <AnimatePresence>
+                    {showMediaMenu && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                        className="absolute bottom-full mb-3 left-0 bg-white/95 backdrop-blur-2xl border border-neutral-200/60 rounded-[20px] p-1.5 shadow-xl flex flex-col gap-0.5 z-[60]"
                       >
-                        {icon}{label}
-                      </motion.button>
+                        <button onClick={openCameraModal} className="flex items-center gap-2.5 p-2.5 pr-8 hover:bg-neutral-50 rounded-xl border-none bg-transparent cursor-pointer text-neutral-600 text-[13px] font-medium transition-colors"><Camera size={14} /> Camera</button>
+                        <button onClick={() => { setShowMediaMenu(false); imageFileRef.current?.click(); }} className="flex items-center gap-2.5 p-2.5 pr-8 hover:bg-neutral-50 rounded-xl border-none bg-transparent cursor-pointer text-neutral-600 text-[13px] font-medium transition-colors"><FolderOpen size={14} /> Files</button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                <div className="relative">
+                  <motion.button
+                    onClick={() => setShowLangMenu(!showLangMenu)}
+                    whileHover={{ scale: 1.1, }}
+                    whileTap={{ scale: 0.95 }}
+                    className={`w-9 h-9 rounded-lg bg-transparent border-none  flex items-center justify-center cursor-pointer transition-all ${showLangMenu ? "text-blue-600" : "text-neutral-500 hover:text-neutral-900"}`}
+                  >
+                    <span className="text-[10px] font-bold tracking-tight">{language.toUpperCase()}</span>
+                  </motion.button>
+
+                  <AnimatePresence>
+                    {showLangMenu && (
+                      <>
+                        <motion.div
+                          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                          className="fixed inset-0 z-[55]"
+                          onClick={() => setShowLangMenu(false)}
+                        />
+                        <motion.div
+                          initial={{ opacity: 0, y: 10, scale: 0.95, x: "-10%" }}
+                          animate={{ opacity: 1, y: 0, scale: 1, x: "-10%" }}
+                          exit={{ opacity: 0, y: 10, scale: 0.95, x: "-10%" }}
+                          transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                          className="absolute bottom-full mb-4 left-0 bg-white/95 backdrop-blur-2xl border border-neutral-200/60 rounded-[24px] p-3 shadow-2xl z-[60] min-w-[200px]"
+                        >
+                          <div className="text-[10px] font-bold text-neutral-400 tracking-[1.5px] px-2 mb-2 uppercase">Select Language</div>
+                          <div className="grid grid-cols-2 gap-1.5">
+                            {LANGUAGES.map((lang) => (
+                              <button
+                                key={lang.code}
+                                onClick={() => {
+                                  setLanguage(lang.code);
+                                  setShowLangMenu(false);
+                                  toast.success(`Language set to ${lang.label}`);
+                                }}
+                                className={`px-3 py-2 text-[12px] font-medium rounded-xl transition-all text-left ${language === lang.code
+                                  ? "bg-neutral-900 text-white shadow-lg shadow-black/10"
+                                  : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+                                  }`}
+                              >
+                                {lang.label}
+                              </button>
+                            ))}
+                          </div>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                <motion.button
+                  onClick={() => setIsSettingsOpen(true)}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="w-9 h-9 rounded-full bg-transparent border-none text-neutral-400 hover:text-neutral-900 flex items-center justify-center cursor-pointer"
+                >
+                  <Settings2 size={18} />
+                </motion.button>
+              </div>
+
+              <div className="w-px h-5 bg-neutral-200/60" />
+
+              <div className={`flex items-center gap-2 bg-neutral-50/50 rounded-full px-3 py-1 border border-neutral-100/50 transition-all ${messages.length === 0 ? "flex-1" : "w-[220px]"}`}>
+                <input
+                  type="text"
+                  value={textInput}
+                  onChange={(e) => setTextInput(e.target.value)}
+                  onKeyPress={(e) => { if (e.key === "Enter" && textInput.trim()) { sendMessage(textInput); setTextInput(""); } }}
+                  placeholder="Ask REVA…"
+                  className="flex-1 bg-transparent border-none outline-none text-neutral-800 text-[13px] py-1.5 placeholder-neutral-400"
+                />
+                {textInput.trim() && (
+                  <motion.button
+                    initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+                    onClick={() => { sendMessage(textInput); setTextInput(""); }}
+                    className="w-7 h-7 rounded-full bg-neutral-900 text-white flex items-center justify-center cursor-pointer"
+                  >
+                    <ArrowUp size={14} />
+                  </motion.button>
+                )}
+              </div>
+
+              <div className="w-px h-5 bg-neutral-200/60" />
+
+              <div className="flex items-center gap-1.5 pr-1">
+                <div className="relative flex items-center justify-center">
+                  {/* Wave Animations (Blue Waves) */}
+                  <AnimatePresence>
+                    {isListening && [1, 2, 3].map((i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ scale: 1, opacity: 0.8 }}
+                        animate={{ scale: 2.2, opacity: 0 }}
+                        exit={{ opacity: 0 }}
+                        transition={{
+                          repeat: Infinity,
+                          duration: 2,
+                          delay: i * 0.6,
+                          ease: "easeOut",
+                        }}
+                        className="absolute inset-0 rounded-full bg-blue-400/30 ring-1 ring-blue-400/50"
+                      />
                     ))}
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
-          </div>
+                  </AnimatePresence>
 
-          {/* | divider */}
-          <div className="w-px h-5 bg-slate-200 shrink-0" />
+                  <motion.button
+                    layout
+                    onClick={handleToggleListening}
+                    animate={{
+                      backgroundColor: isListening ? "#3b82f6" : (micPermission === "denied" ? "#404040" : "#171717"),
+                      scale: isListening ? [1, 1.1, 1] : 1,
+                      boxShadow: isListening
+                        ? "0 0 25px rgba(59, 130, 246, 0.5)"
+                        : (micPermission !== "denied" ? "0 0 15px rgba(0,0,0,0.06)" : "none")
+                    }}
+                    transition={{
+                      scale: { repeat: Infinity, duration: 1.5 },
+                      backgroundColor: { duration: 0.3 }
+                    }}
+                    className={`relative w-10 h-10 rounded-full flex items-center justify-center text-white cursor-pointer border-none z-10 ${micPermission === "denied" ? "opacity-60" : ""}`}
+                    title={micPermission === "denied" ? "Mic Blocked - Click to fix" : "Hold to speak"}
+                  >
+                    <Mic size={18} />
+                  </motion.button>
+                </div>
 
-          {/* Chat input — always visible */}
-          <div className="flex items-center gap-2 bg-slate-50 rounded-[28px] pl-3.5 pr-1.5 py-1 border border-slate-200 w-[260px]">
-            <input
-              type="text"
-              value={textInput}
-              onChange={(e) => setTextInput(e.target.value)}
-              onKeyPress={(e) => { if (e.key === "Enter" && textInput.trim() && !isLoading) { sendMessage(textInput); setTextInput(""); } }}
-              placeholder="Type a message…"
-              disabled={isLoading}
-              className="flex-1 bg-transparent border-none outline-none text-slate-900 text-[13px] py-[7px] placeholder-slate-400"
-            />
-            <motion.button
-              onClick={() => { if (textInput.trim() && !isLoading) { sendMessage(textInput); setTextInput(""); } }}
-              disabled={!textInput.trim() || isLoading}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              className={`w-[30px] h-[30px] rounded-full border-none text-white flex items-center justify-center shrink-0 transition-colors duration-200 ${textInput.trim() && !isLoading ? "bg-slate-900 cursor-pointer" : "bg-slate-200 cursor-not-allowed"
-                }`}
-            >
-              <Send size={14} />
-            </motion.button>
-          </div>
-
-          {/* | divider */}
-          <div className="w-px h-5 bg-slate-200 shrink-0" />
-
-          {/* Stop */}
-          <motion.button
-            onClick={() => { cancelSpeech(); stopSTT(); }}
-            whileHover={{ scale: 1.15, color: "#0f172a" }}
-            whileTap={{ scale: 0.9 }}
-            title="Stop audio / Cancel"
-            className="bg-transparent border-none text-slate-400 cursor-pointer p-[6px_8px] rounded-[10px]"
-          >
-            <StopCircle size={20} />
-          </motion.button>
-
-          {/* Mic orb */}
-          <motion.button
-            onClick={handleToggleListening}
-            disabled={isInitializing || isSpeaking || isMediaUploading}
-            whileHover={{ scale: isInitializing || isSpeaking || isMediaUploading ? 1 : 1.06 }}
-            whileTap={{ scale: isInitializing || isSpeaking || isMediaUploading ? 1 : 0.93 }}
-            animate={{ backgroundColor: micColor, boxShadow: micShadow }}
-            transition={{ backgroundColor: { duration: 0.3 }, boxShadow: { duration: 0.3 } }}
-            className={`w-14 h-14 rounded-full border-none text-white flex items-center justify-center shrink-0 ${isInitializing || isSpeaking || isMediaUploading ? "cursor-not-allowed" : "cursor-pointer"
-              }`}
-          >
-            {isInitializing
-              ? <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}><Loader2 size={24} color="white" /></motion.div>
-              : isSpeaking ? <Volume2 size={24} />
-                : isListening ? <MicOff size={24} />
-                  : <Mic size={24} />}
-          </motion.button>
-
-          {/* | divider */}
-          <div className="w-px h-5 bg-slate-200 shrink-0" />
-
-          {/* File complaint — location icon */}
-          <motion.button
-            onClick={finalizeComplaint}
-            disabled={isSubmitting}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.93 }}
-            title={isSubmitting ? "Filing…" : "File Complaint"}
-            animate={{ backgroundColor: isSubmitting ? "#94a3b8" : "#1e293b" }}
-            transition={{ duration: 0.3 }}
-            className={`w-[38px] h-[38px] rounded-full border-none text-white flex items-center justify-center shrink-0 shadow-md ${isSubmitting ? "cursor-not-allowed" : "cursor-pointer"
-              }`}
-          >
-            {isSubmitting
-              ? <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}><Loader2 size={16} /></motion.div>
-              : <MapPin size={17} />}
-          </motion.button>
-
-          {/* Language selector */}
-          <div className="flex items-center bg-slate-50 rounded-[20px] px-2.5 border border-slate-200">
-            <Globe size={12} color="#94a3b8" />
-            <select
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              className="bg-transparent border-none text-slate-600 py-[7px] px-1 cursor-pointer text-xs font-bold outline-none"
-            >
-              {[["en", "EN"], ["hi", "HI"], ["te", "TE"], ["ta", "TA"], ["kn", "KN"], ["mr", "MR"], ["bn", "BN"], ["gu", "GU"], ["ml", "ML"], ["pa", "PA"]].map(([v, l]) => (
-                <option key={v} value={v}>{l}</option>
-              ))}
-            </select>
-          </div>
-        </motion.div >
+                <motion.button
+                  onClick={finalizeComplaint}
+                  whileTap={{ scale: 0.95 }}
+                  className="rounded-full font-semibold text-[13px] bg-transparent border-none text-neutral-400 hover:text-neutral-900 flex items-center justify-center cursor-pointer transition-colors px-2"
+                >
+                  Police Station
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        </div>
 
         {/* ── Settings Modal ─────────────────────────────────────────── */}
         < AnimatePresence >
@@ -1610,21 +1606,21 @@ export default function ComplaintPage() {
             <motion.div
               key="settings-backdrop"
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur flex items-center justify-center p-5"
+              className="fixed inset-0 z-[100] bg-neutral-900/40 backdrop-blur flex items-center justify-center p-5"
             >
               <motion.div
                 initial={{ opacity: 0, scale: 0.92, y: 16 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.92, y: 16 }}
                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                className="bg-white rounded-[24px] w-full max-w-[380px] p-7 border border-slate-100 shadow-2xl shadow-black/10"
+                className="bg-white rounded-[24px] w-full max-w-[380px] p-7 border border-neutral-100 shadow-2xl shadow-black/10"
               >
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="m-0 text-[1.1rem] font-extrabold text-slate-900">Voice Settings</h3>
+                  <h3 className="m-0 text-[1.1rem] font-extrabold text-neutral-900">Voice Settings</h3>
                   <motion.button
                     onClick={() => setIsSettingsOpen(false)}
                     whileHover={{ scale: 1.12, color: "#ef4444" }}
-                    className="bg-transparent border-none text-slate-400 cursor-pointer"
+                    className="bg-transparent border-none text-neutral-400 cursor-pointer"
                   >
                     <X size={20} />
                   </motion.button>
@@ -1634,10 +1630,10 @@ export default function ComplaintPage() {
                   { label: "Auto-Stop Listening", desc: "Detects when you finish speaking", value: autoStop, toggle: () => setAutoStop(!autoStop) },
                   { label: "Auto-Handsfree Mode", desc: "Mic turns on after REVA finishes", value: autoResumeMic, toggle: () => setAutoResumeMic(!autoResumeMic) },
                 ].map(({ label, desc, value, toggle }) => (
-                  <div key={label} className="flex justify-between items-center p-4 bg-slate-50 rounded-[14px] mb-2.5 border border-slate-100">
+                  <div key={label} className="flex justify-between items-center p-4 bg-neutral-50 rounded-[14px] mb-2.5 border border-neutral-100">
                     <div>
-                      <div className="font-bold text-[0.92rem] text-slate-800">{label}</div>
-                      <div className="text-[11px] text-slate-400 mt-0.5">{desc}</div>
+                      <div className="font-bold text-[0.92rem] text-neutral-800">{label}</div>
+                      <div className="text-[11px] text-neutral-400 mt-0.5">{desc}</div>
                     </div>
                     <motion.button
                       onClick={toggle}
@@ -1655,11 +1651,20 @@ export default function ComplaintPage() {
                   </div>
                 ))}
 
+                {micPermission === "denied" && (
+                  <div className="mx-4 p-3 bg-amber-50 rounded-xl border border-amber-100 flex items-start gap-2.5 mb-4">
+                    <AlertTriangle size={16} className="text-amber-600 mt-0.5" />
+                    <div className="text-[11px] text-amber-800 leading-relaxed font-medium">
+                      Microphone access is blocked. Please go to your browser settings to allow REVA to hear you.
+                    </div>
+                  </div>
+                )}
+
                 <motion.button
                   onClick={() => setIsSettingsOpen(false)}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.97 }}
-                  className="w-full mt-2 py-3.5 bg-slate-900 border-none rounded-[12px] text-white font-extrabold cursor-pointer text-[0.95rem]"
+                  className="w-full mt-2 py-3.5 bg-neutral-900 border-none rounded-[12px] text-white font-extrabold cursor-pointer text-[0.95rem]"
                 >
                   Save & Close
                 </motion.button>
@@ -1674,37 +1679,37 @@ export default function ComplaintPage() {
             <motion.div
               key="station-backdrop"
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[100] bg-slate-900/45 backdrop-blur-md flex items-center justify-center p-5"
+              className="fixed inset-0 z-[100] bg-neutral-900/45 backdrop-blur-md flex items-center justify-center p-5"
             >
               <motion.div
                 initial={{ opacity: 0, scale: 0.92, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.92, y: 20 }}
                 transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                className="bg-white rounded-[24px] w-full max-w-[500px] max-h-[80vh] flex flex-col border border-slate-100 shadow-2xl shadow-black/10 overflow-hidden"
+                className="bg-white rounded-[24px] w-full max-w-[500px] max-h-[80vh] flex flex-col border border-neutral-100 shadow-2xl shadow-black/10 overflow-hidden"
               >
-                <div className="p-[22px_24px] border-b border-slate-100 flex justify-between items-center">
+                <div className="p-[22px_24px] border-b border-neutral-100 flex justify-between items-center">
                   <div>
-                    <h3 className="m-0 text-[1.15rem] font-extrabold text-slate-900">Select Police Station</h3>
-                    <p className="m-0 mt-1 text-[0.8rem] text-slate-400">We couldn't detect your local station. Please choose one manually.</p>
+                    <h3 className="m-0 text-[1.15rem] font-extrabold text-neutral-900">Select Police Station</h3>
+                    <p className="m-0 mt-1 text-[0.8rem] text-neutral-400">We couldn't detect your local station. Please choose one manually.</p>
                   </div>
                   <motion.button
                     onClick={() => setShowStationPicker(false)}
                     whileHover={{ scale: 1.1, color: "#ef4444" }}
-                    className="bg-transparent border-none text-slate-400 cursor-pointer"
+                    className="bg-transparent border-none text-neutral-400 cursor-pointer"
                   >
                     <X size={22} />
                   </motion.button>
                 </div>
-                <div className="p-[14px_16px] border-b border-slate-50">
+                <div className="p-[14px_16px] border-b border-neutral-50">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={16} />
                     <input
                       type="text"
                       placeholder="Search station or district…"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full py-[11px] pl-9 pr-3 bg-slate-50 border border-slate-200 rounded-[12px] text-slate-900 outline-none text-sm box-border"
+                      className="w-full py-[11px] pl-9 pr-3 bg-neutral-50 border border-neutral-200 rounded-[12px] text-neutral-900 outline-none text-sm box-border"
                     />
                   </div>
                 </div>
@@ -1720,20 +1725,20 @@ export default function ComplaintPage() {
                         onClick={() => handleManualStationSelect(station)}
                         whileHover={{ backgroundColor: activeStation?.id === station.id ? "rgba(15,23,42,0.06)" : "#f8fafc" }}
                         whileTap={{ scale: 0.98 }}
-                        className={`w-full p-4 mb-2.5 rounded-[14px] text-left cursor-pointer flex justify-between items-center border text-slate-900 ${activeStation?.id === station.id
-                          ? "bg-slate-50 border-slate-300"
-                          : "bg-white border-slate-100"
+                        className={`w-full p-4 mb-2.5 rounded-[14px] text-left cursor-pointer flex justify-between items-center border text-neutral-900 ${activeStation?.id === station.id
+                          ? "bg-neutral-50 border-neutral-300"
+                          : "bg-white border-neutral-100"
                           }`}
                       >
                         <div>
-                          <div className="font-bold text-[0.97rem] text-slate-800">{station.stationName}</div>
-                          <div className="text-[0.78rem] text-slate-400 mt-0.5">{station.district}, {station.state}</div>
+                          <div className="font-bold text-[0.97rem] text-neutral-800">{station.stationName}</div>
+                          <div className="text-[0.78rem] text-neutral-400 mt-0.5">{station.district}, {station.state}</div>
                         </div>
                         <ChevronRight size={18} color="#cbd5e1" />
                       </motion.button>
                     ))}
                   {availableStations.length === 0 && (
-                    <div className="text-center p-10 text-slate-400">Loading stations…</div>
+                    <div className="text-center p-10 text-neutral-400">Loading stations…</div>
                   )}
                 </div>
               </motion.div>
@@ -1748,7 +1753,7 @@ export default function ComplaintPage() {
           <motion.div
             key="leave-backdrop"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[10000] bg-slate-900/50 backdrop-blur-md flex items-center justify-center p-6"
+            className="fixed inset-0 z-[10000] bg-neutral-900/50 backdrop-blur-md flex items-center justify-center p-6"
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.88, y: 20 }}
@@ -1758,14 +1763,14 @@ export default function ComplaintPage() {
               className="bg-white border border-red-100 rounded-[20px] p-8 max-w-[380px] w-full text-center shadow-2xl shadow-black/10"
             >
               <div className="mb-3 flex justify-center items-center"><TriangleAlert size={56} className="text-red-500" /></div>
-              <h3 className="m-0 mb-2 text-[1.12rem] font-extrabold text-slate-900">Leave complaint session?</h3>
-              <p className="m-0 mb-6 text-[0.85rem] text-slate-400 leading-[1.55]">Your conversation will be lost and cannot be recovered.</p>
+              <h3 className="m-0 mb-2 text-[1.12rem] font-extrabold text-neutral-900">Leave complaint session?</h3>
+              <p className="m-0 mb-6 text-[0.85rem] text-neutral-400 leading-[1.55]">Your conversation will be lost and cannot be recovered.</p>
               <div className="flex gap-3">
                 <motion.button
                   onClick={cancelLeave}
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
-                  className="flex-1 py-3 bg-slate-50 border border-slate-200 rounded-[12px] text-slate-600 font-bold cursor-pointer text-[0.9rem]"
+                  className="flex-1 py-3 bg-neutral-50 border border-neutral-200 rounded-[12px] text-neutral-600 font-bold cursor-pointer text-[0.9rem]"
                 >Stay</motion.button>
                 <motion.button
                   onClick={confirmLeave}

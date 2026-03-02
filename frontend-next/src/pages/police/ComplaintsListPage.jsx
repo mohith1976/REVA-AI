@@ -5,17 +5,17 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/utils/api";
 import toast from "react-hot-toast";
-import { LayoutDashboard, Folder, Map, BarChart2, Users, Link2, Building } from "lucide-react";
+import { LayoutDashboard, Folder, Map, BarChart2, Users, Link2, Building, Search } from "lucide-react";
 
 const PRIORITY_COLORS = {
-  EMERGENCY: "#ff3b30", HIGH: "#f87171", MODERATE: "#fbbf24", INFORMATIONAL: "#34d399",
+  EMERGENCY: "#dc2626", HIGH: "#ef4444", MODERATE: "#f59e0b", INFORMATIONAL: "#10b981",
 };
 const STATUS_COLORS = {
-  FILED: "#60a5fa", UNDER_REVIEW: "#fbbf24", ASSIGNED: "#a78bfa",
-  IN_PROGRESS: "#34d399", ESCALATED: "#f87171", RESOLVED: "#10b981", CLOSED: "#94a3b8",
+  FILED: "#0f172a", UNDER_REVIEW: "#737373", ASSIGNED: "#404040",
+  IN_PROGRESS: "#09090b", ESCALATED: "#ef4444", RESOLVED: "#10b981", CLOSED: "#a3a3a3",
 };
 
-const INPUT_CLASS = "w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm placeholder:text-slate-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-colors";
+const INPUT_CLASS = "w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-neutral-900 text-sm placeholder:text-neutral-400 outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900/10 transition-all";
 
 export default function ComplaintsListPage() {
   const auth = useAuth();
@@ -29,16 +29,13 @@ export default function ComplaintsListPage() {
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState({ status: "", priority: "", search: "" });
 
-  const token = typeof window !== "undefined" ? localStorage.getItem("reva_police_token") : "";
-  const headers = { Authorization: `Bearer ${token}` };
-
   useEffect(() => { fetchComplaints(); }, [page, filters.status, filters.priority]);
 
   const fetchComplaints = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ page, limit: 15, status: filters.status, priority: filters.priority, search: filters.search });
-      const res = await api.get(`/api/police/complaints?${params}`, { headers });
+      const res = await api.get(`/api/police/complaints?${params}`);
       setComplaints(res.data.complaints);
       setTotal(res.data.pagination.total);
     } catch { toast.error("Failed to load complaints"); }
@@ -62,23 +59,28 @@ export default function ComplaintsListPage() {
   );
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen bg-neutral-50 font-sans text-neutral-900">
       {/* Sidebar */}
-      <aside className="w-64 bg-slate-50/80 backdrop-blur-xl border-r border-slate-200 flex flex-col p-6 sticky top-0 h-screen">
-        <div className="pb-8 px-3">
-          <h1 className="text-xl font-extrabold text-slate-900 flex items-center gap-2.5">
-            <span className="text-blue-400">REVA</span>
-            <span className="text-xs bg-gradient-to-r from-blue-600 to-violet-600 px-2 py-0.5 rounded uppercase font-bold">Police</span>
-          </h1>
+      <aside className="w-64 bg-white/80 backdrop-blur-2xl border-r border-neutral-200/60 flex flex-col p-6 sticky top-0 h-screen z-40">
+        <div className="flex items-center gap-3 mb-10 px-2">
+          <div className="w-9 h-9 rounded-xl bg-neutral-900 flex items-center justify-center flex-shrink-0 shadow-lg shadow-black/10">
+            <Shield size={18} color="white" />
+          </div>
+          <div>
+            <div className="font-bold text-[15px] text-neutral-900 tracking-tight leading-tight">REVA Police</div>
+            <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mt-0.5">{policeUser?.station?.stationName?.slice(0, 18)}</div>
+          </div>
         </div>
-        <nav className="flex-1">
+
+        <nav className="flex-1 space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.to;
             return (
               <Link key={item.to} href={item.to}
-                className={`flex items-center gap-2.5 px-3.5 py-3 rounded-xl mb-1.5 text-[0.9rem] transition-all no-underline ${active ? "bg-blue-500/15 text-blue-400 font-semibold border border-blue-500/20"
-                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-transparent"
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all no-underline ${active
+                  ? "bg-neutral-900 text-white shadow-md shadow-black/10"
+                  : "text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100"
                   }`}
               >
                 <Icon size={16} />
@@ -87,11 +89,14 @@ export default function ComplaintsListPage() {
             );
           })}
         </nav>
-        <div className="pt-4 border-t border-slate-200">
-          <div className="text-xs text-slate-400 mb-0.5">Logged in as</div>
-          <div className="text-sm font-semibold text-slate-800 mb-3">{policeUser?.name}</div>
-          <button onClick={logoutPolice} className="w-full text-left text-sm text-red-400 hover:text-red-300 hover:bg-slate-100 px-3 py-2 rounded-xl transition-colors">
-            Logout
+
+        <div className="mt-auto pt-6 border-t border-neutral-100">
+          <div className="px-2 mb-4">
+            <div className="text-[13px] font-bold text-neutral-900">{policeUser?.name}</div>
+            <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">{policeUser?.role?.replace("_", " ")}</div>
+          </div>
+          <button onClick={logoutPolice} className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-bold text-red-500 hover:bg-red-50 transition-colors border-none bg-transparent cursor-pointer">
+            Sign Out
           </button>
         </div>
       </aside>
@@ -110,87 +115,85 @@ export default function ComplaintsListPage() {
         </header>
 
         {/* Filters */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
-          <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-[1fr_180px_180px_120px] gap-4">
+        <div className="bg-white border border-neutral-200/60 rounded-2xl p-6 mb-8 shadow-sm">
+          <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-[1fr_200px_200px_140px] gap-4">
             <div className="relative">
-              <span className="absolute left-3.5 top-3.5 text-slate-500 text-sm">🔍</span>
-              <input type="text" placeholder="Search by Tracking ID, Incident Type..."
-                className={`${INPUT_CLASS} pl-9`}
+              <Search className="absolute left-4 top-3.5 text-neutral-400" size={18} />
+              <input type="text" placeholder="Search Tracking ID, Type..."
+                className={`${INPUT_CLASS} pl-12 font-medium`}
                 value={filters.search} onChange={e => setFilters({ ...filters, search: e.target.value })} />
             </div>
-            <select className={INPUT_CLASS} value={filters.status}
+            <select className={`${INPUT_CLASS} font-medium`} value={filters.status}
               onChange={e => { setFilters({ ...filters, status: e.target.value }); setPage(1); }}>
-              <option value="">All Statuses</option>
+              <option value="">Status</option>
               {Object.keys(STATUS_COLORS).map(s => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
             </select>
-            <select className={INPUT_CLASS} value={filters.priority}
+            <select className={`${INPUT_CLASS} font-medium`} value={filters.priority}
               onChange={e => { setFilters({ ...filters, priority: e.target.value }); setPage(1); }}>
-              <option value="">All Priorities</option>
+              <option value="">Priority</option>
               {Object.keys(PRIORITY_COLORS).map(p => <option key={p} value={p}>{p}</option>)}
             </select>
-            <button type="submit" className="px-4 py-3 bg-gradient-to-r from-blue-600 to-violet-600 text-white font-bold text-sm rounded-xl hover:opacity-90 transition-opacity">
-              Search
+            <button type="submit" className="px-6 py-3 bg-neutral-900 text-white font-bold text-[13px] rounded-xl hover:bg-neutral-800 transition-all shadow-lg shadow-black/5">
+              Refine Search
             </button>
           </form>
         </div>
 
         {/* Table */}
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+        <div className="bg-white border border-neutral-200/60 rounded-[20px] shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-white border-b border-slate-200">
-                  <ThCell>Case ID</ThCell>
-                  <ThCell>Incident</ThCell>
-                  <ThCell>Priority</ThCell>
-                  <ThCell>Status</ThCell>
-                  <ThCell>Date Filed</ThCell>
-                  <ThCell>Action</ThCell>
+                <tr className="border-b border-neutral-100">
+                  <th className="px-6 py-4 text-[10px] font-bold text-neutral-400 tracking-widest uppercase text-left">CASE ID</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-neutral-400 tracking-widest uppercase text-left">INCIDENT</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-neutral-400 tracking-widest uppercase text-left">PRIORITY</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-neutral-400 tracking-widest uppercase text-left">STATUS</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-neutral-400 tracking-widest uppercase text-left">FILED DATE</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-neutral-400 tracking-widest uppercase text-left">ACTION</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan="6" className="py-16 text-center text-slate-500 text-sm">Loading cases...</td></tr>
+                  <tr><td colSpan="6" className="py-24 text-center text-neutral-400 font-medium text-[13px]">Loading records...</td></tr>
                 ) : complaints.length > 0 ? (
                   complaints.map(c => (
-                    <tr key={c.id} className="border-b border-white/[0.04] hover:bg-white transition-colors">
-                      <td className="px-4 py-4">
-                        <div className="font-mono font-bold text-blue-400">{c.trackingId}</div>
-                        {c.isEmergency && <span className="text-[0.65rem] text-red-400 font-extrabold">🚨 EMERGENCY</span>}
+                    <tr key={c.id} className="border-b border-neutral-50 hover:bg-neutral-50/50 transition-colors group">
+                      <td className="px-6 py-5">
+                        <div className="font-mono font-bold text-neutral-900 text-[13px]">{c.trackingId}</div>
+                        {c.isEmergency && <span className="text-[9px] font-bold text-red-500 uppercase tracking-wider block mt-1 px-1.5 py-0.5 bg-red-50 rounded inline-block">EMERGENCY</span>}
                       </td>
-                      <td className="px-4 py-4">
-                        <div className="font-semibold text-slate-800">{c.incidentType || "General"}</div>
-                        <div className="text-xs text-slate-500">{c.locationAddress?.slice(0, 30)}…</div>
+                      <td className="px-6 py-5">
+                        <div className="font-bold text-neutral-900 text-[14px]">{c.incidentType || "General"}</div>
+                        <div className="text-[12px] text-neutral-400 font-medium truncate max-w-[200px] mt-1">{c.locationAddress}</div>
                       </td>
-                      <td className="px-4 py-4">
-                        <span className="px-2.5 py-1 rounded-xl text-[0.7rem] font-bold border"
-                          style={{ background: `${PRIORITY_COLORS[c.priorityLevel]}20`, color: PRIORITY_COLORS[c.priorityLevel], borderColor: `${PRIORITY_COLORS[c.priorityLevel]}40` }}>
+                      <td className="px-6 py-5">
+                        <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold tracking-tight uppercase border ${c.priorityLevel === "EMERGENCY" ? "bg-red-50 text-red-600 border-red-100" :
+                          c.priorityLevel === "HIGH" ? "bg-orange-50 text-orange-600 border-orange-100" :
+                            "bg-neutral-50 text-neutral-500 border-neutral-200/60"
+                          }`}>
                           {c.priorityLevel}
                         </span>
                       </td>
-                      <td className="px-4 py-4">
+                      <td className="px-6 py-5">
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: STATUS_COLORS[c.status] }} />
-                          <span className="text-sm text-slate-800">{c.status.replace("_", " ")}</span>
+                          <div className="w-1.5 h-1.5 rounded-full" style={{ background: STATUS_COLORS[c.status] }} />
+                          <span className="text-[13px] text-neutral-600 font-semibold">{c.status.replace("_", " ")}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-4 text-sm text-slate-500">{new Date(c.createdAt).toLocaleDateString("en-IN")}</td>
-                      <td className="px-4 py-4">
-                        <div className="flex gap-2">
-                          <Link href={`/police/complaints/${c.id}`}
-                            className="text-xs font-bold text-slate-900 bg-gradient-to-r from-blue-600 to-violet-600 px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity no-underline">
-                            Full Case File →
-                          </Link>
-                          <Link href={`/police/map?id=${c.id}`}
-                            className="text-xs text-slate-500 hover:text-slate-800 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 transition-colors no-underline">
-                            📍
-                          </Link>
-                        </div>
+                      <td className="px-6 py-5 text-[13px] text-neutral-400 font-medium whitespace-nowrap">
+                        {new Date(c.createdAt).toLocaleDateString("en-IN", { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </td>
+                      <td className="px-6 py-5">
+                        <Link href={`/police/complaints/${c.id}`}
+                          className="text-[12px] font-bold text-white bg-neutral-900 px-5 py-2.5 rounded-xl hover:bg-neutral-800 transition-all no-underline whitespace-nowrap shadow-sm">
+                          Case File
+                        </Link>
                       </td>
                     </tr>
                   ))
                 ) : (
-                  <tr><td colSpan="6" className="py-12 text-center text-slate-500">No complaints found matching your filters.</td></tr>
+                  <tr><td colSpan="6" className="py-24 text-center text-neutral-400 font-medium">No records found matching filters.</td></tr>
                 )}
               </tbody>
             </table>

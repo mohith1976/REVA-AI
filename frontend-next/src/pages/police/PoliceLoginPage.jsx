@@ -31,43 +31,44 @@ export default function PoliceLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-6 relative overflow-hidden">
-      {/* Glow orb */}
-      <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full pointer-events-none bg-[radial-gradient(circle,rgba(59,130,246,0.06)_0%,transparent_70%)]" />
+    <div className="min-h-screen bg-neutral-50 font-sans flex items-center justify-center px-6 relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute top-0 left-0 w-full h-full opacity-[0.03] pointer-events-none"
+        style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 0)', backgroundSize: '40px 40px' }} />
 
       <div className="w-full max-w-sm animate-fade-in">
         {/* Header */}
         <div className="text-center mb-10">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-900 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-[0_8px_32px_rgba(59,130,246,0.3)]">
-            <Shield size={32} color="white" strokeWidth={2} />
+          <div className="w-20 h-20 bg-neutral-900 rounded-[24px] flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-black/10 scale-110">
+            <Shield size={36} color="white" strokeWidth={1.5} />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 mb-1">Police Station Portal</h1>
-          <p className="text-sm text-slate-500">Restricted access — Authorized personnel only</p>
+          <h1 className="text-3xl font-bold text-neutral-900 tracking-tight mb-2">REVA Police Portal</h1>
+          <p className="text-[13px] font-bold text-neutral-400 uppercase tracking-widest">Authorized Access Only</p>
         </div>
 
         {/* Card */}
-        <div className="bg-white border border-blue-500/20 rounded-2xl p-8">
+        <div className="bg-white/80 backdrop-blur-xl border border-neutral-200/60 rounded-[32px] p-10 shadow-xl shadow-black/5">
           {/* Security notice */}
-          <div className="flex items-center gap-2 bg-blue-500/8 border border-blue-500/15 rounded-lg px-3.5 py-2.5 mb-6">
-            <Lock size={13} className="text-slate-500 flex-shrink-0" />
-            <span className="text-xs text-slate-500">Secured by JWT · All access logged and audited</span>
+          <div className="flex items-center gap-3 bg-neutral-900 rounded-2xl px-4 py-3 mb-8 shadow-lg shadow-black/10">
+            <Lock size={14} className="text-white opacity-60 flex-shrink-0" />
+            <span className="text-[11px] font-bold text-white tracking-wide">SECURED BY REVA QUANTUM ENCRYPTION</span>
           </div>
 
-          <div className="mb-5">
-            <label htmlFor="police-email" className="block text-sm font-medium text-slate-500 mb-2">Official Email</label>
+          <div className="mb-6">
+            <label htmlFor="police-email" className="block text-[11px] font-bold text-neutral-400 uppercase tracking-widest mb-3 ml-1">Official Identifier</label>
             <input
               id="police-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-              placeholder="officer@police.gov.in"
-              className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm placeholder:text-slate-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-colors"
+              placeholder="officer_id@reva.gov.in"
+              className="w-full px-5 py-4 bg-neutral-50/50 border border-neutral-200/80 rounded-[20px] text-neutral-900 text-[14px] font-medium placeholder:text-neutral-300 outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900/10 transition-all"
             />
           </div>
 
-          <div className="mb-6">
-            <label htmlFor="police-password" className="block text-sm font-medium text-slate-500 mb-2">Password</label>
+          <div className="mb-8">
+            <label htmlFor="police-password" className="block text-[11px] font-bold text-neutral-400 uppercase tracking-widest mb-3 ml-1">Security Key</label>
             <input
               id="police-password"
               type="password"
@@ -75,7 +76,7 @@ export default function PoliceLoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleLogin()}
               placeholder="••••••••"
-              className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm placeholder:text-slate-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-colors"
+              className="w-full px-5 py-4 bg-neutral-50/50 border border-neutral-200/80 rounded-[20px] text-neutral-900 text-[14px] font-medium placeholder:text-neutral-300 outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900/10 transition-all"
             />
           </div>
 
@@ -83,22 +84,23 @@ export default function PoliceLoginPage() {
             id="police-login-btn"
             onClick={handleLogin}
             disabled={loading}
-            className="w-full py-3 bg-gradient-to-r from-blue-600 to-violet-600 text-white font-bold text-sm rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-4 bg-neutral-900 text-white font-bold text-[14px] rounded-[20px] hover:bg-neutral-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-xl shadow-black/10 active:scale-[0.98] cursor-pointer border-none"
           >
-            {loading ? "Signing in..." : "Sign In to Dashboard →"}
+            {loading ? "Authenticating..." : "Establish Secure Session →"}
           </button>
         </div>
 
-        <p className="text-center mt-5 text-xs text-slate-400">
+        <p className="text-center mt-8 text-[13px] font-medium text-neutral-400">
           Citizen?{" "}
-          <Link href="/login" className="text-blue-400 hover:text-blue-300 transition-colors">
-            File a complaint →
+          <Link href="/login" className="text-neutral-900 font-bold hover:underline transition-all no-underline">
+            File a report
           </Link>
         </p>
 
         {/* Demo credentials */}
-        <div className="mt-4 bg-amber-500/8 border border-amber-500/20 rounded-xl px-4 py-3 text-xs text-amber-400">
-          <strong>Demo:</strong> admin@station.gov.in / Admin@123
+        <div className="mt-8 bg-neutral-100/50 border border-neutral-200/60 rounded-2xl px-5 py-4 text-[11px] font-medium text-neutral-400 text-center leading-relaxed">
+          <span className="font-bold text-neutral-500 uppercase tracking-widest block mb-1">Sandbox Environment</span>
+          admin@station.gov.in / Admin@123
         </div>
       </div>
     </div>

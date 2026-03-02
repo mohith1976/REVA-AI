@@ -44,6 +44,7 @@ export default function LandingPage() {
   const { t, i18n } = useTranslation();
   const [activeLang, setActiveLang] = useState(i18n.language || "en");
   const [hoverFeature, setHoverFeature] = useState(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   function handleLangChange(code) {
     i18n.changeLanguage(code);
@@ -52,11 +53,11 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="bg-slate-50 min-h-screen text-slate-900 font-sans">
+    <div className="bg-slate-50 min-h-screen text-slate-900 font-santoshi">
 
       {/* ── Navbar ── */}
       <nav className="sticky top-0 z-50 bg-slate-50/85 backdrop-blur-md border-b border-slate-200">
-        <div className="max-w-6xl mx-auto px-8 flex items-center justify-between h-[60px]">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 flex items-center justify-between h-[60px]">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 no-underline">
             <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
@@ -65,8 +66,8 @@ export default function LandingPage() {
             <span className="font-bold text-base tracking-wide text-slate-900">REVA AI</span>
           </Link>
 
-          {/* Links */}
-          <div className="flex items-center gap-2">
+          {/* Desktop Links */}
+          <div className="hidden md:flex items-center gap-2">
             {/* Services Dropdown */}
             <div className="relative group">
               <button className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100">
@@ -106,7 +107,48 @@ export default function LandingPage() {
               </>
             )}
           </div>
+
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 text-slate-600 hover:text-slate-900 transition-colors border-none bg-transparent"
+          >
+            {mobileMenuOpen ? "✕" : "☰"}
+          </button>
         </div>
+
+        {/* Mobile Navigation Drawer */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-white border-b border-slate-200 py-4 px-6 animate-in slide-in-from-top duration-300">
+            <div className="flex flex-col gap-4">
+              <Link href="/track" className="text-sm font-medium text-slate-600 no-underline" onClick={() => setMobileMenuOpen(false)}>
+                {t("nav.track")}
+              </Link>
+              {user ? (
+                <>
+                  <Link href="/my-complaints" className="text-sm font-medium text-slate-600 no-underline" onClick={() => setMobileMenuOpen(false)}>
+                    {t("nav.myCases")}
+                  </Link>
+                  <Link href="/complaint" className="text-sm font-medium text-slate-600 no-underline" onClick={() => setMobileMenuOpen(false)}>
+                    {t("nav.fileComplaint")}
+                  </Link>
+                  <Link href="/profile" className="text-sm font-medium text-slate-600 no-underline" onClick={() => setMobileMenuOpen(false)}>
+                    Profile
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link href="/login" className="text-sm font-semibold text-slate-900 no-underline" onClick={() => setMobileMenuOpen(false)}>
+                    {t("nav.signIn")}
+                  </Link>
+                  <Link href="/police/login" className="text-sm font-medium text-slate-600 no-underline" onClick={() => setMobileMenuOpen(false)}>
+                    {t("nav.policePortal")}
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* ── Hero ── */}
@@ -131,11 +173,11 @@ export default function LandingPage() {
             {t("hero.subtitle")}
           </p>
 
-          <div className="flex gap-3 justify-center flex-wrap">
+          <div className="flex gap-3 justify-center flex-col sm:flex-row items-center sm:flex-wrap px-4">
             <Link
               href={user ? "/complaint" : "/login"}
               id="hero-file-btn"
-              className="inline-flex items-center gap-2 px-7 py-3.5 bg-slate-900 text-white font-bold text-sm rounded-[10px] hover:bg-slate-800 transition-opacity"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-slate-900 text-white font-bold text-sm rounded-[10px] hover:bg-slate-800 transition-opacity"
             >
               <Mic size={16} strokeWidth={2.5} />
               {t("hero.fileBtn")}
@@ -143,7 +185,7 @@ export default function LandingPage() {
             <Link
               href="/track"
               id="hero-track-btn"
-              className="inline-flex items-center gap-2 px-7 py-3.5 bg-transparent text-slate-900 font-semibold text-sm rounded-[10px] border border-slate-200 hover:border-white/40 transition-colors"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-transparent text-slate-900 font-semibold text-sm rounded-[10px] border border-slate-200 hover:border-white/40 transition-colors"
             >
               {t("hero.trackBtn")}
               <ArrowRight size={16} />
@@ -167,95 +209,6 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
-      {/* ── Stats ── */}
-      <section className="py-12 px-8 border-t border-b border-white/7">
-        <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-          {STATS.map(({ value, labelKey }) => (
-            <div key={labelKey}>
-              <div className="text-[2.4rem] font-extrabold tracking-[-1px] text-slate-900 leading-none mb-1.5">{value}</div>
-              <div className="text-xs font-medium text-slate-500 uppercase tracking-[0.4px]">{t(labelKey)}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Features ── */}
-      <section className="py-24 px-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <div className="text-[0.72rem] font-bold tracking-[2px] uppercase text-slate-500 mb-3">Platform Features</div>
-            <h2 className="text-[clamp(1.8rem,3.5vw,2.6rem)] font-extrabold tracking-[-0.8px] text-slate-900 mb-3">
-              {t("features.heading")}
-            </h2>
-            <p className="text-sm text-slate-500 max-w-sm mx-auto leading-relaxed">{t("features.subheading")}</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-slate-100 border border-white/7 rounded-2xl overflow-hidden">
-            {FEATURES.map(({ key, Icon }, i) => (
-              <div
-                key={key}
-                className={`p-8 transition-colors duration-200 cursor-default ${hoverFeature === i ? "bg-white" : "bg-slate-50"}`}
-                onMouseEnter={() => setHoverFeature(i)}
-                onMouseLeave={() => setHoverFeature(null)}
-              >
-                <div className="w-10 h-10 rounded-[10px] bg-slate-100 border border-slate-200 flex items-center justify-center mb-4">
-                  <Icon size={18} color="rgba(255,255,255,0.7)" strokeWidth={1.75} />
-                </div>
-                <div className="font-bold text-[0.95rem] text-slate-900 mb-2 tracking-[-0.2px]">
-                  {t(`features.${key}.title`)}
-                </div>
-                <p className="text-[0.84rem] text-slate-500 leading-relaxed">{t(`features.${key}.desc`)}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Emergency CTA ── */}
-      <section className="pb-20 px-8">
-        <div className="max-w-3xl mx-auto bg-white border border-white/9 rounded-2xl p-10 text-center">
-          <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-5">
-            <AlertTriangle size={22} color="#f87171" strokeWidth={2} />
-          </div>
-          <h3 className="text-xl font-extrabold text-slate-900 tracking-[-0.4px] mb-2">{t("emergency.title")}</h3>
-          <p className="text-sm text-slate-500 mb-7 leading-relaxed">{t("emergency.subtitle")}</p>
-          <div className="flex gap-3 justify-center flex-wrap">
-            <a
-              href="tel:112"
-              id="emergency-call-112"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-red-500/12 text-red-400 font-bold text-sm rounded-[10px] border border-red-500/30 hover:bg-red-500/20 transition-colors"
-            >
-              <Phone size={15} strokeWidth={2.5} />
-              {t("emergency.call112")}
-            </a>
-            <a
-              href="tel:100"
-              id="emergency-call-100"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-transparent text-slate-900 font-semibold text-sm rounded-[10px] border border-slate-200 hover:border-white/40 transition-colors"
-            >
-              <Phone size={15} strokeWidth={2.5} />
-              {t("emergency.call100")}
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Footer ── */}
-      <footer className="border-t border-white/7 py-10 px-8">
-        <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Shield size={14} color="rgba(255,255,255,0.25)" strokeWidth={2} />
-            <span className="font-bold text-sm text-slate-500">REVA AI</span>
-          </div>
-          <span className="text-xs text-slate-500">{t("footer.copyright")}</span>
-          <div className="flex gap-6">
-            <Link href="/police/login" className="text-xs text-slate-500 hover:text-slate-500 transition-colors">{t("footer.policePortal")}</Link>
-            <Link href="/track" className="text-xs text-slate-500 hover:text-slate-500 transition-colors">{t("footer.track")}</Link>
-          </div>
-        </div>
-      </footer>
-
     </div>
   );
 }

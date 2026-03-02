@@ -39,11 +39,7 @@ function EvidenceCard({ item }) {
     if (url) return;
     setLoading(true);
     try {
-      const res = await api.get(`/api/evidence/${item.id}/url`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("reva_police_token")}`,
-        },
-      });
+      const res = await api.get(`/api/evidence/${item.id}/url`);
       setUrl(res.data.url);
     } catch (err) {
       toast.error("Failed to load evidence file");
@@ -189,8 +185,6 @@ export default function ComplaintDetailPage() {
   const [firError, setFirError] = useState(null);
   const firGeneratedRef = useRef(false);
 
-  const token = typeof window !== "undefined" ? localStorage.getItem("reva_police_token") : "";
-  const headers = { Authorization: `Bearer ${token}` };
 
   useEffect(() => {
     fetchData();
@@ -207,22 +201,14 @@ export default function ComplaintDetailPage() {
     setLoading(true);
     try {
       // Fetch complaint first as it's critical
-      const cRes = await api.get(`/api/police/complaints/${id}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("reva_police_token")}`,
-        },
-      });
+      const cRes = await api.get(`/api/police/complaints/${id}`);
       setComplaint(cRes.data);
       setSelectedStatus(cRes.data.status);
 
       // Fetch other data secondary
       try {
         if (["STATION_ADMIN", "SUPER_ADMIN"].includes(policeUser?.role)) {
-          const oRes = await api.get("/api/police/officers", {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("reva_police_token")}`,
-            },
-          });
+          const oRes = await api.get("/api/police/officers");
           setOfficers(oRes.data.officers || []);
         }
       } catch (e) {
@@ -258,8 +244,7 @@ export default function ComplaintDetailPage() {
     try {
       await api.patch(
         `/api/police/complaints/${id}/assign`,
-        { officerId: selectedOfficer },
-        { headers },
+        { officerId: selectedOfficer }
       );
       toast.success("Complaint assigned successfully");
       fetchData();
@@ -273,8 +258,7 @@ export default function ComplaintDetailPage() {
     try {
       await api.patch(
         `/api/police/complaints/${id}/status`,
-        { status: selectedStatus },
-        { headers },
+        { status: selectedStatus }
       );
       toast.success("Status updated");
       fetchData();
@@ -289,8 +273,7 @@ export default function ComplaintDetailPage() {
     try {
       await api.post(
         `/api/police/complaints/${id}/notes`,
-        { note },
-        { headers },
+        { note }
       );
       toast.success("Note added");
       setNote("");
@@ -309,8 +292,7 @@ export default function ComplaintDetailPage() {
     try {
       const res = await api.post(
         `/api/police/complaints/${complaintId}/generate-fir`,
-        {},
-        { headers },
+        {}
       );
       setFirData(res.data.firData);
     } catch (err) {
@@ -326,8 +308,7 @@ export default function ComplaintDetailPage() {
     try {
       await api.patch(
         `/api/police/complaints/${id}/migrate`,
-        { targetStationId: selectedTargetStation, reason: migrationReason },
-        { headers },
+        { targetStationId: selectedTargetStation, reason: migrationReason }
       );
       toast.success("Complaint migrated and transferred");
       router.push("/police/dashboard");

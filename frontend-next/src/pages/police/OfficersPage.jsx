@@ -24,8 +24,6 @@ export default function OfficersPage() {
   const [form, setForm] = useState({ name: "", email: "", password: "", role: "OFFICER" });
   const [submitting, setSubmitting] = useState(false);
 
-  const token = typeof window !== "undefined" ? localStorage.getItem("reva_police_token") : "";
-  const headers = { Authorization: `Bearer ${token}` };
 
   const queryParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : new URLSearchParams();
   const targetStationId = queryParams.get("stationId") || policeUser?.stationId;
@@ -40,7 +38,7 @@ export default function OfficersPage() {
   const fetchOfficers = async () => {
     try {
       const url = targetStationId ? `/api/police/officers?stationId=${targetStationId}` : "/api/police/officers";
-      const res = await api.get(url, { headers });
+      const res = await api.get(url);
       setOfficers(res.data.officers);
     } catch { toast.error("Failed to load officers"); }
     finally { setLoading(false); }
@@ -50,7 +48,7 @@ export default function OfficersPage() {
     if (!form.name || !form.email || !form.password) { toast.error("All fields required"); return; }
     setSubmitting(true);
     try {
-      await api.post("/api/police/auth/register", { ...form, stationId: targetStationId }, { headers });
+      await api.post("/api/police/auth/register", { ...form, stationId: targetStationId });
       toast.success("Officer registered successfully");
       setShowAddForm(false);
       setForm({ name: "", email: "", password: "", role: "OFFICER" });
@@ -63,7 +61,7 @@ export default function OfficersPage() {
     <div className="min-h-screen bg-slate-50 p-6">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="flex justify-between items-center mb-7">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-7">
           <div>
             <button onClick={() => router.push("/police/dashboard")}
               className="text-sm text-slate-500 hover:text-slate-900 hover:bg-slate-100 px-3 py-1.5 rounded-lg transition-colors mb-2 flex items-center gap-1">
@@ -73,7 +71,7 @@ export default function OfficersPage() {
             <p className="text-sm text-slate-500">{policeUser?.station?.stationName} — {officers.length} officers</p>
           </div>
           <button id="add-officer-btn" onClick={() => setShowAddForm(!showAddForm)}
-            className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-violet-600 text-white font-bold text-sm rounded-xl hover:opacity-90 transition-opacity">
+            className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-blue-600 to-violet-600 text-white font-bold text-sm rounded-xl hover:opacity-90 transition-opacity">
             {showAddForm ? "✕ Cancel" : "+ Add Officer"}
           </button>
         </div>

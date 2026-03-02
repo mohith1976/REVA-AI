@@ -19,10 +19,7 @@ export default function CrimeMap() {
 
   const fetchComplaints = async () => {
     try {
-      const token = localStorage.getItem("reva_police_token");
-      const res = await api.get("/api/police/complaints?limit=250", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await api.get("/api/police/complaints?limit=250");
       setComplaints(res.data.complaints || []);
     } catch (err) { console.error("Map Data Fetch Error:", err); }
     finally { setLoading(false); }

@@ -1,29 +1,36 @@
 'use client';
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/utils/api";
-import { LayoutDashboard, Folder, Map, BarChart2, Users, Link2, Building, Shield } from "lucide-react";
+import { LayoutDashboard, Folder, Map, BarChart2, Users, Link2, Building, Shield, MapPin } from "lucide-react";
 
 const PRIORITY_COLORS = {
-  EMERGENCY: "#ff3b30", HIGH: "#f87171", MODERATE: "#fbbf24", INFORMATIONAL: "#34d399",
+  EMERGENCY: "#dc2626", // red-600
+  HIGH: "#ef4444",      // red-500
+  MODERATE: "#f59e0b",  // amber-500
+  INFORMATIONAL: "#10b981", // emerald-500
 };
 const STATUS_LABELS = {
-  FILED: "Filed", UNDER_REVIEW: "Under Review", ASSIGNED: "Assigned",
-  IN_PROGRESS: "In Progress", ESCALATED: "Escalated", RESOLVED: "Resolved", CLOSED: "Closed",
+  FILED: "Filed", UNDER_REVIEW: "Review", ASSIGNED: "Assigned",
+  IN_PROGRESS: "Active", ESCALATED: "Escalated", RESOLVED: "Resolved", CLOSED: "Closed",
 };
 
-const INPUT_CLASS = "px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm placeholder:text-slate-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-colors";
+const INPUT_CLASS = "px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-neutral-900 text-sm placeholder:text-neutral-400 outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900/10 transition-all";
 
 function StatCard({ label, value, color, icon: Icon }) {
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-4 text-center">
-      <div className="flex justify-center mb-2">
-        <Icon size={20} style={{ color }} />
+    <div className="bg-white border border-neutral-200/60 rounded-2xl p-5 transition-all hover:shadow-lg hover:shadow-black/5 group">
+      <div className="flex items-center justify-between mb-3">
+        <div className="w-8 h-8 rounded-lg bg-neutral-50 flex items-center justify-center group-hover:bg-neutral-100 transition-colors">
+          <Icon size={16} className="text-neutral-500" />
+        </div>
+        {color && <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />}
       </div>
-      <div className="text-3xl font-extrabold mb-0.5" style={{ color }}>{value ?? "—"}</div>
-      <div className="text-[0.78rem] text-slate-400">{label}</div>
+      <div className="text-2xl font-bold text-neutral-900 tracking-tight">{value ?? "0"}</div>
+      <div className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider mt-1">{label}</div>
     </div>
   );
 }
@@ -41,15 +48,14 @@ export default function PoliceDashboard() {
   const [pagination, setPagination] = useState(null);
   const [page, setPage] = useState(1);
   const [activeTab, setActiveTab] = useState("all");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => { fetchDashboard(); }, []);
   useEffect(() => { fetchComplaints(); }, [page, filter, activeTab]);
 
   const fetchDashboard = async () => {
     try {
-      const res = await api.get("/api/police/dashboard", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("reva_police_token")}` },
-      });
+      const res = await api.get("/api/police/dashboard");
       setData(res.data);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
@@ -61,9 +67,7 @@ export default function PoliceDashboard() {
       if (activeTab === "mine") params.set("assignedTo", "me");
       if (activeTab === "emergency") params.set("priority", "EMERGENCY");
       if (activeTab === "cyber") params.set("search", "Cybercrime");
-      const res = await api.get(`/api/police/complaints?${params}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("reva_police_token")}` },
-      });
+      const res = await api.get(`/api/police/complaints?${params}`);
       setComplaints(res.data.complaints); setPagination(res.data.pagination);
     } catch (err) { console.error(err); }
   };
@@ -90,246 +94,319 @@ export default function PoliceDashboard() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      {/* Sidebar */}
-      <aside className="w-60 bg-slate-50/80 backdrop-blur-xl border-r border-slate-200 flex flex-col p-6 sticky top-0 h-screen flex-shrink-0 overflow-auto">
-        <div className="flex items-center gap-2.5 mb-8">
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center flex-shrink-0">
-            <Shield size={16} color="white" />
+    <div className="flex min-h-screen bg-neutral-50 font-sans">
+      {/* Sidebar - Desktop */}
+      <aside className="hidden lg:flex w-64 bg-white/80 backdrop-blur-2xl border-r border-neutral-200/60 flex-col p-6 sticky top-0 h-screen flex-shrink-0 z-40">
+        <SidebarContent />
+      </aside>
+
+      {/* Sidebar - Mobile Drawer */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSidebarOpen(false)}
+              className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 lg:hidden"
+            />
+            <motion.aside
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed inset-y-0 left-0 w-72 bg-white z-[60] p-6 shadow-2xl lg:hidden flex flex-col"
+            >
+              <SidebarContent onClose={() => setSidebarOpen(false)} />
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Main Content Area */}
+      <div className="flex-1 min-w-0">
+        {/* Mobile Header */}
+        <header className="lg:hidden bg-white/80 backdrop-blur-xl border-b border-neutral-200/60 px-4 py-3 sticky top-0 z-30 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-neutral-900 flex items-center justify-center">
+              <Shield size={16} color="white" />
+            </div>
+            <span className="font-bold text-sm tracking-tight">REVA Police</span>
           </div>
-          <div>
-            <div className="font-bold text-sm text-slate-900">REVA Police</div>
-            <div className="text-[0.7rem] text-slate-400">{policeUser?.station?.stationName}</div>
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-2 hover:bg-neutral-100 rounded-lg transition-colors border-none bg-transparent cursor-pointer"
+          >
+            <LayoutDashboard size={20} className="text-neutral-600" />
+          </button>
+        </header>
+
+        <main className="flex-1 overflow-auto px-4 py-6 md:px-8 md:py-8">
+          {/* Header */}
+          <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-6 mb-10">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-neutral-900 tracking-tight mb-1.5">
+                {policeUser?.station?.stationName || "Station Dashboard"}
+              </h1>
+              <div className="flex items-center gap-2 text-[13px] font-medium text-neutral-400">
+                <MapPin size={14} />
+                {policeUser?.station?.district}, {policeUser?.station?.state}
+              </div>
+            </div>
+
+            {/* Station Admin Geofence Settings */}
+            {policeUser?.role === "STATION_ADMIN" && (
+              <div className="bg-white border border-neutral-200 rounded-2xl p-4 flex flex-col gap-3 w-full md:min-w-[280px] md:w-auto">
+                <div className="text-sm font-semibold text-blue-400">Geofence Settings</div>
+                <div className="grid grid-cols-2 gap-2">
+                  {["latitude", "longitude"].map(field => (
+                    <div key={field}>
+                      <label className="text-[0.65rem] text-slate-400 block mb-1 capitalize">{field}</label>
+                      <input type="number" className={`${INPUT_CLASS} w-full text-xs py-1.5`}
+                        defaultValue={policeUser?.station?.[field]}
+                        onBlur={async (e) => {
+                          try {
+                            await api.patch(`/api/stations/${policeUser.stationId}`, { [field]: e.target.value });
+                          } catch { }
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <label className="text-[0.65rem] text-slate-400 block mb-1">Radius (km)</label>
+                  <input type="number" className={`${INPUT_CLASS} w-full text-xs py-1.5`}
+                    defaultValue={policeUser?.station?.radiusKm || 5}
+                    onBlur={async (e) => {
+                      const radius = parseFloat(e.target.value);
+                      try { await api.patch(`/api/stations/${policeUser.stationId}`, { radiusKm: radius }); } catch { }
+                    }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
+
+          {/* Stats Grid */}
+          {!loading && stats && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-7">
+              {statItems.map(s => <StatCard key={s.label} {...s} />)}
+            </div>
+          )}
+
+          {/* Cyber-Intel Panel */}
+          <div className="mb-10">
+            <div className="flex items-center gap-3 mb-5 px-1">
+              <div className="w-2 h-2 rounded-full bg-neutral-900 animate-pulse" />
+              <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-widest">Cyber-Intel awareness</h2>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+              {/* Attack Vectors */}
+              <div className="lg:col-span-2 bg-white border border-neutral-200/60 rounded-2xl p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="text-[12px] font-bold text-neutral-400 uppercase tracking-wider">Active Attack Vectors (Regional)</div>
+                  <div className="px-2 py-1 bg-neutral-50 rounded text-[10px] font-bold text-neutral-500">REAL-TIME DATA</div>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+                  {[
+                    { l: "Social Engineering", v: "44%", c: "#000000" },
+                    { l: "Phishing", v: "28%", c: "#404040" },
+                    { l: "Identity Theft", v: "15%", c: "#737373" },
+                    { l: "Financial Fraud", v: "13%", c: "#a3a3a3" },
+                  ].map(vector => (
+                    <div key={vector.l}>
+                      <div className="text-2xl font-bold text-neutral-900 mb-1">{vector.v}</div>
+                      <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-tight leading-tight mb-3 h-6">{vector.l}</div>
+                      <div className="h-1 bg-neutral-100 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full bg-neutral-900 transition-all duration-1000" style={{ width: vector.v }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* Audit stream */}
+              <div className="bg-neutral-900 rounded-2xl p-5 shadow-xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                  <Shield size={80} color="white" />
+                </div>
+                <div className="text-[10px] font-bold text-neutral-400 mb-4 tracking-[2px] uppercase">Immutable Security Stream</div>
+                <div className="space-y-2 font-mono text-[11px] text-neutral-300 leading-relaxed">
+                  <div className="flex gap-2"><span className="text-neutral-600">01</span> [SYS] Integrity: PASSED</div>
+                  <div className="flex gap-2"><span className="text-neutral-600">02</span> [SIGN] Envelope Sealed</div>
+                  <div className="flex gap-2"><span className="text-neutral-600">03</span> [IDS] Monitors: ACTIVE</div>
+                  <div className="flex gap-2"><span className="text-neutral-600">04</span> [LOG] Session: {policeUser?.name?.slice(0, 3).toUpperCase()}...</div>
+                  <div className="flex gap-2 animate-pulse"><span className="text-neutral-600">05</span> [WSS] Streaming...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-6 mb-8 border-b border-neutral-100 px-1">
+            {[
+              { id: "all", label: "All Cases" },
+              { id: "emergency", label: "Emergency" },
+              { id: "cyber", label: "Cyber-Crime" },
+              { id: "mine", label: "Assigned" },
+            ].map(tab => (
+              <button key={tab.id} onClick={() => { setActiveTab(tab.id); setPage(1); }}
+                className={`pb-4 text-[13px] font-bold transition-all relative border-none bg-transparent cursor-pointer ${activeTab === tab.id
+                  ? "text-neutral-900"
+                  : "text-neutral-400 hover:text-neutral-600"
+                  }`}
+              >
+                {tab.label}
+                {activeTab === tab.id && (
+                  <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-neutral-900" />
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Search & Filter */}
+          <div className="grid grid-cols-1 sm:flex gap-3 mb-6">
+            <div className="relative flex-1">
+              <input id="complaint-search" type="text" className={`${INPUT_CLASS} w-full pl-9`}
+                placeholder="Search by tracking ID, type..."
+                value={filter.search} onChange={e => setFilter(f => ({ ...f, search: e.target.value }))} />
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
+                <Shield size={14} />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <select id="status-filter" className={`${INPUT_CLASS} flex-1 sm:w-36`} value={filter.status}
+                onChange={e => setFilter(f => ({ ...f, status: e.target.value }))}>
+                <option value="">All Statuses</option>
+                {Object.entries(STATUS_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </select>
+              <select id="priority-filter" className={`${INPUT_CLASS} flex-1 sm:w-36`} value={filter.priority}
+                onChange={e => setFilter(f => ({ ...f, priority: e.target.value }))}>
+                <option value="">All Priority</option>
+                {Object.keys(PRIORITY_COLORS).map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* Complaints Table */}
+          <div className="bg-white border border-neutral-200/60 rounded-[20px] shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-[13px] border-collapse">
+                <thead>
+                  <tr className="border-b border-neutral-100">
+                    {["TRACKING ID", "TYPE", "PRIORITY", "STATUS", "OFFICER", "FILED DATE", "ACTION"].map(h => (
+                      <th key={h} className="px-4 md:px-6 py-4 text-[10px] font-bold text-neutral-400 tracking-widest uppercase">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {complaints.map(c => (
+                    <tr key={c.id} className="border-b border-neutral-50 hover:bg-neutral-50/50 transition-colors group">
+                      <td className="px-4 md:px-6 py-4">
+                        <div className="font-mono text-neutral-900 font-bold text-[12px] flex items-center gap-2">
+                          <span className="truncate max-w-[80px] md:max-w-none">{c.trackingId}</span>
+                          {c.isEmergency && <span className="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444]" />}
+                        </div>
+                      </td>
+                      <td className="px-4 md:px-6 py-4 text-neutral-600 font-medium max-w-[120px] md:max-w-[150px] truncate">{c.incidentType || "General"}</td>
+                      <td className="px-4 md:px-6 py-4">
+                        <span className={`px-2 py-1 rounded-lg text-[10px] font-bold tracking-tight uppercase border ${c.priorityLevel === "EMERGENCY" ? "bg-red-50 text-red-600 border-red-100" :
+                          c.priorityLevel === "HIGH" ? "bg-orange-50 text-orange-600 border-orange-100" :
+                            "bg-neutral-50 text-neutral-500 border-neutral-200/60"
+                          }`}>
+                          {c.priorityLevel}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-neutral-500 font-medium">
+                          {STATUS_LABELS[c.status]}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-neutral-500 font-medium">{c.assignedOfficer?.name || "—"}</td>
+                      <td className="px-6 py-4 text-neutral-400 font-medium whitespace-nowrap">{new Date(c.createdAt).toLocaleTimeString("en-IN", { hour: '2-digit', minute: '2-digit' })} · {new Date(c.createdAt).toLocaleDateString("en-IN", { day: '2-digit', month: 'short' })}</td>
+                      <td className="px-6 py-4">
+                        <div className="flex gap-2">
+                          <Link href={`/police/complaints/${c.id}`}
+                            className="text-[11px] font-bold text-white bg-neutral-900 px-4 py-2 rounded-xl hover:bg-neutral-800 transition-colors no-underline whitespace-nowrap">
+                            View Case
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {complaints.length === 0 && (
+                    <tr><td colSpan="7" className="py-20 text-center text-neutral-400 font-medium">No complaints found matching your filters</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Pagination */}
+          {pagination && pagination.pages > 1 && (
+            <div className="flex justify-center items-center gap-3 mt-5">
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                className="text-sm text-slate-500 px-4 py-2 border border-white/12 rounded-xl hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                ← Prev
+              </button>
+              <span className="text-sm text-slate-500">{page} of {pagination.pages}</span>
+              <button onClick={() => setPage(p => p + 1)} disabled={page === pagination.pages}
+                className="text-sm text-slate-500 px-4 py-2 border border-white/12 rounded-xl hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                Next →
+              </button>
+            </div>
+          )}
+        </main>
+      </div>
+    </div>
+  );
+
+  function SidebarContent({ onClose }) {
+    return (
+      <>
+        <div className="flex items-center justify-between mb-10 px-2 lg:block">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-neutral-900 flex items-center justify-center flex-shrink-0 shadow-lg shadow-black/10">
+              <Shield size={18} color="white" />
+            </div>
+            <div>
+              <div className="font-bold text-[15px] text-neutral-900 tracking-tight leading-tight">REVA Police</div>
+              <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mt-0.5">{policeUser?.station?.stationName?.slice(0, 18)}</div>
+            </div>
+          </div>
+          <button onClick={onClose} className="lg:hidden p-2 text-neutral-400 hover:text-neutral-900 border-none bg-transparent cursor-pointer">
+            ✕
+          </button>
         </div>
 
-        <nav className="flex-1">
+        <nav className="flex-1 space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.to;
             return (
-              <Link key={item.to} href={item.to}
-                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl mb-1 text-[0.88rem] transition-all no-underline ${active ? "bg-blue-500/15 text-blue-400 font-semibold"
-                  : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+              <Link key={item.to} href={item.to} onClick={onClose}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all no-underline ${active
+                  ? "bg-neutral-900 text-white shadow-md shadow-black/10"
+                  : "text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100"
                   }`}
               >
-                <Icon size={15} />
+                <Icon size={16} />
                 {item.label}
               </Link>
             );
           })}
         </nav>
 
-        <div className="pt-4 border-t border-slate-200">
-          <div className="text-sm font-semibold text-slate-800">{policeUser?.name}</div>
-          <div className="text-[0.7rem] text-slate-400 mb-3">{policeUser?.role?.replace("_", " ")}</div>
-          <button onClick={logoutPolice} className="w-full text-left text-sm text-red-400 hover:text-red-300 hover:bg-slate-100 px-2 py-1.5 rounded-lg transition-colors">
-            Logout
+        <div className="mt-auto pt-6 border-t border-neutral-100">
+          <div className="px-2 mb-4">
+            <div className="text-[13px] font-bold text-neutral-900">{policeUser?.name}</div>
+            <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">{policeUser?.role?.replace("_", " ")}</div>
+          </div>
+          <button onClick={logoutPolice} className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-bold text-red-500 hover:bg-red-50 transition-colors border-none bg-transparent cursor-pointer">
+            Sign Out
           </button>
         </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto px-7 py-6">
-
-        {/* Header */}
-        <div className="flex justify-between items-start mb-7">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 mb-1">
-              {policeUser?.station?.stationName || "Station Dashboard"}
-            </h1>
-            <p className="text-sm text-slate-500">
-              {policeUser?.station?.district}, {policeUser?.station?.state}
-            </p>
-          </div>
-
-          {/* Station Admin Geofence Settings */}
-          {policeUser?.role === "STATION_ADMIN" && (
-            <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col gap-3 min-w-[280px]">
-              <div className="text-sm font-semibold text-blue-400">Geofence Settings</div>
-              <div className="grid grid-cols-2 gap-2">
-                {["latitude", "longitude"].map(field => (
-                  <div key={field}>
-                    <label className="text-[0.65rem] text-slate-400 block mb-1 capitalize">{field}</label>
-                    <input type="number" className={`${INPUT_CLASS} w-full text-xs py-1.5`}
-                      defaultValue={policeUser?.station?.[field]}
-                      onBlur={async (e) => {
-                        try {
-                          await api.patch(`/api/stations/${policeUser.stationId}`, { [field]: e.target.value });
-                        } catch { }
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-              <div>
-                <label className="text-[0.65rem] text-slate-400 block mb-1">Radius (km)</label>
-                <input type="number" className={`${INPUT_CLASS} w-full text-xs py-1.5`}
-                  defaultValue={policeUser?.station?.radiusKm || 5}
-                  onBlur={async (e) => {
-                    const radius = parseFloat(e.target.value);
-                    try { await api.patch(`/api/stations/${policeUser.stationId}`, { radiusKm: radius }); } catch { }
-                  }}
-                />
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Stats Grid */}
-        {!loading && stats && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-7">
-            {statItems.map(s => <StatCard key={s.label} {...s} />)}
-          </div>
-        )}
-
-        {/* Cyber-Intel Panel */}
-        <div className="mb-7">
-          <div className="flex items-center gap-2.5 mb-4">
-            <div className="w-2.5 h-2.5 rounded-full bg-blue-400" style={{ boxShadow: "0 0 10px #60a5fa" }} />
-            <h2 className="text-lg font-bold text-blue-400">Cyber-Intel Threat Awareness</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-4">
-            {/* Attack Vectors */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-5">
-              <div className="text-sm text-slate-500 mb-4">Active Attack Vectors (Regional)</div>
-              <div className="flex gap-3">
-                {[
-                  { l: "Social Engineering", v: "44%", c: "#fbbf24" },
-                  { l: "Phishing", v: "28%", c: "#f87171" },
-                  { l: "Identity Theft", v: "15%", c: "#a78bfa" },
-                  { l: "Financial Fraud", v: "13%", c: "#60a5fa" },
-                ].map(vector => (
-                  <div key={vector.l} className="flex-1 text-center">
-                    <div className="text-xl font-bold" style={{ color: vector.c }}>{vector.v}</div>
-                    <div className="text-[0.65rem] text-slate-400 uppercase mb-2">{vector.l}</div>
-                    <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: vector.v, background: vector.c }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            {/* Audit stream */}
-            <div className="bg-slate-50/40 border border-slate-200 rounded-2xl p-4">
-              <div className="text-xs font-bold text-emerald-400 mb-3">IMMUTABLE AUDIT STREAM</div>
-              <div className="text-[0.65rem] font-mono text-slate-400 leading-relaxed">
-                [SYS] Integrity Check: PASSED (SHA-256)<br />
-                [AUDIT] Auth Request: Officer_{policeUser?.name?.slice(0, 3)}...<br />
-                [SIGN] Forensic Envelope: Sealed v1.2<br />
-                [BLOCK] Tracking ID verification...
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-1 mb-5 border-b border-slate-200">
-          {[
-            { id: "all", label: "All Complaints" },
-            { id: "emergency", label: "🚨 Emergency" },
-            { id: "cyber", label: "Cyber Crimes" },
-            { id: "mine", label: "Assigned to Me" },
-          ].map(tab => (
-            <button key={tab.id} onClick={() => { setActiveTab(tab.id); setPage(1); }}
-              className={`px-4 py-2.5 text-sm border-b-2 transition-all ${activeTab === tab.id
-                ? "text-slate-900 font-semibold border-blue-500"
-                : "text-slate-500 font-normal border-transparent hover:text-slate-700"
-                }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Search & Filter */}
-        <div className="flex gap-3 mb-4 flex-wrap">
-          <input id="complaint-search" type="text" className={`${INPUT_CLASS} flex-1 min-w-[200px]`}
-            placeholder="Search by tracking ID, type..."
-            value={filter.search} onChange={e => setFilter(f => ({ ...f, search: e.target.value }))} />
-          <select id="status-filter" className={INPUT_CLASS} value={filter.status}
-            onChange={e => setFilter(f => ({ ...f, status: e.target.value }))}>
-            <option value="">All Statuses</option>
-            {Object.entries(STATUS_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-          </select>
-          <select id="priority-filter" className={INPUT_CLASS} value={filter.priority}
-            onChange={e => setFilter(f => ({ ...f, priority: e.target.value }))}>
-            <option value="">All Priority</option>
-            {Object.keys(PRIORITY_COLORS).map(p => <option key={p} value={p}>{p}</option>)}
-          </select>
-        </div>
-
-        {/* Complaints Table */}
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm border-collapse">
-              <thead className="border-b border-slate-200">
-                <tr>
-                  {["Tracking ID", "Type", "Priority", "Status", "Officer", "Filed", "Action"].map(h => (
-                    <th key={h} className="px-4 py-3.5 text-xs font-medium text-slate-400 whitespace-nowrap">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {complaints.map(c => (
-                  <tr key={c.id} className="border-b border-white/[0.04] hover:bg-white transition-colors">
-                    <td className="px-4 py-3">
-                      <div className="font-mono text-blue-400 text-xs">
-                        {c.trackingId}
-                        {c.isEmergency && <span className="ml-1.5 text-red-400">🚨</span>}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-slate-800 max-w-[150px] truncate">{c.incidentType || "General"}</td>
-                    <td className="px-4 py-3">
-                      <span className="px-2 py-0.5 rounded-lg text-[0.72rem] font-semibold"
-                        style={{ background: `${PRIORITY_COLORS[c.priorityLevel]}20`, color: PRIORITY_COLORS[c.priorityLevel] }}>
-                        {c.priorityLevel}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="px-2 py-0.5 rounded-lg text-[0.72rem] bg-slate-100 text-slate-500">
-                        {STATUS_LABELS[c.status]}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-slate-500">{c.assignedOfficer?.name || "—"}</td>
-                    <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{new Date(c.createdAt).toLocaleDateString("en-IN")}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-2">
-                        <Link href={`/police/complaints/${c.id}`}
-                          className="text-xs font-bold text-slate-900 bg-gradient-to-r from-blue-600 to-violet-600 px-2.5 py-1.5 rounded-lg hover:opacity-90 transition-opacity no-underline whitespace-nowrap">
-                          Case File →
-                        </Link>
-                        <Link href={`/police/map?id=${c.id}`} title="View on Map"
-                          className="text-xs text-slate-500 hover:text-slate-800 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition-colors no-underline">
-                          📍
-                        </Link>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {complaints.length === 0 && (
-                  <tr><td colSpan="7" className="py-12 text-center text-slate-500">No complaints found matching your filters</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Pagination */}
-        {pagination && pagination.pages > 1 && (
-          <div className="flex justify-center items-center gap-3 mt-5">
-            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-              className="text-sm text-slate-500 px-4 py-2 border border-white/12 rounded-xl hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-              ← Prev
-            </button>
-            <span className="text-sm text-slate-500">{page} of {pagination.pages}</span>
-            <button onClick={() => setPage(p => p + 1)} disabled={page === pagination.pages}
-              className="text-sm text-slate-500 px-4 py-2 border border-white/12 rounded-xl hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-              Next →
-            </button>
-          </div>
-        )}
-      </main>
-    </div>
-  );
+      </>
+    );
+  }
 }

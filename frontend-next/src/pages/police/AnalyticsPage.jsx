@@ -14,11 +14,9 @@ export default function AnalyticsPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const token = typeof window !== "undefined" ? localStorage.getItem("reva_police_token") : "";
-  const headers = { Authorization: `Bearer ${token}` };
 
   useEffect(() => {
-    api.get("/api/analytics/overview", { headers })
+    api.get("/api/analytics/overview")
       .then(res => setData(res.data))
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -68,11 +66,11 @@ export default function AnalyticsPage() {
             {/* By Status */}
             <div className="bg-white border border-slate-200 rounded-2xl p-6">
               <h4 className="font-bold text-slate-900 mb-5">Complaints by Status</h4>
-              <div className="flex flex-wrap gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
                 {Object.entries(data.byStatus || {}).map(([status, count]) => (
-                  <div key={status} className="px-5 py-3 bg-white border border-slate-200 rounded-xl text-center min-w-[120px]">
-                    <div className="text-2xl font-bold" style={{ color: STATUS_COLORS[status] || "#94a3b8" }}>{count}</div>
-                    <div className="text-xs text-slate-500 mt-1">{status.replace("_", " ")}</div>
+                  <div key={status} className="px-3 py-3 bg-neutral-50/50 border border-slate-100 rounded-xl text-center">
+                    <div className="text-xl font-bold" style={{ color: STATUS_COLORS[status] || "#94a3b8" }}>{count}</div>
+                    <div className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-tight">{status.replace("_", " ")}</div>
                   </div>
                 ))}
               </div>

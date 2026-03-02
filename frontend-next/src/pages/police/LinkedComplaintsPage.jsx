@@ -25,9 +25,7 @@ export default function LinkedComplaintsPage() {
 
   const fetchLinkedComplaints = async () => {
     try {
-      const res = await api.get("/api/evidence/linked-complaints", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("reva_police_token")}` },
-      });
+      const res = await api.get("/api/evidence/linked-complaints");
       setLinks(res.data.links || []);
     } catch (err) {
       toast.error("Failed to load linked complaints.");
@@ -73,12 +71,12 @@ export default function LinkedComplaintsPage() {
                   {/* Summary row */}
                   <button
                     onClick={() => setExpanded(isOpen ? null : link.linkId)}
-                    className="w-full flex items-center gap-4 p-5 bg-transparent border-none cursor-pointer text-left"
+                    className="w-full flex flex-col sm:flex-row items-start sm:items-center gap-4 p-5 bg-transparent border-none cursor-pointer text-left"
                   >
                     {/* Match badge */}
-                    <div className={`min-w-[64px] text-center px-2.5 py-1.5 rounded-lg border ${isExact ? "bg-emerald-500/15 border-emerald-500/40" : "bg-blue-500/12 border-blue-500/30"}`}>
-                      <div className={`text-xs font-bold ${isExact ? "text-emerald-400" : "text-blue-400"}`}>{isExact ? "EXACT" : `${sim}%`}</div>
-                      <div className="text-[0.65rem] text-slate-500 mt-0.5">match</div>
+                    <div className={`w-full sm:min-w-[64px] sm:w-auto text-center px-2.5 py-1.5 rounded-lg border flex sm:flex-col justify-between items-center sm:justify-center ${isExact ? "bg-emerald-500/15 border-emerald-500/40" : "bg-blue-500/12 border-blue-500/30"}`}>
+                      <div className={`text-xs font-bold ${isExact ? "text-emerald-400" : "text-blue-400"}`}>{isExact ? "EXACT" : `${sim}%`} match</div>
+                      <div className="text-[0.65rem] text-slate-500 sm:mt-0.5">Similarity</div>
                     </div>
 
                     {/* Complaints summary */}
@@ -133,7 +131,7 @@ export default function LinkedComplaintsPage() {
                       {link.evidenceMatch && (
                         <div className="mt-4 p-4 bg-violet-500/8 border border-violet-500/20 rounded-xl">
                           <div className="text-[0.7rem] font-bold uppercase text-violet-400 tracking-widest mb-3">Matching Evidence</div>
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {[link.evidenceMatch.source, link.evidenceMatch.target].map((ev, i) => (
                               <div key={i} className="text-sm text-slate-500">
                                 <div className="font-semibold text-slate-800 mb-1">{ev.fileName}</div>
