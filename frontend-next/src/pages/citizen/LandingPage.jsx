@@ -68,29 +68,20 @@ export default function LandingPage() {
 
           {/* Desktop Links */}
           <div className="hidden md:flex items-center gap-2">
-            {/* Services Dropdown */}
-            <div className="relative group">
-              <button className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100">
-                Complaints <ChevronDown size={14} className="transition-transform duration-200 group-hover:rotate-180" />
-              </button>
-
-              <div className="absolute top-full mt-1 -right-4 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top scale-95 group-hover:scale-100 bg-white/95 backdrop-blur-md border border-slate-200 shadow-xl rounded-xl overflow-hidden py-1.5 z-50">
-                <Link href="/track" className="block px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors">
-                  {t("nav.track")}
+            {/* Navigation Links */}
+            <Link href="/track" className="px-3 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100">
+              {t("nav.track")}
+            </Link>
+            {user && (
+              <>
+                <Link href="/my-complaints" className="px-3 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100">
+                  {t("nav.myCases")}
                 </Link>
-                {user && (
-                  <>
-                    <div className="h-px bg-slate-100 my-1 mx-2" />
-                    <Link href="/my-complaints" className="block px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors">
-                      {t("nav.myCases")}
-                    </Link>
-                    <Link href="/complaint" className="block px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors">
-                      {t("nav.fileComplaint")}
-                    </Link>
-                  </>
-                )}
-              </div>
-            </div>
+                <Link href="/complaint" className="px-3 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100">
+                  {t("nav.fileComplaint")}
+                </Link>
+              </>
+            )}
 
             {user ? (
               <Link href="/profile" className="px-3.5 py-1.5 text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors rounded-lg hover:bg-slate-100">
@@ -157,11 +148,6 @@ export default function LandingPage() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,rgba(255,255,255,0.04)_0%,transparent_70%)] pointer-events-none" />
 
         <div className="max-w-3xl relative z-10">
-          {/* Live badge */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-slate-100 border border-white/12 rounded-full mb-8 text-xs font-medium text-slate-500 tracking-widest uppercase">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
-            {t("hero.badge")}
-          </div>
 
           <h1 className="text-[clamp(2.8rem,6vw,4.5rem)] font-extrabold leading-[1.08] tracking-[-1.5px] mb-6 text-slate-900">
             {t("hero.title1")}

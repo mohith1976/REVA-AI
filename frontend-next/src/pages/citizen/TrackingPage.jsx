@@ -116,29 +116,19 @@ export default function TrackingPage() {
           </Link>
 
           <div className="flex items-center gap-1.5 sm:gap-2">
-            <div className="relative group">
-              <button className="flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-semibold text-neutral-500 hover:text-neutral-900 transition-colors rounded-lg">
-                <span className="hidden xs:inline">Complaints</span>
-                <ChevronDown size={14} className="transition-transform duration-300 group-hover:rotate-180" />
-              </button>
-
-              <div className="absolute top-full mt-1 -right-2 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform origin-top scale-95 group-hover:scale-100 bg-white border border-neutral-100 shadow-2xl shadow-black/5 rounded-2xl overflow-hidden py-2 z-50">
-                <Link href="/track" className="block px-4 py-2.5 text-[13px] font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50">
-                  Track Complaint
+            <Link href="/track" className="px-3 py-1.5 text-[13px] font-semibold text-neutral-500 hover:text-neutral-900 transition-colors rounded-lg hover:bg-neutral-50">
+              Track Complaint
+            </Link>
+            {user && (
+              <>
+                <Link href="/my-complaints" className="px-3 py-1.5 text-[13px] font-semibold text-neutral-500 hover:text-neutral-900 transition-colors rounded-lg hover:bg-neutral-50">
+                  My Cases
                 </Link>
-                {user && (
-                  <>
-                    <div className="h-px bg-neutral-50 my-1 mx-3" />
-                    <Link href="/my-complaints" className="block px-4 py-2.5 text-[13px] font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50">
-                      My Cases
-                    </Link>
-                    <Link href="/complaint" className="block px-4 py-2.5 text-[13px] font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50">
-                      New Complaint
-                    </Link>
-                  </>
-                )}
-              </div>
-            </div>
+                <Link href="/complaint" className="px-3 py-1.5 text-[13px] font-semibold text-neutral-500 hover:text-neutral-900 transition-colors rounded-lg hover:bg-neutral-50">
+                  New Complaint
+                </Link>
+              </>
+            )}
 
             {user ? (
               <Link href="/profile" className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-neutral-50 transition-colors">

@@ -20,7 +20,36 @@ const STATUS_LABELS = {
 
 const INPUT_CLASS = "px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-neutral-900 text-sm placeholder:text-neutral-400 outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900/10 transition-all";
 
-function StatCard({ label, value, color, icon: Icon }) {
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, x: -20 },
+  visible: { opacity: 1, x: 0 }
+};
+
+const contentVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 100,
+      damping: 15
+    }
+  }
+};
+
+function StatCard({ label, value, color, icon: Icon, loading }) {
   return (
     <div className="bg-white border border-neutral-200/60 rounded-2xl p-5 transition-all hover:shadow-lg hover:shadow-black/5 group">
       <div className="flex items-center justify-between mb-3">
@@ -28,7 +57,11 @@ function StatCard({ label, value, color, icon: Icon }) {
           <Icon size={16} className="text-neutral-500" />
         </div>
       </div>
-      <div className="text-2xl font-bold text-neutral-900 tracking-tight">{value ?? "0"}</div>
+      {loading ? (
+        <div className="h-8 w-16 bg-neutral-100 animate-pulse rounded-lg mb-1" />
+      ) : (
+        <div className="text-2xl font-bold text-neutral-900 tracking-tight">{value ?? "0"}</div>
+      )}
       <div className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider mt-1">{label}</div>
     </div>
   );
@@ -48,6 +81,7 @@ export default function PoliceDashboard() {
   const [page, setPage] = useState(1);
   const [activeTab, setActiveTab] = useState("all");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => { fetchDashboard(); }, []);
   useEffect(() => { fetchComplaints(); }, [page, filter, activeTab]);
@@ -73,15 +107,6 @@ export default function PoliceDashboard() {
 
   const stats = data?.stats;
 
-  const navItems = [
-    { to: "/police/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-    { to: "/police/complaints", icon: Folder, label: "All Cases" },
-    { to: "/police/map", icon: Map, label: "Crime Map" },
-    { to: "/police/analytics", icon: BarChart2, label: "Analytics" },
-    { to: "/police/officers", icon: Users, label: "Officers" },
-    { to: "/police/linked-complaints", icon: Link2, label: "Joint Complaints" },
-    ...(policeUser?.role === "GLOBAL_ADMIN" ? [{ to: "/police/stations", icon: Building, label: "Stations" }] : []),
-  ];
 
   const statItems = [
     { label: "Total", value: stats?.total, color: "#60a5fa", icon: Folder },
@@ -95,9 +120,14 @@ export default function PoliceDashboard() {
   return (
     <div className="flex min-h-screen bg-neutral-50 font-sans">
       {/* Sidebar - Desktop */}
-      <aside className="hidden lg:flex w-64 bg-white/80 backdrop-blur-2xl border-r border-neutral-200/60 flex-col p-6 sticky top-0 h-screen flex-shrink-0 z-40">
-        <SidebarContent />
-      </aside>
+      <motion.aside
+        initial={{ width: 256 }}
+        animate={{ width: isCollapsed ? 80 : 256 }}
+        transition={{ type: "spring", damping: 20, stiffness: 150 }}
+        className="hidden lg:flex bg-white/80 backdrop-blur-2xl border-r border-neutral-200/60 flex-col p-6 sticky top-0 h-screen flex-shrink-0 z-40 overflow-hidden"
+      >
+        <SidebarContent isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} policeUser={policeUser} logoutPolice={logoutPolice} pathname={pathname} containerVariants={containerVariants} itemVariants={itemVariants} />
+      </motion.aside>
 
       {/* Sidebar - Mobile Drawer */}
       <AnimatePresence>
@@ -117,7 +147,7 @@ export default function PoliceDashboard() {
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
               className="fixed inset-y-0 left-0 w-72 bg-white z-[60] p-6 shadow-2xl lg:hidden flex flex-col"
             >
-              <SidebarContent onClose={() => setSidebarOpen(false)} />
+              <SidebarContent onClose={() => setSidebarOpen(false)} policeUser={policeUser} logoutPolice={logoutPolice} pathname={pathname} containerVariants={containerVariants} itemVariants={itemVariants} />
             </motion.aside>
           </>
         )}
@@ -128,10 +158,7 @@ export default function PoliceDashboard() {
         {/* Mobile Header */}
         <header className="lg:hidden bg-white/80 backdrop-blur-xl border-b border-neutral-200/60 px-4 py-3 sticky top-0 z-30 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-neutral-900 flex items-center justify-center">
-              <Shield size={16} color="white" />
-            </div>
-            <span className="font-bold text-sm tracking-tight">REVA Police</span>
+            {/* Branding Removed */}
           </div>
           <button
             onClick={() => setSidebarOpen(true)}
@@ -188,11 +215,11 @@ export default function PoliceDashboard() {
           </div>
 
           {/* Stats Grid */}
-          {!loading && stats && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-7">
-              {statItems.map(s => <StatCard key={s.label} {...s} />)}
-            </div>
-          )}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-7">
+            {statItems.map(s => (
+              <StatCard key={s.label} {...s} loading={loading} />
+            ))}
+          </div>
 
           {/* Cyber-Intel Panel */}
           <div className="mb-10">
@@ -360,52 +387,93 @@ export default function PoliceDashboard() {
     </div>
   );
 
-  function SidebarContent({ onClose }) {
-    return (
-      <>
-        <div className="flex items-center justify-between mb-10 px-2 lg:block">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-neutral-900 flex items-center justify-center flex-shrink-0 shadow-lg shadow-black/10">
-              <Shield size={18} color="white" />
-            </div>
-            <div>
-              <div className="font-bold text-[15px] text-neutral-900 tracking-tight leading-tight">REVA Police</div>
-              <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mt-0.5">{policeUser?.station?.stationName?.slice(0, 18)}</div>
-            </div>
-          </div>
-          <button onClick={onClose} className="lg:hidden p-2 text-neutral-400 hover:text-neutral-900 border-none bg-transparent cursor-pointer">
-            ✕
-          </button>
-        </div>
+}
 
-        <nav className="flex-1 space-y-1">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const active = pathname === item.to;
-            return (
-              <Link key={item.to} href={item.to} onClick={onClose}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all no-underline ${active
+function SidebarContent({ onClose, isCollapsed, setIsCollapsed, policeUser, logoutPolice, pathname, containerVariants, itemVariants }) {
+  const navItems = [
+    { to: "/police/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+    { to: "/police/complaints", icon: Folder, label: "All Cases" },
+    { to: "/police/map", icon: Map, label: "Crime Map" },
+    { to: "/police/analytics", icon: BarChart2, label: "Analytics" },
+    { to: "/police/officers", icon: Users, label: "Officers" },
+    { to: "/police/linked-complaints", icon: Link2, label: "Joint Complaints" },
+    ...(policeUser?.role === "GLOBAL_ADMIN" ? [{ to: "/police/stations", icon: Building, label: "Stations" }] : []),
+  ];
+
+  return (
+    <>
+      <div className="flex items-center justify-between mb-10 px-2 lg:block relative">
+        <div className="flex items-center gap-3 mb-5" />
+
+        {/* Desktop Toggle Button */}
+        {setIsCollapsed && (
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="hidden lg:flex absolute -right-3 top-1.5 w-6 h-6 bg-white border border-neutral-200 rounded-full items-center justify-center text-neutral-400 hover:text-neutral-900 shadow-sm transition-all z-50 cursor-pointer"
+          >
+            <motion.span animate={{ rotate: isCollapsed ? 180 : 0 }}>
+              ‹
+            </motion.span>
+          </button>
+        )}
+
+        <button onClick={onClose} className="lg:hidden p-2 text-neutral-400 hover:text-neutral-900 border-none bg-transparent cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <motion.nav
+        variants={containerVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+        className="flex-1 space-y-1"
+      >
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const active = pathname === item.to;
+          return (
+            <motion.div key={item.to} variants={itemVariants}>
+              <Link href={item.to} onClick={onClose}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all no-underline overflow-hidden ${active
                   ? "bg-neutral-900 text-white shadow-md shadow-black/10"
                   : "text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100"
                   }`}
               >
-                <Icon size={16} />
-                {item.label}
+                <Icon size={16} className="flex-shrink-0" />
+                {!isCollapsed && (
+                  <motion.span
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="whitespace-nowrap"
+                  >
+                    {item.label}
+                  </motion.span>
+                )}
               </Link>
-            );
-          })}
-        </nav>
+            </motion.div>
+          );
+        })}
+      </motion.nav>
 
-        <div className="mt-auto pt-6 border-t border-neutral-100">
-          <div className="px-2 mb-4">
-            <div className="text-[13px] font-bold text-neutral-900">{policeUser?.name}</div>
-            <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">{policeUser?.role?.replace("_", " ")}</div>
-          </div>
-          <button onClick={logoutPolice} className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-bold text-red-500 hover:bg-red-50 transition-colors border-none bg-transparent cursor-pointer">
-            Sign Out
-          </button>
+      <div className="mt-auto pt-6 border-t border-neutral-100 overflow-hidden">
+        <div className="px-2 mb-4">
+          {!isCollapsed ? (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <div className="text-[13px] font-bold text-neutral-900">{policeUser?.name}</div>
+              <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">{policeUser?.role?.replace("_", " ")}</div>
+            </motion.div>
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center text-[10px] font-bold text-neutral-500">
+              {policeUser?.name?.charAt(0)}
+            </div>
+          )}
         </div>
-      </>
-    );
-  }
+        <button onClick={logoutPolice} className={`w-full flex items-center gap-2 py-2.5 rounded-xl text-[13px] font-bold text-red-500 hover:bg-red-50 transition-colors border-none bg-transparent cursor-pointer ${isCollapsed ? "justify-center" : "px-3"}`}>
+          <LayoutDashboard size={16} className="flex-shrink-0" />
+          {!isCollapsed && <span>Sign Out</span>}
+        </button>
+      </div>
+    </>
+  );
 }

@@ -42,7 +42,7 @@ export default function PoliceLoginPage() {
           <div className="w-20 h-20 bg-neutral-900 rounded-[24px] flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-black/10 scale-110">
             <Shield size={36} color="white" strokeWidth={1.5} />
           </div>
-          <h1 className="text-3xl font-bold text-neutral-900 tracking-tight mb-2">REVA Police Portal</h1>
+          <h1 className="text-3xl font-bold text-neutral-900 tracking-tight mb-2">REVA Portal</h1>
           <p className="text-[13px] font-bold text-neutral-400 uppercase tracking-widest">Authorized Access Only</p>
         </div>
 
