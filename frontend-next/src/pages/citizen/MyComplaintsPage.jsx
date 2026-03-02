@@ -41,61 +41,63 @@ export default function MyComplaintsPage() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
       {/* Navbar */}
-      <nav className="sticky top-0 z-50 bg-slate-50/85 backdrop-blur-md border-b border-slate-200">
-        <div className="max-w-6xl mx-auto px-8 flex items-center justify-between h-[60px]">
-          <Link href="/" className="flex items-center gap-2.5 no-underline">
-            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
-              <Shield size={16} color="#000" strokeWidth={2.5} />
+      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-neutral-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 flex items-center justify-between h-[64px]">
+          <Link href="/" className="flex items-center gap-2.5 no-underline group">
+            <div className="w-8 h-8 bg-neutral-900 rounded-[10px] flex items-center justify-center transition-transform group-hover:scale-105">
+              <Shield size={16} className="text-white" strokeWidth={2.5} />
             </div>
-            <span className="font-bold text-base tracking-wide text-slate-900">REVA AI</span>
+            <span className="font-bold text-[17px] tracking-tight text-neutral-900">REVA AI</span>
           </Link>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <div className="relative group">
-              <button className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100">
-                Complaints <ChevronDown size={14} className="transition-transform duration-200 group-hover:rotate-180" />
+              <button className="flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-semibold text-neutral-500 hover:text-neutral-900 transition-colors rounded-lg">
+                <span className="hidden xs:inline">Complaints</span>
+                <ChevronDown size={14} className="transition-transform duration-300 group-hover:rotate-180" />
               </button>
 
-              <div className="absolute top-full mt-1 -right-4 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top scale-95 group-hover:scale-100 bg-white/95 backdrop-blur-md border border-slate-200 shadow-xl rounded-xl overflow-hidden py-1.5 z-50">
-                <Link href="/track" className="block px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors">
+              <div className="absolute top-full mt-1 -right-2 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform origin-top scale-95 group-hover:scale-100 bg-white border border-neutral-100 shadow-2xl shadow-black/5 rounded-2xl overflow-hidden py-2 z-50">
+                <Link href="/track" className="block px-4 py-2.5 text-[13px] font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50">
                   Track Complaint
                 </Link>
                 {user && (
                   <>
-                    <div className="h-px bg-slate-100 my-1 mx-2" />
-                    <Link href="/my-complaints" className="block px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors">
+                    <div className="h-px bg-neutral-50 my-1 mx-3" />
+                    <Link href="/my-complaints" className="block px-4 py-2.5 text-[13px] font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50">
                       My Cases
                     </Link>
-                    <Link href="/complaint" className="block px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors">
-                      File a Complaint
+                    <Link href="/complaint" className="block px-4 py-2.5 text-[13px] font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50">
+                      New Complaint
                     </Link>
                   </>
                 )}
               </div>
             </div>
 
-            <Link href="/profile" className="px-3.5 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100">
-              <User size={16} strokeWidth={2.5} />
+            <Link href="/profile" className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-neutral-50 transition-colors">
+              <User size={18} className="text-neutral-600" />
             </Link>
-            <button onClick={logoutCitizen} className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors">
+            <button onClick={logoutCitizen} className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-bold text-neutral-500 hover:text-red-500 rounded-lg transition-colors">
               <LogOut size={14} /> Logout
             </button>
           </div>
         </div>
       </nav>
 
-      <div className="max-w-2xl mx-auto py-14 px-6">
+      <div className="max-w-2xl mx-auto py-12 sm:py-14 px-4 sm:px-6">
         {/* Fixed Back Button */}
         <button
           onClick={() => router.back()}
-          className="fixed top-22 left-8 z-40 flex items-center gap-2 px-4 py-2  backdrop-blur-md  text-sm font-semibold text-neutral-600 hover:text-neutral-900  rounded-lg  transition-all duration-300"
+          className="fixed top-4 left-4 sm:top-[88px] sm:left-8 z-[60] flex items-center gap-1.5 bg-white/85 backdrop-blur-md border border-neutral-200 rounded-[10px] px-2.5 py-1 sm:px-3.5 sm:py-[7px] text-[12px] sm:text-[13px] font-semibold text-neutral-600 cursor-pointer shadow-sm"
         >
-          <ArrowLeft size={16} />Back
+          <ArrowLeft size={14} /> <span className="hidden xs:inline">Back</span>
         </button>
 
         {/* Header */}
-        <div className="mb-10">
-          <p className="text-[0.72rem] font-bold tracking-[2px] uppercase text-slate-500 mb-2">Your Cases</p>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">My Complaints</h1>
+        <div className="mb-8 sm:mb-10 text-center sm:text-left mt-12 sm:mt-0">
+          <p className="text-[10px] sm:text-[0.72rem] font-bold tracking-[2px] uppercase text-slate-500 mb-2">My History</p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">My Complaints</h1>
         </div>
 
         {/* Loading skeletons */}
@@ -123,18 +125,18 @@ export default function MyComplaintsPage() {
             {complaints.map((c) => (
               <Link key={c.trackingId} href={`/track/${c.trackingId}`} className="no-underline group">
                 <div className="bg-white border border-slate-200 rounded-2xl p-5 hover:bg-white hover:border-slate-200 transition-all">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <div className="font-mono font-bold text-slate-500 text-xs mb-1 tracking-widest">{c.trackingId}</div>
-                      <div className="font-semibold text-slate-900">{c.incidentType || "General Complaint"}</div>
+                  <div className="flex flex-col sm:flex-row justify-between items-start gap-2 mb-3">
+                    <div className="min-w-0">
+                      <div className="font-mono font-bold text-slate-500 text-[10px] sm:text-xs mb-1 tracking-widest">{c.trackingId}</div>
+                      <div className="font-bold text-slate-900 text-sm sm:text-base truncate">{c.incidentType || "General Complaint"}</div>
                     </div>
-                    <div className="flex gap-1.5 flex-shrink-0">
+                    <div className="flex gap-1.5 shrink-0">
                       {c.isEmergency && (
-                        <span className="text-[0.68rem] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-900 border border-slate-200 uppercase tracking-wide">
+                        <span className="text-[9px] sm:text-[0.68rem] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-100 uppercase tracking-wide">
                           Emergency
                         </span>
                       )}
-                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${PRIORITY_STYLE[c.priorityLevel] || PRIORITY_STYLE.INFORMATIONAL}`}>
+                      <span className={`text-[10px] sm:text-xs font-semibold px-2.5 py-1 rounded-full ${PRIORITY_STYLE[c.priorityLevel] || PRIORITY_STYLE.INFORMATIONAL}`}>
                         {c.priorityLevel}
                       </span>
                     </div>

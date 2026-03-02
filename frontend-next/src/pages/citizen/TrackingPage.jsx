@@ -21,8 +21,8 @@ function ProgressTracker({ status }) {
   const allDone = activeIdx === 4;
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-7 mb-4">
-      <div className="text-[0.68rem] font-bold tracking-[2px] uppercase text-slate-500 mb-6">
+    <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-7 mb-4">
+      <div className="text-[10px] sm:text-[0.68rem] font-bold tracking-[2px] uppercase text-slate-500 mb-4 sm:mb-6">
         Complaint Status
       </div>
 
@@ -31,39 +31,35 @@ function ProgressTracker({ status }) {
           Complaint Rejected
         </div>
       ) : (
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-1">
           {STAGES.map((label, i) => {
             const isCompleted = i < activeIdx || allDone;
             const isActive = i === activeIdx && !allDone;
             return (
-              <div key={i} className="flex-1 flex flex-col items-center relative">
+              <div key={i} className="flex-1 flex flex-col items-center relative min-w-0">
                 {/* Connector line */}
                 {i > 0 && (
                   <div
-                    className="absolute top-4 -left-1/2 w-full h-px z-0 transition-all duration-500"
-                    style={{ background: isCompleted ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.08)" }}
+                    className="absolute top-3 sm:top-4 -left-1/2 w-full h-px z-0 transition-all duration-500 bg-neutral-100"
+                    style={{ background: isCompleted ? "#171717" : "#f5f5f5" }}
                   />
                 )}
                 {/* Node */}
                 <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center z-10 text-[12px] font-bold transition-all duration-500"
+                  className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center z-10 text-[10px] sm:text-[12px] font-bold transition-all duration-500"
                   style={
                     isCompleted
-                      ? { background: "rgba(255,255,255,0.9)", color: "#000" }
+                      ? { background: "#171717", color: "#fff" }
                       : isActive
-                        ? { background: "rgba(255,255,255,0.12)", border: "2px solid rgba(255,255,255,0.5)", color: "#fff" }
-                        : { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.2)" }
+                        ? { background: "#fff", border: "2px solid #171717", color: "#171717" }
+                        : { background: "#fff", border: "1px solid #e5e5e5", color: "#a3a3a3" }
                   }
                 >
                   {isCompleted ? "✓" : i + 1}
                 </div>
                 {/* Label */}
                 <div
-                  className="mt-2.5 text-[0.68rem] text-center leading-tight px-1 transition-colors duration-500"
-                  style={{
-                    fontWeight: isActive || isCompleted ? 600 : 400,
-                    color: isCompleted ? "rgba(255,255,255,0.7)" : isActive ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.2)",
-                  }}
+                  className={`mt-2 text-[9px] sm:text-[0.68rem] text-center leading-tight px-0.5 transition-colors duration-500 truncate w-full ${isActive || isCompleted ? "font-semibold text-neutral-900" : "text-neutral-400"}`}
                 >
                   {label}
                 </div>
@@ -110,32 +106,34 @@ export default function TrackingPage() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
       {/* Navbar */}
-      <nav className="sticky top-0 z-50 bg-slate-50/85 backdrop-blur-md border-b border-slate-200">
-        <div className="max-w-6xl mx-auto px-8 flex items-center justify-between h-[60px]">
-          <Link href="/" className="flex items-center gap-2.5 no-underline">
-            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
-              <Shield size={16} color="#000" strokeWidth={2.5} />
+      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-neutral-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 flex items-center justify-between h-[64px]">
+          <Link href="/" className="flex items-center gap-2.5 no-underline group">
+            <div className="w-8 h-8 bg-neutral-900 rounded-[10px] flex items-center justify-center transition-transform group-hover:scale-105">
+              <Shield size={16} className="text-white" strokeWidth={2.5} />
             </div>
-            <span className="font-bold text-base tracking-wide text-slate-900">REVA AI</span>
+            <span className="font-bold text-[17px] tracking-tight text-neutral-900">REVA AI</span>
           </Link>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <div className="relative group">
-              <button className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100">
-                Complaints <ChevronDown size={14} className="transition-transform duration-200 group-hover:rotate-180" />
+              <button className="flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-semibold text-neutral-500 hover:text-neutral-900 transition-colors rounded-lg">
+                <span className="hidden xs:inline">Complaints</span>
+                <ChevronDown size={14} className="transition-transform duration-300 group-hover:rotate-180" />
               </button>
 
-              <div className="absolute top-full mt-1 -right-4 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top scale-95 group-hover:scale-100 bg-white/95 backdrop-blur-md border border-slate-200 shadow-xl rounded-xl overflow-hidden py-1.5 z-50">
-                <Link href="/track" className="block px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors">
-                  {t("nav.track") || "Track Complaint"}
+              <div className="absolute top-full mt-1 -right-2 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform origin-top scale-95 group-hover:scale-100 bg-white border border-neutral-100 shadow-2xl shadow-black/5 rounded-2xl overflow-hidden py-2 z-50">
+                <Link href="/track" className="block px-4 py-2.5 text-[13px] font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50">
+                  Track Complaint
                 </Link>
                 {user && (
                   <>
-                    <div className="h-px bg-slate-100 my-1 mx-2" />
-                    <Link href="/my-complaints" className="block px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors">
-                      {t("nav.myCases") || "My Cases"}
+                    <div className="h-px bg-neutral-50 my-1 mx-3" />
+                    <Link href="/my-complaints" className="block px-4 py-2.5 text-[13px] font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50">
+                      My Cases
                     </Link>
-                    <Link href="/complaint" className="block px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors">
-                      {t("nav.fileComplaint") || "File a Complaint"}
+                    <Link href="/complaint" className="block px-4 py-2.5 text-[13px] font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50">
+                      New Complaint
                     </Link>
                   </>
                 )}
@@ -143,11 +141,11 @@ export default function TrackingPage() {
             </div>
 
             {user ? (
-              <Link href="/profile" className="px-3.5 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100">
-                <User size={16} strokeWidth={2.5} />
+              <Link href="/profile" className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-neutral-50 transition-colors">
+                <User size={18} className="text-neutral-600" />
               </Link>
             ) : (
-              <Link href="/login" className="px-3.5 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100 no-underline">
+              <Link href="/login" className="px-4 py-2 bg-neutral-900 text-white text-[13px] font-bold rounded-full hover:bg-neutral-800 transition-all">
                 Sign In
               </Link>
             )}
@@ -155,24 +153,23 @@ export default function TrackingPage() {
         </div>
       </nav>
 
-      <div className="max-w-xl mx-auto py-16 px-6">
+      <div className="max-w-xl mx-auto py-12 sm:py-16 px-4 sm:px-6">
         {/* Fixed Back Button */}
         <button
           onClick={() => router.back()}
-          className="fixed top-22 left-8 z-40 flex items-center gap-2 px-4 py-2  backdrop-blur-md  text-sm font-semibold text-neutral-600 hover:text-neutral-900  rounded-lg  transition-all duration-300"
+          className="fixed top-4 left-4 sm:top-[88px] sm:left-8 z-[60] flex items-center gap-1.5 bg-white/85 backdrop-blur-md border border-neutral-200 rounded-[10px] px-2.5 py-1 sm:px-3.5 sm:py-[7px] text-[12px] sm:text-[13px] font-semibold text-neutral-600 cursor-pointer shadow-sm"
         >
-          <ArrowLeft size={16} />Back
+          <ArrowLeft size={14} /> <span className="hidden xs:inline">Back</span>
         </button>
 
         {/* Header */}
-        <div className="mb-10">
-          <p className="text-[0.72rem] font-bold tracking-[2px] uppercase text-slate-500 mb-2">Public</p>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">Track Complaint</h1>
-          <p className="text-sm text-slate-500">Enter your tracking ID to check the status of your complaint</p>
+        <div className="mb-8 sm:mb-10 text-center sm:text-left mt-12 sm:mt-0">
+          <p className="text-[10px] sm:text-[0.72rem] font-bold tracking-[2px] uppercase text-slate-500 mb-2">Public Portal</p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-2">Track Complaint</h1>
+          <p className="text-[13px] sm:text-sm text-slate-500">Enter your tracking ID to check the status</p>
         </div>
 
-        {/* Search */}
-        <div className="flex gap-3 mb-10">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-8 sm:mb-10">
           <input
             id="tracking-input"
             type="text"
@@ -180,16 +177,16 @@ export default function TrackingPage() {
             onChange={(e) => setTrackingId(e.target.value.toUpperCase())}
             onKeyDown={(e) => e.key === "Enter" && fetchComplaint(trackingId)}
             placeholder="REVA-2024-XXXXXXXX"
-            className="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-900 font-mono text-sm placeholder:text-slate-500 outline-none focus:border-slate-200 focus:bg-white transition-colors"
+            className="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl text-neutral-900 font-mono text-sm placeholder:text-slate-400 outline-none focus:border-neutral-900 transition-colors"
           />
           <button
             id="track-btn"
             onClick={() => fetchComplaint(trackingId)}
             disabled={loading || !trackingId}
-            className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white font-bold text-sm rounded-xl hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center justify-center gap-2 px-6 py-3 bg-neutral-900 text-white font-bold text-sm rounded-xl hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             <Search size={15} strokeWidth={2.5} />
-            {loading ? "..." : "Track"}
+            {loading ? "Tracking…" : "Track"}
           </button>
         </div>
 

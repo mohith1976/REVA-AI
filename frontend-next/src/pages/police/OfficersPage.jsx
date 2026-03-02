@@ -12,7 +12,7 @@ const ROLE_COLORS = {
   OFFICER: { bg: "rgba(16,185,129,0.15)", color: "#34d399" },
 };
 
-const INPUT = "w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm placeholder:text-slate-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-colors";
+const INPUT = "w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-neutral-900 text-[13px] font-medium placeholder:text-neutral-400 outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900/10 transition-all";
 
 export default function OfficersPage() {
   const auth = useAuth();
@@ -58,46 +58,46 @@ export default function OfficersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-neutral-50 p-4 sm:p-6 lg:p-8">
+      <div className="max-w-5xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-7">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8">
           <div>
             <button onClick={() => router.push("/police/dashboard")}
-              className="text-sm text-slate-500 hover:text-slate-900 hover:bg-slate-100 px-3 py-1.5 rounded-lg transition-colors mb-2 flex items-center gap-1">
+              className="text-[13px] font-bold text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 px-3 py-1.5 rounded-lg transition-colors mb-4 flex items-center gap-1.5 -ml-2">
               ← Back
             </button>
-            <h2 className="text-2xl font-bold text-slate-900">Station Officers</h2>
-            <p className="text-sm text-slate-500">{policeUser?.station?.stationName} — {officers.length} officers</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-neutral-900 mb-2">Station Officers</h2>
+            <p className="text-sm text-neutral-500">{policeUser?.station?.stationName} — {officers.length} active personnel</p>
           </div>
           <button id="add-officer-btn" onClick={() => setShowAddForm(!showAddForm)}
-            className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-blue-600 to-violet-600 text-white font-bold text-sm rounded-xl hover:opacity-90 transition-opacity">
+            className="w-full sm:w-auto px-5 py-3 bg-neutral-900 text-white font-bold text-[13px] rounded-xl hover:bg-neutral-800 transition-all shadow-lg shadow-black/10 text-center">
             {showAddForm ? "✕ Cancel" : "+ Add Officer"}
           </button>
         </div>
 
         {/* Add Officer Form */}
         {showAddForm && (
-          <div className="bg-white border border-blue-500/20 rounded-2xl p-6 mb-5 animate-fade-in">
-            <h4 className="font-bold text-slate-900 mb-5">Register New Officer</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div className="bg-white border border-neutral-200/60 shadow-sm rounded-3xl p-6 sm:p-8 mb-8 animate-fade-in">
+            <h4 className="font-bold text-neutral-900 text-lg border-b border-neutral-100 pb-4 mb-6">Register New Officer</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
               <div>
-                <label className="block text-sm font-medium text-slate-500 mb-2">Full Name</label>
+                <label className="block text-[11px] font-bold text-neutral-400 uppercase tracking-widest mb-2 px-1">Full Name</label>
                 <input type="text" className={INPUT} value={form.name}
                   onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Officer name" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-500 mb-2">Email</label>
+                <label className="block text-[11px] font-bold text-neutral-400 uppercase tracking-widest mb-2 px-1">Email</label>
                 <input type="email" className={INPUT} value={form.email}
                   onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))} placeholder="officer@police.gov.in" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-500 mb-2">Password</label>
+                <label className="block text-[11px] font-bold text-neutral-400 uppercase tracking-widest mb-2 px-1">Password</label>
                 <input type="password" className={INPUT} value={form.password}
                   onChange={(e) => setForm(f => ({ ...f, password: e.target.value }))} placeholder="Minimum 8 characters" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-500 mb-2">Role</label>
+                <label className="block text-[11px] font-bold text-neutral-400 uppercase tracking-widest mb-2 px-1">Role</label>
                 <select className={INPUT} value={form.role} onChange={(e) => setForm(f => ({ ...f, role: e.target.value }))}>
                   <option value="OFFICER">Officer</option>
                   {["GLOBAL_ADMIN", "SUPER_ADMIN", "STATION_ADMIN"].includes(policeUser?.role) &&
@@ -110,8 +110,8 @@ export default function OfficersPage() {
               </div>
             </div>
             <button id="submit-officer-btn" onClick={addOfficer} disabled={submitting}
-              className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-violet-600 text-white font-bold text-sm rounded-xl hover:opacity-90 disabled:opacity-50 transition-opacity">
-              {submitting ? "Registering..." : "Register Officer"}
+              className="w-full md:w-auto px-8 py-3.5 bg-neutral-900 text-white font-bold text-[13px] rounded-xl hover:bg-neutral-800 disabled:opacity-50 transition-all shadow-lg shadow-black/10">
+              {submitting ? "Registering..." : "Register Officer →"}
             </button>
           </div>
         )}
@@ -122,29 +122,33 @@ export default function OfficersPage() {
             {[1, 2, 3].map(i => <div key={i} className="h-20 rounded-xl bg-slate-100 animate-shimmer bg-[length:200%_100%]" />)}
           </div>
         ) : (
-          <div className="grid gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {officers.map((officer) => {
               const roleStyle = ROLE_COLORS[officer.role] || ROLE_COLORS.OFFICER;
               return (
-                <div key={officer.id} className="bg-white border border-slate-200 rounded-2xl px-5 py-4 flex items-center gap-4">
-                  <div className="w-11 h-11 rounded-full bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center flex-shrink-0">
-                    <UserCheck size={18} color="white" />
+                <div key={officer.id} className="bg-white border border-neutral-200/60 shadow-sm rounded-3xl p-5 flex flex-col sm:flex-row items-start sm:items-center gap-5 hover:shadow-md transition-all group">
+                  <div className="flex items-center gap-4 flex-1 w-full min-w-0">
+                    <div className="w-12 h-12 rounded-[14px] bg-neutral-900 flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+                      <UserCheck size={20} className="text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-neutral-900 text-[15px] truncate">{officer.name}</div>
+                      <div className="text-[13px] font-medium text-neutral-500 truncate">{officer.email}</div>
+                      {officer.station && <div className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider mt-1 truncate">{officer.station.stationName}</div>}
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-slate-900">{officer.name}</div>
-                    <div className="text-sm text-slate-500">{officer.email}</div>
-                    {officer.station && <div className="text-xs text-slate-400">{officer.station.stationName}</div>}
-                  </div>
-                  <div className="flex items-center gap-3 flex-shrink-0">
-                    <span className="text-xs font-semibold px-2.5 py-1 rounded-lg"
-                      style={{ background: roleStyle.bg, color: roleStyle.color }}>
+
+                  <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto mt-4 sm:mt-0 pt-4 sm:pt-0 border-t sm:border-t-0 border-neutral-100">
+                    <span className="text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-lg border border-neutral-200/60 bg-neutral-50 text-neutral-600">
                       {officer.role.replace("_", " ")}
                     </span>
-                    <div className="text-right">
-                      <div className="text-sm font-bold text-blue-400">{officer._count?.assignedComplaints || 0}</div>
-                      <div className="text-[0.7rem] text-slate-400">cases</div>
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <div className="text-[15px] font-bold text-neutral-900">{officer._count?.assignedComplaints || 0}</div>
+                        <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mt-0.5">cases</div>
+                      </div>
+                      <div className={`w-3 h-3 rounded-full flex-shrink-0 shadow-sm ${officer.isActive ? "bg-emerald-500 shadow-emerald-500/20" : "bg-neutral-300"}`} />
                     </div>
-                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${officer.isActive ? "bg-emerald-500" : "bg-slate-600"}`} />
                   </div>
                 </div>
               );

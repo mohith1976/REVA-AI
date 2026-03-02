@@ -50,12 +50,12 @@ export default function ProfilePage() {
     );
   };
 
-  const inputCls = `w-full px-4 py-2 border rounded-lg text-sm transition-colors ${isEditing
-    ? "bg-white border-slate-200 text-slate-900 placeholder:text-slate-500 outline-none focus:border-slate-300"
-    : "bg-slate-100/70 border-slate-200 text-slate-500 cursor-not-allowed select-none focus:outline-none"
+  const inputCls = `w-full px-4 py-3 border rounded-xl text-sm transition-all ${isEditing
+    ? "bg-white border-neutral-200 text-neutral-900 placeholder:text-neutral-400 outline-none focus:border-neutral-900 shadow-sm"
+    : "bg-neutral-50/50 border-neutral-100 text-neutral-500 cursor-not-allowed select-none focus:outline-none"
     }`;
 
-  const labelCls = "flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-widest mb-1.5";
+  const labelCls = "flex items-center gap-2 text-[10px] font-bold text-neutral-400 uppercase tracking-[1.5px] mb-2 px-1";
 
   const handleCancel = () => {
     setIsEditing(false);
@@ -71,32 +71,34 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
       {/* Navbar */}
-      <nav className="sticky top-0 z-50 bg-slate-50/85 backdrop-blur-md border-b border-slate-200">
-        <div className="max-w-6xl mx-auto px-8 flex items-center justify-between h-[60px]">
-          <Link href="/" className="flex items-center gap-2.5 no-underline">
-            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
-              <Shield size={16} color="#000" strokeWidth={2.5} />
+      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-neutral-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 flex items-center justify-between h-[64px]">
+          <Link href="/" className="flex items-center gap-2.5 no-underline group">
+            <div className="w-8 h-8 bg-neutral-900 rounded-[10px] flex items-center justify-center transition-transform group-hover:scale-105">
+              <Shield size={16} className="text-white" strokeWidth={2.5} />
             </div>
-            <span className="font-bold text-base tracking-wide text-slate-900">REVA AI</span>
+            <span className="font-bold text-[17px] tracking-tight text-neutral-900">REVA AI</span>
           </Link>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <div className="relative group">
-              <button className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100">
-                Complaints <ChevronDown size={14} className="transition-transform duration-200 group-hover:rotate-180" />
+              <button className="flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-semibold text-neutral-500 hover:text-neutral-900 transition-colors rounded-lg">
+                <span className="hidden xs:inline">Complaints</span>
+                <ChevronDown size={14} className="transition-transform duration-300 group-hover:rotate-180" />
               </button>
 
-              <div className="absolute top-full mt-1 -right-4 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top scale-95 group-hover:scale-100 bg-white/95 backdrop-blur-md border border-slate-200 shadow-xl rounded-xl overflow-hidden py-1.5 z-50">
-                <Link href="/track" className="block px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors">
-                  {t("nav.track") || "Track Complaint"}
+              <div className="absolute top-full mt-1 -right-2 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform origin-top scale-95 group-hover:scale-100 bg-white border border-neutral-100 shadow-2xl shadow-black/5 rounded-2xl overflow-hidden py-2 z-50">
+                <Link href="/track" className="block px-4 py-2.5 text-[13px] font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50">
+                  Track Complaint
                 </Link>
                 {user && (
                   <>
-                    <div className="h-px bg-slate-100 my-1 mx-2" />
-                    <Link href="/my-complaints" className="block px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors">
-                      {t("nav.myCases") || "My Cases"}
+                    <div className="h-px bg-neutral-50 my-1 mx-3" />
+                    <Link href="/my-complaints" className="block px-4 py-2.5 text-[13px] font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50">
+                      My Cases
                     </Link>
-                    <Link href="/complaint" className="block px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors">
-                      {t("nav.fileComplaint") || "File a Complaint"}
+                    <Link href="/complaint" className="block px-4 py-2.5 text-[13px] font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50">
+                      New Complaint
                     </Link>
                   </>
                 )}
@@ -105,39 +107,39 @@ export default function ProfilePage() {
 
             <button
               onClick={logoutCitizen}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-bold text-neutral-500 hover:text-red-500 rounded-lg transition-colors"
             >
               <LogOut size={14} />
-              Logout
+              <span className="hidden xs:inline">Logout</span>
             </button>
           </div>
         </div>
       </nav>
 
-      <div className="max-w-lg mx-auto py-10 px-6">
+      <div className="max-w-xl mx-auto py-12 sm:py-14 px-4 sm:px-6">
         {/* Fixed Back Button */}
         <button
           onClick={() => router.back()}
-          className="fixed top-22 left-8 z-40 flex items-center gap-2 px-4 py-2  backdrop-blur-md  text-sm font-semibold text-neutral-600 hover:text-neutral-900  rounded-lg  transition-all duration-300"
+          className="fixed top-4 left-4 sm:top-[88px] sm:left-8 z-[60] flex items-center gap-1.5 bg-white/85 backdrop-blur-md border border-neutral-200 rounded-[10px] px-2.5 py-1 sm:px-3.5 sm:py-[7px] text-[12px] sm:text-[13px] font-semibold text-neutral-600 cursor-pointer shadow-sm"
         >
-          <ArrowLeft size={16} />
-          Back
+          <ArrowLeft size={14} /> <span className="hidden xs:inline">Back</span>
         </button>
-        <div className=" p-8 mt-10 rounded-lg shadow-[0_8px_30px_rgb(0,0,0,0.05)] ">
+
+        <div className="bg-white border border-neutral-100 rounded-[28px] p-6 sm:p-10 shadow-2xl shadow-black/5 mt-10">
           {/* Header */}
-          <div className="mb-6 flex items-end justify-between">
+          <div className="mb-8 flex items-center justify-between">
             <div>
-              <p className="text-[0.72rem] font-bold tracking-[2px] uppercase text-slate-500 mb-1">Account</p>
-              <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">My Profile</h1>
+              <p className="text-[10px] sm:text-[0.72rem] font-bold tracking-[2px] uppercase text-neutral-400 mb-1">Account</p>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-neutral-900 tracking-tight">My Profile</h1>
             </div>
 
             {!isEditing && (
               <button
                 onClick={() => setIsEditing(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg hover:bg-slate-300 transition-colors"
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-neutral-900 text-white text-[13px] font-bold rounded-xl hover:bg-neutral-800 transition-all shadow-lg shadow-black/10"
               >
                 <Edit2 size={14} />
-                Edit
+                <span className="hidden xs:inline">Edit</span>
               </button>
             )}
           </div>
@@ -192,7 +194,7 @@ export default function ProfilePage() {
               <div className="flex gap-2">
                 <input
                   type="text"
-                  className={`${inputCls} flex-1`}
+                  className={`${inputCls} flex-1 font-mono tracking-tight`}
                   value={formData.latitude ? `${Number(formData.latitude).toFixed(4)}, ${Number(formData.longitude).toFixed(4)}` : ""}
                   readOnly
                   placeholder="No location set"
@@ -201,28 +203,28 @@ export default function ProfilePage() {
                   <button
                     type="button"
                     onClick={setLocation}
-                    className="px-3 py-2 text-sm font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-100 hover:text-slate-900 transition-colors whitespace-nowrap"
+                    className="px-4 py-2 bg-neutral-900 text-white text-[13px] font-bold rounded-xl hover:bg-neutral-800 transition-all shadow-sm"
                   >
-                    Get GPS
+                    Capture
                   </button>
                 )}
               </div>
-              <p className="text-xs text-slate-500 mt-2">Used to route complaints to your nearest police station</p>
+              <p className="text-[11px] text-neutral-400 mt-2 px-1">Used to route complaints to your nearest police station</p>
             </div>
 
             {/* Assigned station badge */}
             {user?.policeStation && (
-              <div className="p-4 bg-white border border-slate-200 rounded-xl">
-                <div className="text-[0.68rem] font-bold uppercase text-slate-500 tracking-widest mb-1">Assigned Station</div>
-                <div className="font-semibold text-slate-900">{user.policeStation.stationName}</div>
-                <div className="text-sm text-slate-500">{user.policeStation.district}</div>
+              <div className="p-5 bg-neutral-50 border border-neutral-100 rounded-[20px]">
+                <div className="text-[10px] font-bold uppercase text-neutral-400 tracking-[1.5px] mb-2 px-1">Assigned Station</div>
+                <div className="font-bold text-neutral-900 text-base">{user.policeStation.stationName}</div>
+                <div className="text-[13px] text-neutral-500">{user.policeStation.district}, {user.policeStation.state}</div>
               </div>
             )}
 
             {isEditing && (
               <>
                 {/* Divider */}
-                <div className="h-px bg-slate-200 my-8" />
+                <div className="h-px bg-neutral-100 my-8" />
 
                 {/* Action Buttons */}
                 <div className="flex gap-3 pt-2">
@@ -230,15 +232,14 @@ export default function ProfilePage() {
                     type="button"
                     onClick={handleCancel}
                     disabled={loading}
-                    className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-white text-slate-700 font-bold text-sm border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+                    className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-white text-neutral-600 font-bold text-[13px] border border-neutral-200 rounded-2xl hover:bg-neutral-50 transition-colors"
                   >
-                    <X size={16} strokeWidth={2.5} />
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex-[2] flex items-center justify-center gap-2 py-3.5 bg-slate-900 text-white font-bold text-sm rounded-xl hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+                    className="flex-[2] flex items-center justify-center gap-2 py-3.5 bg-neutral-900 text-white font-bold text-[13px] rounded-2xl hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-black/10"
                   >
                     <Save size={16} strokeWidth={2.5} />
                     {loading ? "Saving..." : "Save Changes"}

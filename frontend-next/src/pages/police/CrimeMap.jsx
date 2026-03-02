@@ -107,25 +107,29 @@ export default function CrimeMap() {
       `}</style>
 
       {/* Topbar */}
-      <div className="flex items-center gap-5 px-6 py-3 bg-slate-50/95 border-b border-slate-200 z-[1000] shadow-[0_4px_12px_rgba(0,0,0,0.5)]">
-        <button onClick={() => router.push("/police/dashboard")}
-          className="text-sm text-slate-500 hover:text-slate-900 hover:bg-slate-100 px-3 py-1.5 rounded-lg transition-colors">
-          ← Dashboard
-        </button>
-        <div>
-          <h3 className="text-base font-bold text-slate-900">Live Intelligence Map</h3>
-          <div className="text-[0.7rem] text-slate-400">Real-time Incident Monitoring — {complaints.length} Cases Loaded</div>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-5 px-4 sm:px-6 py-4 bg-white/95 backdrop-blur-md border-b border-neutral-200 z-[1000] shadow-sm">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <button onClick={() => router.push("/police/dashboard")}
+            className="text-[13px] font-bold text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 flex-shrink-0 px-3 py-1.5 rounded-lg transition-colors -ml-2">
+            ← Back
+          </button>
+          <div className="flex-1 sm:flex-none">
+            <h3 className="text-base sm:text-lg font-bold text-neutral-900 leading-tight">Live Intelligence Map</h3>
+            <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">{complaints.length} Cases Loaded</div>
+          </div>
         </div>
-        <div className="flex-1" />
+
+        <div className="hidden sm:block flex-1" />
+
         {/* Legend */}
-        <div className="flex gap-6 text-xs">
+        <div className="flex flex-wrap sm:flex-nowrap gap-4 sm:gap-6 text-[11px] font-bold uppercase tracking-widest w-full sm:w-auto mt-2 sm:mt-0 pt-3 sm:pt-0 border-t border-neutral-100 sm:border-0">
           <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-[#ff3b30] border-2 border-white" style={{ boxShadow: "0 0 8px #ff3b30" }} />
-            <span className="text-slate-800 font-semibold">Critical / Emergency</span>
+            <div className="w-2.5 h-2.5 rounded-full bg-[#ff3b30] shadow-[0_0_8px_rgba(255,59,48,0.6)]" />
+            <span className="text-neutral-600">Critical / Emergency</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-blue-500 border-2 border-white" style={{ boxShadow: "0 0 8px #3b82f6" }} />
-            <span className="text-slate-800 font-semibold">Standard Dispatch</span>
+            <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
+            <span className="text-neutral-600">Standard</span>
           </div>
         </div>
       </div>

@@ -23,6 +23,7 @@ import {
   Siren,
   CheckCircle2,
   Bot,
+  ShieldCheck,
   User,
   Volume2,
   X,
@@ -1139,9 +1140,9 @@ export default function ComplaintPage() {
           animate={{ opacity: 1, x: 0 }}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.95 }}
-          className="fixed top-[22px] left-7 z-40 flex items-center gap-1.5 bg-white/85 backdrop-blur-md border border-neutral-200 rounded-[10px] px-3.5 py-[7px] text-[13px] font-semibold text-neutral-600 cursor-pointer shadow-sm"
+          className="fixed top-4 left-4 sm:top-[22px] sm:left-7 z-[60] flex items-center gap-1.5 bg-white/85 backdrop-blur-md border border-neutral-200 rounded-[10px] px-2.5 py-1 sm:px-3.5 sm:py-[7px] text-[12px] sm:text-[13px] font-semibold text-neutral-600 cursor-pointer shadow-sm"
         >
-          <ArrowLeft size={15} />Back
+          <ArrowLeft size={14} /> <span className="hidden xs:inline">Back</span>
         </motion.button>
 
         {/* ── Header (Ultra Minimal) ─────────────────────────────────── */}
@@ -1149,14 +1150,14 @@ export default function ComplaintPage() {
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.1, type: "spring", stiffness: 300, damping: 28 }}
-          className="relative z-10 flex justify-between items-center pl-[90px] pr-7 py-3 border-b border-neutral-100 bg-white/60 backdrop-blur-xl"
+          className="relative z-10 flex justify-between items-center pl-16 pr-4 sm:pl-[120px] sm:pr-7 py-3 border-b border-neutral-100 bg-white/60 backdrop-blur-xl"
         >
-          <div className="flex items-center gap-2.5 ml-auto">
+          <div className="flex items-center gap-2 sm:gap-2.5 ml-auto">
             <AnimatePresence mode="wait">
               <motion.div
                 key={isListening ? "listening" : isInitializing ? "init" : isLoading ? "thinking" : "ready"}
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="text-[9px] font-bold text-neutral-400 tracking-widest flex items-center gap-1.5"
+                className="hidden xs:flex text-[9px] font-bold text-neutral-400 tracking-widest items-center gap-1.5"
               >
                 <div className={`w-1.5 h-1.5 rounded-full ${isListening ? "bg-red-500 animate-pulse" : "bg-neutral-300"}`} />
                 {isInitializing ? "CONNECTING" : isListening ? "LISTENING" : isLoading ? "THINKING" : "REVA ACTIVE"}
@@ -1165,12 +1166,12 @@ export default function ComplaintPage() {
 
             <motion.div
               onClick={() => setShowStationPicker(true)}
-              className="text-[10px] font-bold px-3 py-1 bg-neutral-100 rounded-full text-neutral-600 cursor-pointer hover:bg-neutral-200 transition-colors"
+              className="text-[9px] sm:text-[10px] font-bold px-2.5 sm:px-3 py-1 bg-neutral-100 rounded-full text-neutral-600 cursor-pointer hover:bg-neutral-200 transition-colors truncate max-w-[120px] sm:max-w-none"
             >
               {activeStation ? activeStation.stationName : "Select Station"}
             </motion.div>
 
-            <button onClick={logoutCitizen} className="bg-transparent border-none text-[10px] text-neutral-400 hover:text-red-500 font-bold ml-1 cursor-pointer">
+            <button onClick={logoutCitizen} className="hidden sm:block bg-transparent border-none text-[10px] text-neutral-400 hover:text-red-500 font-bold ml-1 cursor-pointer">
               LOGOUT
             </button>
           </div>
@@ -1178,19 +1179,19 @@ export default function ComplaintPage() {
 
         {/* ── Message list ───────────────────────────────────────────── */}
         <main className="flex-1 overflow-y-auto px-6 pt-7 pb-[200px] relative z-[1]">
-          <div className="max-w-[520px] mx-auto flex flex-col gap-5">
+          <div className="max-w-[500px] mx-auto flex flex-col gap-5">
 
             {messages.length === 0 && (
               <motion.div
-                initial={{  opacity: 0, filter: "blur(10px)" }}
-                animate={{  opacity: 1, filter: "blur(0px)" }}
+                initial={{ opacity: 0, filter: "blur(10px)" }}
+                animate={{ opacity: 1, filter: "blur(0px)" }}
                 transition={{ duration: 1.5, ease: "easeInOut" }}
-                className={`flex flex-col transition-all duration-700 ease-in-out ${(isListening || sttTranscript || interimTranscript || textInput) ? "mt-10 mb-8" : "mt-38"} items-start justify-center pt-16 pb-8 text-left`}
+                className={`flex flex-col transition-all duration-700 ease-in-out ${(isListening || sttTranscript || interimTranscript || textInput) ? "mt-6 mb-6" : "mt-24 sm:mt-38"} items-start justify-center pt-8 sm:pt-16 pb-8 text-left`}
               >
-                <h1 className="text-[28px] font-light text-neutral-900  tracking-tight">
+                <h1 className="text-[24px] sm:text-[28px] font-light text-neutral-900 tracking-tight">
                   Hi{user?.name ? " " + user.name : ""}
                 </h1>
-                <p className="text-neutral-900 max-w-[620px] leading-relaxed text-[32px] font-medium">
+                <p className="text-neutral-900 max-w-[620px] leading-relaxed text-[28px] sm:text-[32px] font-medium">
                   How can I help you today?
                 </p>
               </motion.div>
@@ -1420,31 +1421,32 @@ export default function ComplaintPage() {
         </main >
 
         {/* ── Ultra-Minimalist Control Hub ──────────────────────────── */}
-        <div className={`fixed left-1/2 -translate-x-1/2 z-50 transition-all duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] pointer-events-none ${(messages.length === 0 && !isListening && !sttTranscript && !interimTranscript && !textInput) ? "bottom-1/2 translate-y-1/2" : "bottom-8"}`}>
+        <div className={`fixed left-1/2 -translate-x-1/2 z-50 transition-all duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] pointer-events-none ${(messages.length === 0 && !isListening && !sttTranscript && !interimTranscript && !textInput) ? "bottom-1/2 translate-y-1/2" : "bottom-6 sm:bottom-8"} w-[calc(100%-32px)] sm:w-auto`}>
           <motion.div
             layout
             initial={{ blur: 20, opacity: 0 }}
             animate={{ blur: 0, opacity: 1 }}
             transition={{ duration: 0.4, ease: "easeInOut" }}
-            className="pointer-events-auto"
+            className="pointer-events-auto w-full"
           >
             <motion.div
               layout
-              className={`bg-white/70 backdrop-blur-2xl border border-neutral-200/60 shadow-[0_8px_32px_rgba(0,0,0,0.06)] flex items-center p-1.5 rounded-full gap-2 transition-all ${messages.length === 0 ? "w-full max-w-[720px]" : ""}`}
+              className={`bg-white/70 backdrop-blur-2xl border border-neutral-200/60 shadow-[0_8px_32px_rgba(0,0,0,0.06)] flex items-center p-2 rounded-full gap-2 transition-all ${messages.length === 0 ? "w-full max-w-[800px]" : "w-full max-w-[600px] sm:w-auto"}`}
             >
               {/* Hidden file inputs */}
               <input ref={imageFileRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleMediaUpload} />
               <input ref={cameraPhotoRef} type="file" accept="image/*,video/*" capture="environment" className="hidden" onChange={handleMediaUpload} />
 
-              <div className="flex items-center gap-0.5 ml-1">
+              <div className="flex items-center gap-1 sm:gap-2 ml-1 sm:ml-2 shrink-0">
                 <div className="relative">
                   <motion.button
                     onClick={() => setShowMediaMenu((v) => !v)}
-                    whileHover={{ scale: 1.1, }}
+                    whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
-                    className="w-9 h-9 rounded-full bg-transparent border-none text-neutral-400 hover:text-neutral-900 flex items-center justify-center cursor-pointer relative"
+                    title="Add Attachment"
+                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-neutral-100/50 text-neutral-500 hover:text-neutral-900 hover:bg-neutral-200/50 flex items-center justify-center cursor-pointer transition-colors"
                   >
-                    <Plus size={18} className={showMediaMenu ? "rotate-45" : ""} />
+                    <Plus size={18} className={showMediaMenu ? "rotate-45 transition-transform" : "transition-transform"} />
                   </motion.button>
 
                   <AnimatePresence>
@@ -1453,23 +1455,23 @@ export default function ComplaintPage() {
                         initial={{ opacity: 0, y: 10, scale: 0.9 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.9 }}
-                        className="absolute bottom-full mb-3 left-0 bg-white/95 backdrop-blur-2xl border border-neutral-200/60 rounded-[20px] p-1.5 shadow-xl flex flex-col gap-0.5 z-[60]"
+                        className="absolute bottom-full mb-3 left-0 bg-white/95 backdrop-blur-2xl border border-neutral-200/60 rounded-[20px] p-1.5 shadow-xl flex flex-col gap-0.5 z-[60] min-w-[130px]"
                       >
-                        <button onClick={openCameraModal} className="flex items-center gap-2.5 p-2.5 pr-8 hover:bg-neutral-50 rounded-xl border-none bg-transparent cursor-pointer text-neutral-600 text-[13px] font-medium transition-colors"><Camera size={14} /> Camera</button>
-                        <button onClick={() => { setShowMediaMenu(false); imageFileRef.current?.click(); }} className="flex items-center gap-2.5 p-2.5 pr-8 hover:bg-neutral-50 rounded-xl border-none bg-transparent cursor-pointer text-neutral-600 text-[13px] font-medium transition-colors"><FolderOpen size={14} /> Files</button>
+                        <button onClick={() => { setShowMediaMenu(false); openCameraModal(); }} className="flex items-center gap-3 p-3 hover:bg-neutral-50 rounded-xl border-none bg-transparent cursor-pointer text-neutral-600 text-[13px] font-medium transition-colors text-left w-full"><Camera size={16} /> Camera</button>
+                        <button onClick={() => { setShowMediaMenu(false); imageFileRef.current?.click(); }} className="flex items-center gap-3 p-3 hover:bg-neutral-50 rounded-xl border-none bg-transparent cursor-pointer text-neutral-600 text-[13px] font-medium transition-colors text-left w-full"><FolderOpen size={16} /> Image File</button>
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
-
                 <div className="relative">
                   <motion.button
                     onClick={() => setShowLangMenu(!showLangMenu)}
-                    whileHover={{ scale: 1.1, }}
+                    whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
-                    className={`w-9 h-9 rounded-lg bg-transparent border-none  flex items-center justify-center cursor-pointer transition-all ${showLangMenu ? "text-blue-600" : "text-neutral-500 hover:text-neutral-900"}`}
+                    title="Change Language"
+                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-neutral-100/50 flex items-center justify-center cursor-pointer transition-colors ${showLangMenu ? "text-blue-600 bg-blue-50" : "text-neutral-500 hover:text-neutral-900 hover:bg-neutral-200/50"}`}
                   >
-                    <span className="text-[10px] font-bold tracking-tight">{language.toUpperCase()}</span>
+                    <span className="text-[10px] sm:text-[11px] font-bold tracking-tight">{language.toUpperCase()}</span>
                   </motion.button>
 
                   <AnimatePresence>
@@ -1516,37 +1518,38 @@ export default function ComplaintPage() {
                   onClick={() => setIsSettingsOpen(true)}
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
-                  className="w-9 h-9 rounded-full bg-transparent border-none text-neutral-400 hover:text-neutral-900 flex items-center justify-center cursor-pointer"
+                  title="Settings"
+                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-neutral-100/50 text-neutral-500 hover:text-neutral-900 hover:bg-neutral-200/50 flex items-center justify-center cursor-pointer transition-colors"
                 >
                   <Settings2 size={18} />
                 </motion.button>
               </div>
 
-              <div className="w-px h-5 bg-neutral-200/60" />
+              <div className="w-px h-5 bg-neutral-200/60 hidden sm:block" />
 
-              <div className={`flex items-center gap-2 bg-neutral-50/50 rounded-full px-3 py-1 border border-neutral-100/50 transition-all ${messages.length === 0 ? "flex-1" : "w-[220px]"}`}>
+              <div className={`flex items-center gap-1.5 sm:gap-2 bg-neutral-50/50 rounded-full px-2 sm:px-3 py-1 border border-neutral-100/50 transition-all flex-1 min-w-0 ${messages.length === 0 ? "" : "sm:w-[220px]"}`}>
                 <input
                   type="text"
                   value={textInput}
                   onChange={(e) => setTextInput(e.target.value)}
                   onKeyPress={(e) => { if (e.key === "Enter" && textInput.trim()) { sendMessage(textInput); setTextInput(""); } }}
                   placeholder="Ask REVA…"
-                  className="flex-1 bg-transparent border-none outline-none text-neutral-800 text-[13px] py-1.5 placeholder-neutral-400"
+                  className="flex-1 bg-transparent border-none outline-none text-neutral-800 text-[12px] sm:text-[13px] py-1 sm:py-1.5 placeholder-neutral-400 min-w-0"
                 />
-                {textInput.trim() && (
-                  <motion.button
-                    initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                    onClick={() => { sendMessage(textInput); setTextInput(""); }}
-                    className="w-7 h-7 rounded-full bg-neutral-900 text-white flex items-center justify-center cursor-pointer"
-                  >
-                    <ArrowUp size={14} />
-                  </motion.button>
-                )}
+                <AnimatePresence>
+                  {textInput.trim() && (
+                    <motion.button
+                      initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }}
+                      onClick={() => { sendMessage(textInput); setTextInput(""); }}
+                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-neutral-900 text-white flex items-center justify-center cursor-pointer shrink-0 ml-1 shadow-md shadow-neutral-900/20"
+                    >
+                      <ArrowUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    </motion.button>
+                  )}
+                </AnimatePresence>
               </div>
 
-              <div className="w-px h-5 bg-neutral-200/60" />
-
-              <div className="flex items-center gap-1.5 pr-1">
+              <div className="flex items-center gap-1 sm:gap-1.5 pr-1 shrink-0">
                 <div className="relative flex items-center justify-center">
                   {/* Wave Animations (Blue Waves) */}
                   <AnimatePresence>
@@ -1581,19 +1584,31 @@ export default function ComplaintPage() {
                       scale: { repeat: Infinity, duration: 1.5 },
                       backgroundColor: { duration: 0.3 }
                     }}
-                    className={`relative w-10 h-10 rounded-full flex items-center justify-center text-white cursor-pointer border-none z-10 ${micPermission === "denied" ? "opacity-60" : ""}`}
+                    className={`relative w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white cursor-pointer border-none z-10 ${micPermission === "denied" ? "opacity-60" : ""}`}
                     title={micPermission === "denied" ? "Mic Blocked - Click to fix" : "Hold to speak"}
                   >
-                    <Mic size={18} />
+                    <Mic className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
                   </motion.button>
                 </div>
 
                 <motion.button
-                  onClick={finalizeComplaint}
+                  layout
+                  onClick={() => setIsStationModalOpen(true)}
                   whileTap={{ scale: 0.95 }}
-                  className="rounded-full font-semibold text-[13px] bg-transparent border-none text-neutral-400 hover:text-neutral-900 flex items-center justify-center cursor-pointer transition-colors px-2"
+                  title="Choose Police Station"
+                  className="hidden xs:flex rounded-full font-semibold text-[11px] sm:text-[13px] bg-transparent border-none text-neutral-400 hover:text-neutral-900 items-center justify-center cursor-pointer transition-colors px-1 sm:px-2"
                 >
-                  Police Station
+                  <MapPin size={16} />
+                </motion.button>
+                <div className="w-px h-5 bg-neutral-200/60 hidden sm:block mx-1" />
+                <motion.button
+                  onClick={finalizeComplaint}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  title="Finalize Report"
+                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-transparent border-none text-neutral-400 hover:text-emerald-600 hover:bg-emerald-50 flex items-center justify-center cursor-pointer transition-colors"
+                >
+                  <ShieldCheck size={18} />
                 </motion.button>
               </div>
             </motion.div>
@@ -1613,7 +1628,7 @@ export default function ComplaintPage() {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.92, y: 16 }}
                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                className="bg-white rounded-[24px] w-full max-w-[380px] p-7 border border-neutral-100 shadow-2xl shadow-black/10"
+                className="bg-white rounded-[24px] w-full max-w-[380px] p-5 sm:p-7 border border-neutral-100 shadow-2xl shadow-black/10 mx-4"
               >
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="m-0 text-[1.1rem] font-extrabold text-neutral-900">Voice Settings</h3>
@@ -1674,7 +1689,7 @@ export default function ComplaintPage() {
         </AnimatePresence >
 
         {/* ── Station Picker Modal ────────────────────────────────────── */}
-        < AnimatePresence >
+        <AnimatePresence>
           {showStationPicker && (
             <motion.div
               key="station-backdrop"
@@ -1686,12 +1701,12 @@ export default function ComplaintPage() {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.92, y: 20 }}
                 transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                className="bg-white rounded-[24px] w-full max-w-[500px] max-h-[80vh] flex flex-col border border-neutral-100 shadow-2xl shadow-black/10 overflow-hidden"
+                className="bg-white rounded-[24px] w-full max-w-[500px] max-h-[85vh] flex flex-col border border-neutral-100 shadow-2xl shadow-black/10 overflow-hidden mx-4"
               >
                 <div className="p-[22px_24px] border-b border-neutral-100 flex justify-between items-center">
-                  <div>
-                    <h3 className="m-0 text-[1.15rem] font-extrabold text-neutral-900">Select Police Station</h3>
-                    <p className="m-0 mt-1 text-[0.8rem] text-neutral-400">We couldn't detect your local station. Please choose one manually.</p>
+                  <div className="pr-8">
+                    <h3 className="m-0 text-[1.05rem] sm:text-[1.15rem] font-extrabold text-neutral-900">Select Police Station</h3>
+                    <p className="m-0 mt-1 text-[11px] sm:text-[0.8rem] text-neutral-400">We couldn't detect your local station. Please choose one manually.</p>
                   </div>
                   <motion.button
                     onClick={() => setShowStationPicker(false)}
@@ -1744,7 +1759,7 @@ export default function ComplaintPage() {
               </motion.div>
             </motion.div>
           )}
-        </AnimatePresence >
+        </AnimatePresence>
       </div >
 
       {/* ── Leave Confirmation Modal ────────────────────────────────── */}
@@ -1760,7 +1775,7 @@ export default function ComplaintPage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.88, y: 20 }}
               transition={{ type: "spring", stiffness: 420, damping: 30 }}
-              className="bg-white border border-red-100 rounded-[20px] p-8 max-w-[380px] w-full text-center shadow-2xl shadow-black/10"
+              className="bg-white border border-red-100 rounded-[20px] p-6 sm:p-8 max-w-[380px] w-full text-center shadow-2xl shadow-black/10 mx-4"
             >
               <div className="mb-3 flex justify-center items-center"><TriangleAlert size={56} className="text-red-500" /></div>
               <h3 className="m-0 mb-2 text-[1.12rem] font-extrabold text-neutral-900">Leave complaint session?</h3>
@@ -1781,7 +1796,8 @@ export default function ComplaintPage() {
               </div>
             </motion.div>
           </motion.div>
-        )}
+        )
+        }
       </AnimatePresence >
 
       {/* ── Camera Modal ─────────────────────────────────────────────── */}

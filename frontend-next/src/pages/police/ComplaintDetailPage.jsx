@@ -400,11 +400,12 @@ export default function ComplaintDetailPage() {
           background: "rgba(8,12,20,0.9)",
           backdropFilter: "blur(12px)",
           borderBottom: "1px solid var(--clr-border)",
-          padding: "0 24px",
-          height: "60px",
+          padding: "12px 16px",
+          minHeight: "60px",
           display: "flex",
+          flexWrap: "wrap",
           alignItems: "center",
-          gap: "16px",
+          gap: "8px 16px",
         }}
       >
         <button
@@ -470,10 +471,10 @@ export default function ComplaintDetailPage() {
             🔗 LINKED
           </span>
         )}
-        <div style={{ flex: 1 }} />
+        <div style={{ flex: "1 1 auto" }} className="hidden sm:block" />
         {/* Risk score */}
         {complaint.priorityScore > 0 && (
-          <div style={{ fontSize: "0.8rem", color: "var(--clr-text-muted)" }}>
+          <div style={{ fontSize: "0.8rem", color: "var(--clr-text-muted)", marginLeft: "auto" }}>
             Risk Score:{" "}
             <span
               style={{
@@ -496,17 +497,15 @@ export default function ComplaintDetailPage() {
         style={{
           maxWidth: "1200px",
           margin: "0 auto",
-          padding: "24px",
-          display: "grid",
-          gridTemplateColumns: "1fr 340px",
-          gap: "24px",
+          padding: "16px sm:padding-24px",
         }}
+        className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 p-4 sm:p-6"
       >
         {/* Main column */}
-        <div>
+        <div className="min-w-0">
           {/* Tabs */}
           <div
-            className="no-print"
+            className="no-print overflow-x-auto hide-scrollbar"
             style={{
               display: "flex",
               gap: "0",
@@ -541,6 +540,7 @@ export default function ComplaintDetailPage() {
                       ? "3px solid var(--clr-primary)"
                       : "3px solid transparent",
                   transition: "all 0.2s ease",
+                  whiteSpace: "nowrap",
                 }}
               >
                 {tab.label}
@@ -593,17 +593,18 @@ export default function ComplaintDetailPage() {
                   style={{
                     background: "var(--clr-bg-3)",
                     borderRadius: "12px",
-                    padding: "24px",
+                    padding: "16px sm:padding-24px",
                     fontFamily: "monospace",
-                    fontSize: "0.88rem",
-                    lineHeight: 1.9,
+                    fontSize: "0.82rem",
+                    lineHeight: 1.8,
                     color: "var(--clr-text-muted)",
-                    maxHeight: "450px",
+                    maxHeight: "500px",
                     overflowY: "auto",
                     border: "1px solid rgba(255,255,255,0.03)",
                     boxShadow: "inset 0 4px 12px rgba(0,0,0,0.2)",
                     marginBottom: "16px",
                   }}
+                  className="p-4 sm:p-6"
                 >
                   {complaint.transcript ? (
                     complaint.transcript.split("\n").map((line, i) => {
@@ -765,15 +766,15 @@ export default function ComplaintDetailPage() {
               {firData && (
                 <div
                   id="print-root"
-                  className="card printable-area"
+                  className="card printable-area p-4 sm:p-12 overflow-x-auto"
                   style={{
                     background: "#fff",
                     color: "#1a1a1a",
-                    padding: "50px",
                     boxShadow: "0 20px 50px rgba(0,0,0,0.3)",
                     fontFamily: '"Times New Roman", Times, serif',
-                    fontSize: "0.97rem",
-                    lineHeight: 1.7,
+                    fontSize: "0.9rem",
+                    lineHeight: 1.6,
+                    minWidth: "800px", // Maintains print layout formatting even on small screens by scrolling
                   }}
                 >
                   {/* ── Header ── */}

@@ -27,7 +27,6 @@ function StatCard({ label, value, color, icon: Icon }) {
         <div className="w-8 h-8 rounded-lg bg-neutral-50 flex items-center justify-center group-hover:bg-neutral-100 transition-colors">
           <Icon size={16} className="text-neutral-500" />
         </div>
-        {color && <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />}
       </div>
       <div className="text-2xl font-bold text-neutral-900 tracking-tight">{value ?? "0"}</div>
       <div className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider mt-1">{label}</div>
