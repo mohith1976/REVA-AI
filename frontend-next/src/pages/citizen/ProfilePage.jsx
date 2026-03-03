@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/utils/api";
 import toast from "react-hot-toast";
-import { User, Phone, MapPin, Globe, Save, LogOut, ArrowLeft, Shield, Edit2, X, ChevronDown } from "lucide-react";
+import { User, Phone, MapPin, Globe, Save, ArrowLeft, Shield, Edit2, X, ChevronDown } from "lucide-react";
 import Link from "next/link";
 
 export default function ProfilePage() {
@@ -13,7 +13,6 @@ export default function ProfilePage() {
   const auth = useAuth();
   const user = auth?.user;
   const loginCitizen = auth?.loginCitizen;
-  const logoutCitizen = auth?.logoutCitizen;
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -98,14 +97,6 @@ export default function ProfilePage() {
                 </Link>
               </>
             )}
-
-            <button
-              onClick={logoutCitizen}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-bold text-neutral-500 hover:text-red-500 rounded-lg transition-colors"
-            >
-              <LogOut size={14} />
-              <span className="hidden xs:inline">{t("common.logout")}</span>
-            </button>
           </div>
         </div>
       </nav>

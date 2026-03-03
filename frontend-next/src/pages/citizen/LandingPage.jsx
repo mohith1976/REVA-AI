@@ -83,9 +83,17 @@ export default function LandingPage() {
             )}
 
             {user ? (
-              <Link href="/profile" className="px-3.5 py-1.5 text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors rounded-lg hover:bg-slate-100">
-                <User size={16} strokeWidth={2.5} />
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link href="/profile" className="px-3.5 py-1.5 text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors rounded-lg hover:bg-slate-100">
+                  <User size={16} strokeWidth={2.5} />
+                </Link>
+                <button
+                  onClick={() => auth?.logoutCitizen?.()}
+                  className="px-4 py-1.5 text-sm font-semibold text-red-600 bg-red-50 border border-red-100 rounded-lg hover:bg-red-100 transition-colors"
+                >
+                  Signout
+                </button>
+              </div>
             ) : (
               <>
                 <Link href="/login" id="login-nav" className="px-4 py-1.5 text-sm font-semibold text-slate-900 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors">

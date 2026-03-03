@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/utils/api";
 import Link from "next/link";
-import { MapPin, FileText, ArrowLeft, LogOut, Shield, ChevronDown, User } from "lucide-react";
+import { MapPin, FileText, ArrowLeft, Shield, ChevronDown, User } from "lucide-react";
 
 // Priority — monochrome style (white/opacity only, no colors)
 const PRIORITY_STYLE = {
@@ -19,7 +19,6 @@ export default function MyComplaintsPage() {
   const router = useRouter();
   const auth = useAuth();
   const user = auth?.user;
-  const logoutCitizen = auth?.logoutCitizen;
   const { t } = useTranslation();
   const [complaints, setComplaints] = useState([]);
   const [pagination, setPagination] = useState(null);
@@ -68,9 +67,6 @@ export default function MyComplaintsPage() {
             <Link href="/profile" className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-neutral-50 transition-colors">
               <User size={18} className="text-neutral-600" />
             </Link>
-            <button onClick={logoutCitizen} className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-bold text-neutral-500 hover:text-red-500 rounded-lg transition-colors">
-              <LogOut size={14} /> {t("common.logout")}
-            </button>
           </div>
         </div>
       </nav>
@@ -165,6 +161,6 @@ export default function MyComplaintsPage() {
           </div>
         )}
       </div>
-    </div>
+    </div >
   );
 }

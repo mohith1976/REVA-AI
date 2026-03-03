@@ -44,6 +44,7 @@ import {
   Pencil,
   Check,
   FileText,
+  LogOut,
 } from "lucide-react";
 
 const LANGUAGES = [
@@ -86,7 +87,6 @@ const TypewriterText = ({ text, speed = 0.03 }) => {
 export default function ComplaintPage() {
   const _auth = useAuth();
   const user = _auth?.user;
-  const logoutCitizen = _auth?.logoutCitizen;
   const router = useRouter();
   const { t } = useTranslation();
 
@@ -1172,10 +1172,6 @@ export default function ComplaintPage() {
             >
               {activeStation ? activeStation.stationName : "Select Station"}
             </motion.div>
-
-            <button onClick={logoutCitizen} className="hidden sm:block bg-transparent border-none text-[10px] text-neutral-400 hover:text-red-500 font-bold ml-1 cursor-pointer">
-              LOGOUT
-            </button>
           </div>
         </motion.header>
 

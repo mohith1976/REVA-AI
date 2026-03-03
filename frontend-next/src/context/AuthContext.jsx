@@ -23,7 +23,6 @@ export function AuthProvider({ children }) {
 
         if (savedUser && accessToken) {
             setUser(JSON.parse(savedUser));
-            api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
         }
         if (savedPoliceUser && policeToken) {
             setPoliceUser(JSON.parse(savedPoliceUser));
@@ -47,7 +46,6 @@ export function AuthProvider({ children }) {
         setUser(userData);
         localStorage.setItem('reva_user', JSON.stringify(userData));
         localStorage.setItem('reva_token', token);
-        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     };
 
     const loginPolice = (officerData, token) => {
@@ -71,7 +69,6 @@ export function AuthProvider({ children }) {
         setUser(null);
         localStorage.removeItem('reva_user');
         localStorage.removeItem('reva_token');
-        delete api.defaults.headers.common['Authorization'];
     };
 
     const logoutPolice = async () => {
