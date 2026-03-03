@@ -1356,21 +1356,20 @@ export default function ComplaintPage() {
                             ) : (
                               msg.text
                             )}
-                            <div className={`text-[9px] uppercase tracking-wider mt-1.5 font-medium opacity-0 group-hover:opacity-100 transition-opacity ${msg.role === "user" ? "text-white/40 text-right" : "text-neutral-300 text-left"}`}>
-                              {msg.timestamp}
+                            <div className={`flex items-center gap-2 mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity ${msg.role === "user" ? "justify-end text-white/40" : "justify-start text-neutral-300"}`}>
+                              <span className="text-[9px] uppercase tracking-wider font-medium">{msg.timestamp}</span>
+                              {msg.role === "user" && (
+                                <button
+                                  onClick={() => { setEditingMessageId(msg.id); setEditedText(msg.text); }}
+                                  className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer"
+                                  title="Edit message"
+                                >
+                                  <Pencil size={8} />
+                                  <span className="text-[9px] uppercase tracking-wider font-bold">Edit</span>
+                                </button>
+                              )}
                             </div>
                           </div>
-                          {msg.role === "user" && (
-                            <motion.button
-                              onClick={() => { setEditingMessageId(msg.id); setEditedText(msg.text); }}
-                              title="Edit message"
-                              initial={{ opacity: 0 }}
-                              whileHover={{ opacity: 1, scale: 1.15 }}
-                              className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-neutral-700/80 backdrop-blur-sm border border-neutral-500/50 cursor-pointer flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <Pencil size={11} color="white" />
-                            </motion.button>
-                          )}
                         </div>
                       )}
                     </div>

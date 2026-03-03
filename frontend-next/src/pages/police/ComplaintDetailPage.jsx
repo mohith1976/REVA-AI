@@ -5,12 +5,23 @@ import { useAuth } from "@/context/AuthContext";
 import api from "@/utils/api";
 import toast from "react-hot-toast";
 
+import {
+  MapPin, FileText, Clock, AlertCircle, CheckCircle2,
+  ChevronRight, Printer, User, Shield, ArrowLeft,
+  Bot, AlertTriangle, Link2, Info, UserPlus,
+  RefreshCw, Gavel, Image as ImageIcon, Video,
+  File, Activity, BarChart2, Mail, Phone,
+  ChevronLeft, Share2, Search, ExternalLink,
+  ChevronDown, Send, Check
+} from "lucide-react";
+
 const PRIORITY_COLORS = {
-  EMERGENCY: "#ff3b30",
-  HIGH: "#f87171",
-  MODERATE: "#fbbf24",
-  INFORMATIONAL: "#34d399",
+  EMERGENCY: "text-red-600 bg-red-50 border-red-100",
+  HIGH: "text-rose-500 bg-rose-50 border-rose-100",
+  MODERATE: "text-amber-600 bg-amber-50 border-amber-100",
+  INFORMATIONAL: "text-emerald-600 bg-emerald-50 border-emerald-100",
 };
+
 const STATUS_ORDER = [
   "FILED",
   "UNDER_REVIEW",
@@ -52,29 +63,9 @@ function EvidenceCard({ item }) {
   const isVideo = item.mediaCategory === "VIDEO";
 
   return (
-    <div
-      className="card"
-      style={{
-        padding: "12px",
-        background: "var(--clr-bg-2)",
-        display: "flex",
-        flexDirection: "column",
-        gap: "10px",
-        border: "1px solid var(--clr-border)",
-      }}
-    >
+    <div className="bg-white border border-slate-200 rounded-xl p-3 flex flex-col gap-3 group transition-all hover:shadow-md">
       <div
-        style={{
-          height: "140px",
-          background: "var(--clr-bg)",
-          borderRadius: "8px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          overflow: "hidden",
-          position: "relative",
-          cursor: "pointer",
-        }}
+        className="h-36 bg-slate-50 rounded-lg flex items-center justify-center overflow-hidden relative cursor-pointer"
         onClick={fetchUrl}
       >
         {url ? (
@@ -82,69 +73,46 @@ function EvidenceCard({ item }) {
             <img
               src={url}
               alt={item.fileName}
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              className="w-full h-full object-cover"
             />
           ) : isVideo ? (
             <video
               src={url}
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              className="w-full h-full object-cover"
             />
           ) : (
-            <div style={{ fontSize: "2rem" }}>📄</div>
+            <File size={32} className="text-slate-400" />
           )
         ) : (
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: "1.5rem", marginBottom: "4px" }}>
-              {isImage ? "🖼️" : isVideo ? "📹" : "📄"}
+          <div className="text-center">
+            <div className="mb-1 flex justify-center">
+              {isImage ? <ImageIcon size={24} className="text-slate-400" /> : isVideo ? <Video size={24} className="text-slate-400" /> : <File size={24} className="text-slate-400" />}
             </div>
-            <div style={{ fontSize: "0.7rem", color: "var(--clr-text-faint)" }}>
+            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
               {loading ? "Loading..." : "Click to view"}
             </div>
           </div>
         )}
         {item.riskLevel && (
           <div
-            style={{
-              position: "absolute",
-              top: "6px",
-              right: "6px",
-              padding: "2px 6px",
-              borderRadius: "4px",
-              fontSize: "0.6rem",
-              fontWeight: 700,
-              background:
-                item.riskLevel === "Critical" || item.riskLevel === "High"
-                  ? "#ff3b30"
-                  : "#fbbf24",
-              color: "#fff",
-            }}
+            className={`absolute top-1.5 right-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold text-white shadow-sm ${item.riskLevel === "Critical" || item.riskLevel === "High"
+              ? "bg-red-500"
+              : "bg-amber-500"
+              }`}
           >
             {item.riskLevel}
           </div>
         )}
       </div>
-      <div>
+      <div className="min-w-0">
         <div
-          style={{
-            fontSize: "0.8rem",
-            fontWeight: 600,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
+          className="text-xs font-bold text-slate-900 truncate"
           title={item.fileName}
         >
           {item.fileName}
         </div>
-        <div
-          style={{
-            fontSize: "0.65rem",
-            color: "var(--clr-text-faint)",
-            marginTop: "2px",
-          }}
-        >
-          {item.mediaCategory} • {(item.fileSizeBytes / 1024 / 1024).toFixed(2)}{" "}
-          MB
+        <div className="text-[10px] font-medium text-slate-400 mt-0.5">
+          {item.mediaCategory} • {(item.fileSizeBytes / 1024 / 1024).toFixed(2)} MB
         </div>
       </div>
       {url && (
@@ -152,10 +120,9 @@ function EvidenceCard({ item }) {
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="btn btn-ghost btn-xs"
-          style={{ fontSize: "0.7rem", marginTop: "4px" }}
+          className="mt-1 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-[10px] font-bold text-slate-600 flex items-center justify-center gap-1.5 transition-colors hover:bg-slate-100 no-underline"
         >
-          Open Original ↗
+          Open Original <ExternalLink size={10} />
         </a>
       )}
     </div>
@@ -364,1215 +331,554 @@ export default function ComplaintDetailPage() {
 
   if (loading)
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "var(--clr-bg)",
-        }}
-      >
-        <div
-          style={{
-            width: 40,
-            height: 40,
-            border: "3px solid var(--clr-border)",
-            borderTopColor: "var(--clr-primary)",
-            borderRadius: "50%",
-            animation: "spin 1s linear infinite",
-          }}
-        />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 gap-4">
+        <div className="relative">
+          <div className="w-12 h-12 rounded-full border-4 border-slate-200 border-t-slate-900 animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Shield size={16} className="text-slate-900" />
+          </div>
+        </div>
+        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-[3px] animate-pulse">Loading Secure Files</div>
       </div>
     );
 
   if (!complaint) return null;
 
-  const pColor = PRIORITY_COLORS[complaint.priorityLevel] || "#94a3b8";
+  const pStyle = PRIORITY_COLORS[complaint.priorityLevel] || "text-slate-500 bg-slate-50 border-slate-100";
   const structured = complaint.structuredJson || {};
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--clr-bg)" }}>
+    <div className="min-h-screen bg-slate-50/50">
       {/* Header */}
-      <div
-        className="no-print"
-        style={{
-          background: "rgba(8,12,20,0.9)",
-          backdropFilter: "blur(12px)",
-          borderBottom: "1px solid var(--clr-border)",
-          padding: "12px 16px",
-          minHeight: "60px",
-          display: "flex",
-          flexWrap: "wrap",
-          alignItems: "center",
-          gap: "8px 16px",
-        }}
-      >
-        <button
-          className="btn btn-ghost btn-sm"
-          onClick={() => router.push("/police/dashboard")}
-        >
-          ← Back
-        </button>
-        <div
-          style={{
-            fontFamily: "monospace",
-            fontWeight: 700,
-            color: "var(--clr-primary-light)",
-          }}
-        >
-          {complaint.trackingId}
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/60 no-print">
+        <div className="max-w-[1400px] mx-auto px-4 h-16 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <button
+              onClick={() => router.push("/police/dashboard")}
+              className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-500 hover:text-slate-900"
+              title="Back to Dashboard"
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <div className="h-6 w-px bg-slate-200 hidden xs:block" />
+            <div className="flex flex-col min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden sm:block">Case File</span>
+                <span className="font-mono font-bold text-slate-900 text-sm truncate">{complaint.trackingId}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <div className={`px-2.5 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wide ${pStyle}`}>
+              {complaint.priorityLevel}
+            </div>
+
+            {complaint.isEmergency && (
+              <div className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-500 text-white border border-red-600 uppercase tracking-wide animate-pulse flex items-center gap-1">
+                <AlertCircle size={10} />
+                <span>Emergency</span>
+              </div>
+            )}
+
+            {complaint.priorityScore > 0 && (
+              <div className="hidden md:flex items-center gap-2 pl-2 border-l border-slate-200 ml-2">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Risk Score</span>
+                <span className={`text-sm font-black ${complaint.priorityScore >= 80 ? "text-red-600" : complaint.priorityScore >= 50 ? "text-amber-600" : "text-emerald-600"}`}>
+                  {complaint.priorityScore}<span className="text-[10px] text-slate-400 font-medium">/100</span>
+                </span>
+              </div>
+            )}
+          </div>
         </div>
-        <div
-          style={{
-            height: "20px",
-            width: "1px",
-            background: "var(--clr-border)",
-          }}
-        />
-        <span
-          style={{
-            padding: "3px 10px",
-            borderRadius: "12px",
-            fontSize: "0.75rem",
-            fontWeight: 600,
-            background: `${pColor}20`,
-            color: pColor,
-          }}
-        >
-          {complaint.priorityLevel}
-        </span>
-        {complaint.isEmergency && (
-          <span
-            style={{
-              padding: "3px 10px",
-              borderRadius: "12px",
-              fontSize: "0.75rem",
-              fontWeight: 700,
-              background: "rgba(255,59,48,0.2)",
-              color: "#ff3b30",
-              animation: "pulse 1s infinite",
-            }}
-          >
-            🚨 EMERGENCY
-          </span>
-        )}
-        {(complaint.linksAsA?.length > 0 || complaint.linksAsB?.length > 0) && (
-          <span
-            style={{
-              padding: "3px 10px",
-              borderRadius: "12px",
-              fontSize: "0.75rem",
-              fontWeight: 700,
-              background: "rgba(139, 92, 246, 0.2)",
-              color: "#8b5cf6",
-            }}
-          >
-            🔗 LINKED
-          </span>
-        )}
-        <div style={{ flex: "1 1 auto" }} className="hidden sm:block" />
-        {/* Risk score */}
-        {complaint.priorityScore > 0 && (
-          <div style={{ fontSize: "0.8rem", color: "var(--clr-text-muted)", marginLeft: "auto" }}>
-            Risk Score:{" "}
-            <span
-              style={{
-                fontWeight: 700,
-                color:
-                  complaint.priorityScore >= 80
-                    ? "#ff3b30"
-                    : complaint.priorityScore >= 50
-                      ? "#fbbf24"
-                      : "#34d399",
-              }}
-            >
-              {complaint.priorityScore}/100
-            </span>
-          </div>
-        )}
-      </div>
+      </header>
 
-      <div
-        style={{
-          maxWidth: "1200px",
-          margin: "0 auto",
-          padding: "16px sm:padding-24px",
-        }}
-        className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 p-4 sm:p-6"
-      >
-        {/* Main column */}
-        <div className="min-w-0">
-          {/* Tabs */}
-          <div
-            className="no-print overflow-x-auto hide-scrollbar"
-            style={{
-              display: "flex",
-              gap: "0",
-              borderBottom: "1px solid var(--clr-border)",
-              marginBottom: "20px",
-            }}
-          >
-            {[
-              { id: "case_file", label: "Full Case File (Transcript + FIR)" },
-              { id: "extraction", label: "Ai Analytics" },
-              { id: "timeline", label: "Audit Timeline" },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveView(tab.id)}
-                style={{
-                  padding: "12px 20px",
-                  border: "none",
-                  background: "none",
-                  cursor: "pointer",
-                  fontFamily: "var(--font-sans)",
-                  fontSize: "0.85rem",
-                  letterSpacing: "0.5px",
-                  textTransform: "uppercase",
-                  fontWeight: activeView === tab.id ? 700 : 500,
-                  color:
-                    activeView === tab.id
-                      ? "var(--clr-primary-light)"
-                      : "var(--clr-text-faint)",
-                  borderBottom:
-                    activeView === tab.id
-                      ? "3px solid var(--clr-primary)"
-                      : "3px solid transparent",
-                  transition: "all 0.2s ease",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          {activeView === "case_file" && (
-            <div
-              className="animate-fade-in"
-              style={{ display: "grid", gap: "32px" }}
-            >
-              {/* SECTION 1: TRANSCRIPT */}
-              <div
-                className="card no-print"
-                style={{ border: "1px solid var(--clr-border-hover)" }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: "20px",
-                  }}
+      <main className="max-w-[1400px] mx-auto p-4 sm:p-6 lg:p-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 lg:gap-8 items-start">
+          {/* Main column */}
+          <div className="min-w-0">
+            {/* Tabs */}
+            <div className="flex items-center gap-1 border-b border-slate-200 mb-6 overflow-x-auto no-print scrollbar-hide">
+              {[
+                { id: "case_file", label: "Full Case File", icon: FileText },
+                { id: "extraction", label: "AI Analytics", icon: BarChart2 },
+                { id: "timeline", label: "Audit Timeline", icon: Activity },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveView(tab.id)}
+                  className={`flex items-center gap-2 px-5 py-3 text-[11px] font-bold uppercase tracking-wider transition-all border-b-2 whitespace-nowrap ${activeView === tab.id
+                    ? "text-slate-900 border-slate-900"
+                    : "text-slate-400 border-transparent hover:text-slate-600"
+                    }`}
                 >
-                  <h4
-                    style={{
-                      fontSize: "1.1rem",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                    }}
-                  >
-                    <span style={{ color: "var(--clr-primary)" }}>●</span> AI
-                    Intake Conversation
-                  </h4>
-                  <div
-                    style={{
-                      fontSize: "0.75rem",
-                      color: "var(--clr-text-faint)",
-                      textTransform: "uppercase",
-                      letterSpacing: "1px",
-                    }}
-                  >
-                    Digital Audio Transcript
-                  </div>
-                </div>
+                  <tab.icon size={14} />
+                  {tab.label}
+                </button>
+              ))}
+            </div>
 
-                <div
-                  style={{
-                    background: "var(--clr-bg-3)",
-                    borderRadius: "12px",
-                    padding: "16px sm:padding-24px",
-                    fontFamily: "monospace",
-                    fontSize: "0.82rem",
-                    lineHeight: 1.8,
-                    color: "var(--clr-text-muted)",
-                    maxHeight: "500px",
-                    overflowY: "auto",
-                    border: "1px solid rgba(255,255,255,0.03)",
-                    boxShadow: "inset 0 4px 12px rgba(0,0,0,0.2)",
-                    marginBottom: "16px",
-                  }}
-                  className="p-4 sm:p-6"
-                >
-                  {complaint.transcript ? (
-                    complaint.transcript.split("\n").map((line, i) => {
-                      const isAi = line.startsWith("REVA:");
-                      const isUser = line.startsWith("USER:");
-                      return (
-                        <div
-                          key={i}
-                          style={{
-                            marginBottom: "10px",
-                            padding: "8px 12px",
-                            borderRadius: "6px",
-                            background: isAi
-                              ? "rgba(59, 130, 246, 0.03)"
-                              : isUser
-                                ? "rgba(255,255,255,0.02)"
-                                : "transparent",
-                            borderLeft: isAi
-                              ? "3px solid var(--clr-primary)"
-                              : isUser
-                                ? "3px solid #8b5cf6"
-                                : "none",
-                          }}
-                        >
-                          <span
-                            style={{
-                              color: isAi
-                                ? "var(--clr-primary-light)"
-                                : isUser
-                                  ? "#a78bfa"
-                                  : "inherit",
-                              fontWeight: 700,
-                              marginRight: "8px",
-                              fontSize: "0.75rem",
-                              display: "block",
-                              marginBottom: "4px",
-                            }}
-                          >
-                            {line.split(":")[0]}:
-                          </span>
-                          <div
-                            style={{
-                              color: "var(--clr-text)",
-                              paddingLeft: "4px",
-                            }}
-                          >
-                            {line
-                              .split(":")
-                              .slice(1)
-                              .join(":")
-                              .split(/(?<=[.!?])\s+/)
-                              .filter((s) => s.trim())
-                              .map((sentence, idx) => (
-                                <div key={idx} style={{ marginBottom: "6px" }}>
-                                  {sentence}
-                                </div>
-                              ))}
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+              {activeView === "case_file" && (
+                <div className="space-y-8">
+                  {/* Transcript Section */}
+                  <section className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm no-print">
+                    <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-slate-900" />
+                        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-tight">Digital Transcript</h3>
+                      </div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Recorded via REVA AI</span>
+                    </div>
+
+                    <div className="p-6 max-h-[600px] overflow-y-auto space-y-4 bg-white font-sans text-sm leading-relaxed scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
+                      {complaint.transcript ? (
+                        complaint.transcript.split("\n").map((line, i) => {
+                          const isAi = line.startsWith("REVA:");
+                          const isUser = line.startsWith("USER:");
+                          const content = line.split(":").slice(1).join(":").trim();
+
+                          if (!content) return null;
+
+                          return (
+                            <div
+                              key={i}
+                              className={`flex flex-col gap-1.5 p-4 rounded-2xl max-w-[90%] ${isAi
+                                ? "bg-slate-50 text-slate-800 border border-slate-100 self-start rounded-tl-none"
+                                : "bg-white text-slate-900 border border-slate-200 self-end ml-auto rounded-tr-none shadow-sm"
+                                }`}
+                            >
+                              <div className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest ${isAi ? "text-slate-500" : "text-indigo-600"
+                                }`}>
+                                {isAi ? <Bot size={10} /> : <User size={10} />}
+                                {line.split(":")[0]}
+                              </div>
+                              <div className="text-[13px] font-medium leading-relaxed whitespace-pre-wrap">
+                                {content}
+                              </div>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="py-20 text-center flex flex-col items-center gap-3">
+                          <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center">
+                            <Info size={20} className="text-slate-300" />
                           </div>
+                          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">No transcript data available</p>
                         </div>
-                      );
-                    })
-                  ) : (
-                    <div
-                      style={{
-                        textAlign: "center",
-                        padding: "40px",
-                        color: "var(--clr-text-faint)",
-                      }}
-                    >
-                      No transcript data available.
+                      )}
+                    </div>
+                  </section>
+
+                  {/* Evidence Section */}
+                  {complaint.evidence?.length > 0 && (
+                    <section className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm no-print">
+                      <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2">
+                        <ImageIcon size={16} className="text-slate-900" />
+                        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-tight">Evidence & Media Gallery</h3>
+                      </div>
+                      <div className="p-6">
+                        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                          {complaint.evidence.map((ev) => (
+                            <EvidenceCard key={ev.id} item={ev} />
+                          ))}
+                        </div>
+                      </div>
+                    </section>
+                  )}
+
+                  {/* FIR Section */}
+                  {firLoading && (
+                    <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center shadow-sm">
+                      <div className="flex flex-col items-center gap-4">
+                        <RefreshCw size={32} className="text-slate-300 animate-spin" />
+                        <div className="space-y-1">
+                          <p className="text-sm font-bold text-slate-900 uppercase tracking-tight">Generating Official FIR</p>
+                          <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">Processing Section 154 CrPC document...</p>
+                        </div>
+                      </div>
                     </div>
                   )}
-                </div>
-              </div>
 
-              {/* SECTION 1.5: EVIDENCE GALLERY */}
-              {complaint.evidence?.length > 0 && (
-                <div
-                  className="card no-print"
-                  style={{ border: "1px solid var(--clr-border-hover)" }}
-                >
-                  <h4
-                    style={{
-                      fontSize: "1.1rem",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      marginBottom: "20px",
-                    }}
-                  >
-                    <span style={{ color: "var(--clr-primary)" }}>●</span>{" "}
-                    Evidence & Media Attachments
-                  </h4>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns:
-                        "repeat(auto-fill, minmax(180px, 1fr))",
-                      gap: "16px",
-                    }}
-                  >
-                    {complaint.evidence.map((ev) => (
-                      <EvidenceCard key={ev.id} item={ev} />
-                    ))}
-                  </div>
+                  {firError && (
+                    <div className="bg-red-50 border border-red-100 rounded-2xl p-6 text-center">
+                      <div className="flex flex-col items-center gap-3">
+                        <AlertTriangle size={24} className="text-red-500" />
+                        <p className="text-sm font-bold text-red-900">FIR Generation Failed</p>
+                        <p className="text-xs text-red-600 mb-2">{firError}</p>
+                        <button
+                          onClick={() => { setFirError(null); generateFIR(complaint.id); }}
+                          className="px-4 py-2 bg-red-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-red-700 transition-colors"
+                        >
+                          Retry Generation
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {firData && (
+                    <section className="space-y-6">
+                      <div className="flex items-center justify-between no-print">
+                        <div className="flex items-center gap-2">
+                          <Gavel size={16} className="text-slate-900" />
+                          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-tight">Formal FIR Document</h3>
+                        </div>
+                        <button
+                          onClick={handlePrint}
+                          className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-slate-800 transition-all active:scale-95 shadow-lg shadow-black/10"
+                        >
+                          <Printer size={14} />
+                          Print Final FIR
+                        </button>
+                      </div>
+
+                      <div
+                        id="print-root"
+                        className="bg-white border border-slate-200 p-8 md:p-16 shadow-sm rounded-sm overflow-x-auto"
+                        style={{
+                          color: "#000",
+                          fontFamily: '"Times New Roman", Times, serif',
+                          fontSize: "14px",
+                          lineHeight: "1.6",
+                          minWidth: "min(100%, 800px)"
+                        }}
+                      >
+                        {/* ── Document Header ── */}
+                        <div className="text-center mb-10 border-b-4 border-double border-black pb-8">
+                          <div className="text-[11px] font-bold tracking-[4px] uppercase mb-2">Government of India</div>
+                          <h2 className="text-2xl font-black uppercase tracking-tighter mb-1">First Information Report</h2>
+                          <div className="text-sm font-bold opacity-80 mb-1">(Complaint Statement)</div>
+                          <div className="text-xs italic">(Under Section 154 CrPC)</div>
+                        </div>
+
+                        {/* ── Meta Info ── */}
+                        <div className="grid grid-cols-2 border border-black mb-8">
+                          <div className="p-4 border-r border-b border-black">
+                            <span className="font-bold block text-[10px] uppercase mb-0.5">FIR Number</span>
+                            {complaint.trackingId}
+                          </div>
+                          <div className="p-4 border-b border-black">
+                            <span className="font-bold block text-[10px] uppercase mb-0.5">Filing Date & Time</span>
+                            {new Date(complaint.createdAt).toLocaleString("en-IN")}
+                          </div>
+                          <div className="p-4 border-r border-black">
+                            <span className="font-bold block text-[10px] uppercase mb-0.5">Police Jurisdiction</span>
+                            {complaint.station?.stationName}, {complaint.station?.district}
+                          </div>
+                          <div className="p-4">
+                            <span className="font-bold block text-[10px] uppercase mb-0.5">Case Status</span>
+                            {complaint.status}
+                          </div>
+                        </div>
+
+
+                        {/* ── Numbered fields ── */}
+                        <div className="space-y-4 border-t border-black pt-6">
+                          {[
+                            { no: "1.", label: "Name of Complainant", value: complaint.isAnonymous ? "UNDER PROTECTED IDENTITY (ANONYMOUS)" : firData.complainant_name },
+                            { no: "2.", label: "Father's / Husband's Name", value: firData.fathers_or_husbands_name },
+                            { no: "3.", label: "Age", value: firData.age },
+                            { no: "4.", label: "Gender", value: firData.gender },
+                            { no: "5.", label: "Occupation", value: firData.occupation },
+                            { no: "6.", label: "Residential Address", value: firData.address },
+                            { no: "7.", label: "Contact Number", value: complaint.isAnonymous ? "WITHHELD" : firData.contact_number },
+                            { no: "8.", label: "Aadhaar (Masked)", value: complaint.user?.aadhaarMasked || "Not Provided" },
+                          ].map(({ no, label, value }) => (
+                            <div key={no} className="grid grid-cols-[30px_200px_1fr] gap-4 border-b border-dotted border-slate-300 pb-3">
+                              <span className="font-bold">{no}</span>
+                              <span className="font-bold">{label}:</span>
+                              <span className="opacity-90">{value || "Not mentioned"}</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* ── Occurrence details ── */}
+                        <div className="mt-8 mb-6 uppercase border-b-2 border-black pb-2 font-black tracking-widest text-lg">
+                          Particulars of Occurrence
+                        </div>
+
+                        <div className="space-y-4">
+                          {[
+                            { no: "9.", label: "Date of Occurrence", value: firData.date_of_occurrence },
+                            { no: "10.", label: "Time of Occurrence", value: firData.time_of_occurrence },
+                            { no: "11.", label: "Place of Occurrence", value: firData.place_of_occurrence },
+                            { no: "12.", label: "Nature of Offence", value: firData.nature_of_offence },
+                            { no: "13.", label: "Applicable IPC / BNS Sections", value: firData.ipc_sections },
+                          ].map(({ no, label, value }) => (
+                            <div key={no} className="grid grid-cols-[30px_200px_1fr] gap-4 border-b border-dotted border-slate-300 pb-3">
+                              <span className="font-bold">{no}</span>
+                              <span className="font-bold">{label}:</span>
+                              <span className="opacity-90">{value || "Not mentioned"}</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* ── Incident Details ── */}
+                        <div className="mt-8 p-6 bg-slate-50 border border-black italic">
+                          <strong className="block mb-3 text-sm uppercase underline">14. {firData.incident_specific_details_label || "Incident Details"}:</strong>
+                          <div className="whitespace-pre-line leading-relaxed text-justify">
+                            {firData.incident_specific_details || "Not mentioned"}
+                          </div>
+                        </div>
+
+                        <div className="mt-6 p-6 bg-slate-50 border border-black">
+                          <strong className="block mb-3 text-sm uppercase underline">15. Brief Facts of the Case:</strong>
+                          <p className="text-justify leading-relaxed m-0 italic">
+                            {firData.brief_facts}
+                          </p>
+                        </div>
+
+                        <div className="mt-6 grid grid-cols-[30px_200px_1fr] gap-4 py-4 border-t border-black">
+                          <span className="font-bold">16.</span>
+                          <span className="font-bold">Witnesses:</span>
+                          <span className="opacity-90 italic">{firData.witnesses || "None mentioned"}</span>
+                        </div>
+
+                        {/* ── Prayer ── */}
+                        <div className="mt-8 p-6 border-2 border-black font-bold italic text-center">
+                          "I request the registering of this complaint and necessary legal action."
+                        </div>
+
+                        {/* ── Signature Block ── */}
+                        <div className="mt-20 grid grid-cols-3 gap-12 text-center pt-8 border-t border-black">
+                          <div>
+                            <div className="h-12 border-b border-black mb-2" />
+                            <div className="text-[10px] font-bold uppercase">Signature of Complainant</div>
+                            <div className="text-xs mt-1">({complaint.isAnonymous ? "Anonymous" : firData.complainant_name})</div>
+                          </div>
+                          <div>
+                            <div className="h-12 border-b border-black mb-2" />
+                            <div className="text-[10px] font-bold uppercase">Investigating Officer</div>
+                          </div>
+                          <div>
+                            <div className="h-12 border-b border-black mb-2" />
+                            <div className="text-[10px] font-bold uppercase">Station SHO Seal</div>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-between mt-12 text-xs font-bold uppercase tracking-widest text-slate-500">
+                          <span>Date: {firData.date_of_filing}</span>
+                          <span>Place: {firData.place_of_filing}</span>
+                        </div>
+                      </div>
+                    </section>
+                  )}
                 </div>
               )}
 
-              {/* SECTION 2: FORMAL FIR REPORT — Section 154 CrPC */}
-              {firLoading && (
-                <div
-                  style={{
-                    textAlign: "center",
-                    padding: "40px",
-                    color: "var(--clr-text-muted)",
-                    fontSize: "0.95rem",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 32,
-                      height: 32,
-                      border: "3px solid var(--clr-border)",
-                      borderTopColor: "var(--clr-primary)",
-                      borderRadius: "50%",
-                      animation: "spin 1s linear infinite",
-                      margin: "0 auto 16px",
-                    }}
+              {activeView === "extraction" && (
+                <section className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm no-print">
+                  <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2">
+                    <Bot size={16} className="text-slate-900" />
+                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-tight">AI Forensic Extraction</h3>
+                  </div>
+                  <div className="p-6">
+                    <div className="space-y-0.5">
+                      {Object.entries(structured).map(([key, value]) => value && (
+                        <div key={key} className="grid grid-cols-1 sm:grid-cols-[180px_1fr] gap-4 py-4 border-b border-slate-100 last:border-0 hover:bg-slate-50/50 transition-colors px-2 rounded-lg">
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-[2px] mt-1">{key.replace(/_/g, " ")}</span>
+                          <div className="text-[13px] text-slate-700 font-medium leading-relaxed break-words">
+                            {typeof value === 'object' ? (
+                              <pre className="bg-slate-50 text-slate-600 p-4 rounded-xl text-[11px] overflow-x-auto mt-2 border border-slate-100">
+                                {JSON.stringify(value, null, 2)}
+                              </pre>
+                            ) : String(value)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {activeView === "timeline" && (
+                <section className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm no-print">
+                  <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2">
+                    <Activity size={16} className="text-slate-900" />
+                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-tight">Audit History</h3>
+                  </div>
+                  <div className="p-8 relative">
+                    <div className="absolute left-10 top-8 bottom-8 w-px bg-slate-100" />
+                    <div className="space-y-8 relative">
+                      {[
+                        { content: "Complaint filed by citizen", createdAt: complaint.createdAt, updateType: "FILED" },
+                        ...(complaint.updates || [])
+                      ].map((u, i) => (
+                        <div key={i} className="flex gap-6 group">
+                          <div className={`w-4 h-4 rounded-full mt-1.5 z-10 border-2 border-white shadow-sm ring-4 ring-slate-50 transition-colors ${u.updateType === 'EMERGENCY_FLAG' ? 'bg-red-500' : 'bg-slate-900'}`} />
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center gap-3">
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                {new Date(u.createdAt).toLocaleString("en-IN")}
+                              </span>
+                              {u.updateType && (
+                                <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 uppercase tracking-tighter">
+                                  {u.updateType}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm font-semibold text-slate-900">{u.content}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {/* Internal Notes */}
+              <section className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm no-print mt-8">
+                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2">
+                  <FileText size={16} className="text-slate-900" />
+                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-tight">Case Notes</h3>
+                </div>
+                <div className="p-6">
+                  <textarea
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    placeholder="Record investigation updates, officer notes..."
+                    className="w-full h-24 p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900/5 focus:border-slate-900 transition-all outline-none"
                   />
-                  Generating formal FIR from transcript…
-                </div>
-              )}
-
-              {firError && (
-                <div
-                  className="card"
-                  style={{
-                    background: "rgba(255,59,48,0.08)",
-                    border: "1px solid rgba(255,59,48,0.3)",
-                    padding: "20px",
-                    color: "#ff3b30",
-                    fontSize: "0.9rem",
-                  }}
-                >
-                  ⚠️ FIR generation failed: {firError}
-                  <button
-                    className="btn btn-ghost btn-sm"
-                    style={{ marginLeft: "16px" }}
-                    onClick={() => {
-                      setFirError(null);
-                      generateFIR(complaint.id);
-                    }}
-                  >
-                    Retry
-                  </button>
-                </div>
-              )}
-
-              {firData && (
-                <div
-                  id="print-root"
-                  className="card printable-area p-4 sm:p-12 overflow-x-auto"
-                  style={{
-                    background: "#fff",
-                    color: "#1a1a1a",
-                    boxShadow: "0 20px 50px rgba(0,0,0,0.3)",
-                    fontFamily: '"Times New Roman", Times, serif',
-                    fontSize: "0.9rem",
-                    lineHeight: 1.6,
-                    minWidth: "800px", // Maintains print layout formatting even on small screens by scrolling
-                  }}
-                >
-                  {/* ── Header ── */}
-                  <div
-                    style={{
-                      textAlign: "center",
-                      marginBottom: "30px",
-                      borderBottom: "3px double #000",
-                      paddingBottom: "20px",
-                    }}
-                  >
-                    <div style={{ fontSize: "0.85rem", letterSpacing: "2px", marginBottom: "6px" }}>GOVERNMENT OF INDIA</div>
-                    <h2
-                      style={{
-                        fontSize: "1.5rem",
-                        color: "#000",
-                        marginBottom: "6px",
-                        textTransform: "uppercase",
-                        letterSpacing: "1px",
-                      }}
+                  <div className="flex justify-end mt-3">
+                    <button
+                      onClick={addNote}
+                      disabled={submittingNote || !note.trim()}
+                      className="px-6 py-2 bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-slate-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg shadow-black/10"
                     >
-                      First Information Report
-                    </h2>
-                    <div style={{ fontSize: "0.9rem", fontWeight: 600, marginBottom: "4px" }}>
-                      (Complaint Statement)
-                    </div>
-                    <div style={{ fontSize: "0.85rem" }}>(Under Section 154 CrPC)</div>
-                  </div>
-
-                  {/* ── Top meta row ── */}
-                  <table
-                    style={{
-                      width: "100%",
-                      borderCollapse: "collapse",
-                      marginBottom: "24px",
-                      fontSize: "0.9rem",
-                    }}
-                  >
-                    <tbody>
-                      <tr>
-                        <td
-                          style={{
-                            border: "1px solid #999",
-                            padding: "8px 12px",
-                            width: "50%",
-                          }}
-                        >
-                          <strong>FIR No.:</strong> {complaint.trackingId}
-                        </td>
-                        <td
-                          style={{ border: "1px solid #999", padding: "8px 12px" }}
-                        >
-                          <strong>Date &amp; Time of Filing:</strong>{" "}
-                          {new Date(complaint.createdAt).toLocaleString("en-IN")}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td
-                          style={{ border: "1px solid #999", padding: "8px 12px" }}
-                        >
-                          <strong>Police Station:</strong>{" "}
-                          {complaint.station?.stationName},{" "}
-                          {complaint.station?.district}
-                        </td>
-                        <td
-                          style={{ border: "1px solid #999", padding: "8px 12px" }}
-                        >
-                          <strong>Status:</strong> {complaint.status}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-
-                  {/* ── Numbered fields ── */}
-                  {[
-                    { no: "1.", label: "Name of Complainant", value: complaint.isAnonymous ? "UNDER PROTECTED IDENTITY (ANONYMOUS)" : firData.complainant_name },
-                    { no: "2.", label: "Father's / Husband's Name", value: firData.fathers_or_husbands_name },
-                    { no: "3.", label: "Age", value: firData.age },
-                    { no: "4.", label: "Gender", value: firData.gender },
-                    { no: "5.", label: "Occupation", value: firData.occupation },
-                    { no: "6.", label: "Residential Address", value: firData.address },
-                    { no: "7.", label: "Contact Number", value: complaint.isAnonymous ? "WITHHELD" : firData.contact_number },
-                    { no: "8.", label: "Aadhaar (Masked)", value: complaint.user?.aadhaarMasked || "Not Provided" },
-                  ].map(({ no, label, value }) => (
-                    <div
-                      key={no}
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "28px 220px 1fr",
-                        gap: "8px",
-                        marginBottom: "10px",
-                        paddingBottom: "10px",
-                        borderBottom: "1px dashed #ccc",
-                        alignItems: "start",
-                      }}
-                    >
-                      <span style={{ fontWeight: 700, color: "#555" }}>{no}</span>
-                      <span style={{ fontWeight: 700 }}>{label}:</span>
-                      <span>{value || "Not mentioned"}</span>
-                    </div>
-                  ))}
-
-                  {/* ── Occurrence details ── */}
-                  <div style={{ marginTop: "20px", marginBottom: "6px" }}>
-                    <h4
-                      style={{
-                        borderBottom: "2px solid #000",
-                        paddingBottom: "6px",
-                        fontSize: "1rem",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.5px",
-                        marginBottom: "14px",
-                      }}
-                    >
-                      Particulars of Occurrence
-                    </h4>
-                  </div>
-
-                  {[
-                    { no: "9.", label: "Date of Occurrence", value: firData.date_of_occurrence },
-                    { no: "10.", label: "Time of Occurrence", value: firData.time_of_occurrence },
-                    { no: "11.", label: "Place of Occurrence", value: firData.place_of_occurrence },
-                    { no: "12.", label: "Nature of Offence", value: firData.nature_of_offence },
-                    { no: "13.", label: "Applicable IPC / BNS Sections", value: firData.ipc_sections },
-                  ].map(({ no, label, value }) => (
-                    <div
-                      key={no}
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "28px 220px 1fr",
-                        gap: "8px",
-                        marginBottom: "10px",
-                        paddingBottom: "10px",
-                        borderBottom: "1px dashed #ccc",
-                        alignItems: "start",
-                      }}
-                    >
-                      <span style={{ fontWeight: 700, color: "#555" }}>{no}</span>
-                      <span style={{ fontWeight: 700 }}>{label}:</span>
-                      <span>{value || "Not mentioned"}</span>
-                    </div>
-                  ))}
-
-                  {/* ── Incident-specific details (property / accused etc.) ── */}
-                  <div
-                    style={{
-                      marginTop: "20px",
-                      marginBottom: "16px",
-                      padding: "16px",
-                      border: "1px solid #ccc",
-                      background: "#fafafa",
-                    }}
-                  >
-                    <strong style={{ display: "block", marginBottom: "10px" }}>
-                      14. {firData.incident_specific_details_label || "Incident Details"}:
-                    </strong>
-                    <div style={{ whiteSpace: "pre-line", lineHeight: 1.8 }}>
-                      {firData.incident_specific_details || "Not mentioned"}
-                    </div>
-                  </div>
-
-                  {/* ── Brief facts ── */}
-                  <div
-                    style={{
-                      marginBottom: "16px",
-                      padding: "16px",
-                      border: "1px solid #ccc",
-                      background: "#fafafa",
-                    }}
-                  >
-                    <strong style={{ display: "block", marginBottom: "10px" }}>
-                      15. Brief Facts of the Case:
-                    </strong>
-                    <p style={{ margin: 0, textAlign: "justify", lineHeight: 1.9 }}>
-                      {firData.brief_facts}
-                    </p>
-                  </div>
-
-                  {/* ── Witnesses ── */}
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "28px 220px 1fr",
-                      gap: "8px",
-                      marginBottom: "10px",
-                      paddingBottom: "10px",
-                      borderBottom: "1px dashed #ccc",
-                      alignItems: "start",
-                    }}
-                  >
-                    <span style={{ fontWeight: 700, color: "#555" }}>16.</span>
-                    <span style={{ fontWeight: 700 }}>Witnesses:</span>
-                    <span>{firData.witnesses || "None mentioned"}</span>
-                  </div>
-
-                  {/* ── Action requested ── */}
-                  <div
-                    style={{
-                      marginTop: "16px",
-                      marginBottom: "30px",
-                      padding: "12px 16px",
-                      border: "1px solid #bbb",
-                      background: "#f5f5f5",
-                      fontStyle: "italic",
-                    }}
-                  >
-                    <strong>Prayer / Action Requested: </strong>
-                    {firData.action_requested ||
-                      "I request you to kindly register this complaint and take necessary legal action to trace and apprehend the offender(s). I am ready to cooperate with the investigation."}
-                  </div>
-
-                  {/* ── Signature block ── */}
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr 1fr",
-                      gap: "30px",
-                      marginTop: "50px",
-                      paddingTop: "20px",
-                      borderTop: "1px solid #000",
-                    }}
-                  >
-                    <div style={{ textAlign: "center" }}>
-                      <div
-                        style={{
-                          borderBottom: "1px solid #000",
-                          marginBottom: "6px",
-                          height: "40px",
-                        }}
-                      />
-                      <div style={{ fontSize: "0.8rem", fontWeight: 700 }}>
-                        Signature / Thumb Impression
-                      </div>
-                      <div style={{ fontSize: "0.8rem" }}>
-                        of Complainant
-                      </div>
-                      <div style={{ fontSize: "0.85rem", marginTop: "4px" }}>
-                        ({complaint.isAnonymous ? "Anonymous" : firData.complainant_name})
-                      </div>
-                    </div>
-                    <div style={{ textAlign: "center" }}>
-                      <div
-                        style={{
-                          borderBottom: "1px solid #000",
-                          marginBottom: "6px",
-                          height: "40px",
-                        }}
-                      />
-                      <div style={{ fontSize: "0.8rem", fontWeight: 700 }}>
-                        Signature of Investigating
-                      </div>
-                      <div style={{ fontSize: "0.8rem" }}>Officer</div>
-                    </div>
-                    <div style={{ textAlign: "center" }}>
-                      <div
-                        style={{
-                          borderBottom: "1px solid #000",
-                          marginBottom: "6px",
-                          height: "40px",
-                        }}
-                      />
-                      <div style={{ fontSize: "0.8rem", fontWeight: 700 }}>Station SHO Seal</div>
-                    </div>
-                  </div>
-
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      marginTop: "20px",
-                      fontSize: "0.9rem",
-                    }}
-                  >
-                    <span><strong>Date:</strong> {firData.date_of_filing}</span>
-                    <span><strong>Place:</strong> {firData.place_of_filing}</span>
-                  </div>
-
-                  <div style={{ textAlign: "center", marginTop: "30px" }} className="no-print">
-                    <button className="btn btn-primary" onClick={handlePrint}>
-                      🖨️ Print Final FIR
+                      {submittingNote ? <RefreshCw size={12} className="animate-spin" /> : <Send size={12} />}
+                      Add Case Note
                     </button>
                   </div>
                 </div>
-              )}
+              </section>
             </div>
-          )}
+          </div>
 
-          {activeView === "extraction" && (
-            <div className="card animate-fade-in no-print">
-              <h4 style={{ marginBottom: "16px", fontSize: "0.95rem" }}>
-                AI Forensic JSON Extraction
-              </h4>
-              <div style={{ display: "grid", gap: "12px" }}>
-                {Object.entries(structured).map(
-                  ([key, value]) =>
-                    value && (
-                      <div
-                        key={key}
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "180px 1fr",
-                          gap: "12px",
-                          paddingBottom: "12px",
-                          borderBottom: "1px solid var(--clr-border)",
-                        }}
-                      >
-                        <span
-                          style={{
-                            color: "var(--clr-text-faint)",
-                            fontSize: "0.82rem",
-                            textTransform: "uppercase",
-                            letterSpacing: "0.05em",
-                            fontWeight: 600,
-                          }}
-                        >
-                          {key.replace(/_/g, " ")}
-                        </span>
-                        <div
-                          style={{
-                            fontSize: "0.88rem",
-                            color: "var(--clr-text)",
-                            wordBreak: "break-all",
-                            fontFamily:
-                              typeof value === "object"
-                                ? "monospace"
-                                : "inherit",
-                          }}
-                        >
-                          {typeof value === "object" ? (
-                            <pre
-                              style={{
-                                margin: 0,
-                                padding: "8px",
-                                background: "rgba(255,255,255,0.02)",
-                                borderRadius: "4px",
-                                overflowX: "auto",
-                              }}
-                            >
-                              {JSON.stringify(value, null, 2)}
-                            </pre>
-                          ) : (
-                            String(value)
-                          )}
-                        </div>
-                      </div>
-                    ),
-                )}
-                {Object.keys(structured).length === 0 && (
-                  <p
-                    style={{
-                      color: "var(--clr-text-muted)",
-                      fontSize: "0.88rem",
-                    }}
-                  >
-                    No structured data extracted
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {activeView === "timeline" && (
-            <div className="card no-print">
-              <h4 style={{ marginBottom: "16px", fontSize: "0.95rem" }}>
-                Activity Timeline
-              </h4>
-              <div style={{ position: "relative", paddingLeft: "20px" }}>
-                <div
-                  style={{
-                    position: "absolute",
-                    left: "7px",
-                    top: 0,
-                    bottom: 0,
-                    width: "2px",
-                    background: "var(--clr-border)",
-                  }}
-                />
-                {[
-                  {
-                    content: "Complaint filed by citizen",
-                    createdAt: complaint.createdAt,
-                    type: "FILED",
-                  },
-                  ...(complaint.updates || []),
-                ].map((u, i) => (
-                  <div
-                    key={i}
-                    style={{ marginBottom: "20px", position: "relative" }}
-                  >
-                    <div
-                      style={{
-                        position: "absolute",
-                        left: "-17px",
-                        width: "10px",
-                        height: "10px",
-                        borderRadius: "50%",
-                        background:
-                          u.type === "EMERGENCY_FLAG"
-                            ? "#ff3b30"
-                            : "var(--clr-primary)",
-                        top: "4px",
-                        boxShadow: `0 0 0 2px var(--clr-bg)`,
-                      }}
-                    />
-                    <div
-                      style={{
-                        fontSize: "0.75rem",
-                        color: "var(--clr-text-faint)",
-                        marginBottom: "3px",
-                      }}
+          {/* Sidebar Controls */}
+          <aside className="space-y-6 no-print">
+            {/* Status Control */}
+            <section className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+              <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-[2px] mb-4">Case Management</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 block">Update Status</label>
+                  <div className="relative">
+                    <select
+                      value={selectedStatus}
+                      onChange={(e) => setSelectedStatus(e.target.value)}
+                      className="w-full appearance-none bg-slate-50 border border-slate-200 p-3 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-slate-900/5 outline-none"
                     >
-                      {new Date(u.createdAt).toLocaleString("en-IN")}
-                      {u.updateType && (
-                        <span
-                          style={{
-                            marginLeft: "8px",
-                            background: "rgba(255,255,255,0.06)",
-                            padding: "1px 6px",
-                            borderRadius: "4px",
-                            fontSize: "0.7rem",
-                          }}
-                        >
-                          {u.updateType}
-                        </span>
-                      )}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "0.88rem",
-                        color: "var(--clr-text)",
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      {u.content}
-                    </div>
+                      {STATUS_ORDER.map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
+                    </select>
+                    <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Add Note */}
-          <div className="card no-print" style={{ marginTop: "16px" }}>
-            <h4 style={{ marginBottom: "12px", fontSize: "0.95rem" }}>
-              Add Internal Note
-            </h4>
-            <textarea
-              id="note-input"
-              className="input"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Add investigation notes, observations..."
-              rows={3}
-              style={{ resize: "vertical", marginBottom: "10px" }}
-            />
-            <button
-              className="btn btn-primary btn-sm"
-              onClick={addNote}
-              disabled={submittingNote || !note.trim()}
-            >
-              {submittingNote ? "Adding..." : "Add Note"}
-            </button>
-          </div>
-        </div>
-
-        {/* Right panel */}
-        <div
-          className="no-print"
-          style={{ display: "flex", flexDirection: "column", gap: "16px" }}
-        >
-          {/* Complaint Info */}
-          <div className="card">
-            <h4 style={{ marginBottom: "16px", fontSize: "0.95rem" }}>
-              Details
-            </h4>
-            <div style={{ display: "grid", gap: "10px", fontSize: "0.85rem" }}>
-              <InfoRow
-                label="Incident Type"
-                value={complaint.incidentType || "General"}
-              />
-              <InfoRow
-                label="Location"
-                value={
-                  complaint.locationAddress ||
-                  `${complaint.locationLat?.toFixed(4)}, ${complaint.locationLng?.toFixed(4)}` ||
-                  "N/A"
-                }
-              />
-              <InfoRow
-                label="Filed"
-                value={new Date(complaint.createdAt).toLocaleString("en-IN")}
-              />
-              <InfoRow label="Station" value={complaint.station?.stationName} />
-              <InfoRow
-                label="Anonymous"
-                value={complaint.isAnonymous ? "Yes" : "No"}
-              />
-            </div>
-          </div>
-
-          {/* Citizen Info */}
-          {!complaint.isAnonymous && complaint.user && (
-            <div className="card">
-              <h4 style={{ marginBottom: "12px", fontSize: "0.95rem" }}>
-                Complainant
-              </h4>
-              <div style={{ display: "grid", gap: "8px", fontSize: "0.85rem" }}>
-                <InfoRow label="Name" value={complaint.user.name || "N/A"} />
-                <InfoRow label="Mobile" value={complaint.user.mobileNumber} />
-                <InfoRow
-                  label="Aadhaar"
-                  value={complaint.user.aadhaarMasked || "N/A"}
-                />
-                <InfoRow
-                  label="Total Complaints"
-                  value={complaint.user.complaintCount}
-                />
-                <InfoRow
-                  label="Risk Flags"
-                  value={complaint.user.riskFlagCount}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Jurisdiction Transfer (Migration) */}
-          {["STATION_ADMIN", "SUPER_ADMIN", "GLOBAL_ADMIN", "OFFICER"].includes(
-            policeUser?.role,
-          ) && (
-              <div
-                className="card"
-                style={{ border: "1px solid rgba(139, 92, 246, 0.2)" }}
-              >
-                <h4
-                  style={{
-                    marginBottom: "12px",
-                    fontSize: "0.95rem",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                  }}
-                >
-                  <span style={{ color: "var(--clr-primary)" }}>⇄</span>{" "}
-                  Jurisdiction Transfer
-                </h4>
-                <p
-                  style={{
-                    fontSize: "0.78rem",
-                    color: "var(--clr-text-muted)",
-                    marginBottom: "12px",
-                  }}
-                >
-                  Transfer this case to another police station if it falls outside
-                  current jurisdiction.
-                </p>
-
-                <div style={{ display: "grid", gap: "10px" }}>
-                  <select
-                    className="input sm"
-                    value={selectedTargetStation}
-                    onChange={(e) => setSelectedTargetStation(e.target.value)}
-                    style={{ fontSize: "0.85rem" }}
-                  >
-                    <option value="">Select Target Station</option>
-                    {stations
-                      .filter((s) => s.id !== complaint.stationId)
-                      .map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.stationName} ({s.district})
-                        </option>
-                      ))}
-                  </select>
-
-                  <input
-                    type="text"
-                    className="input sm"
-                    placeholder="Reason for transfer..."
-                    value={migrationReason}
-                    onChange={(e) => setMigrationReason(e.target.value)}
-                    style={{ fontSize: "0.85rem" }}
-                  />
-
-                  <button
-                    className="btn btn-ghost btn-sm w-full"
-                    style={{
-                      borderColor: "var(--clr-primary)",
-                      color: "var(--clr-primary-light)",
-                      marginTop: "4px",
-                    }}
-                    onClick={handleMigrate}
-                    disabled={!selectedTargetStation || isMigrating}
-                  >
-                    {isMigrating ? "Processing..." : "Transfer Case →"}
-                  </button>
                 </div>
-              </div>
-            )}
-
-          {/* Status Update */}
-          <div className="card">
-            <h4 style={{ marginBottom: "12px", fontSize: "0.95rem" }}>
-              Update Status
-            </h4>
-            <select
-              id="status-select"
-              className="input"
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              style={{ marginBottom: "10px" }}
-            >
-              {STATUS_ORDER.map((s) => (
-                <option key={s} value={s}>
-                  {s.replace("_", " ")}
-                </option>
-              ))}
-            </select>
-            <button
-              className="btn btn-primary btn-sm w-full"
-              onClick={handleStatusChange}
-              disabled={selectedStatus === complaint.status}
-            >
-              Update Status
-            </button>
-          </div>
-
-          {/* Officer Assignment */}
-          {["STATION_ADMIN", "SUPER_ADMIN", "GLOBAL_ADMIN"].includes(
-            policeUser?.role,
-          ) &&
-            officers.length > 0 && (
-              <div className="card">
-                <h4 style={{ marginBottom: "12px", fontSize: "0.95rem" }}>
-                  Assign Officer
-                </h4>
-                <p
-                  style={{
-                    fontSize: "0.8rem",
-                    color: "var(--clr-text-muted)",
-                    marginBottom: "10px",
-                  }}
-                >
-                  Currently: {complaint.assignedOfficer?.name || "Unassigned"}
-                </p>
-                <select
-                  id="officer-select"
-                  className="input"
-                  value={selectedOfficer}
-                  onChange={(e) => setSelectedOfficer(e.target.value)}
-                  style={{ marginBottom: "10px" }}
-                >
-                  <option value="">Select Officer</option>
-                  {officers.map((o) => (
-                    <option key={o.id} value={o.id}>
-                      {o.name} ({o._count?.assignedComplaints || 0} cases)
-                    </option>
-                  ))}
-                </select>
                 <button
-                  className="btn btn-primary btn-sm w-full"
-                  onClick={handleAssign}
-                  disabled={!selectedOfficer}
+                  onClick={handleStatusChange}
+                  disabled={selectedStatus === complaint.status}
+                  className="w-full py-3 bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl hover:bg-slate-800 transition-all disabled:opacity-30 flex items-center justify-center gap-2"
                 >
-                  Assign
+                  Permanently Save Status
                 </button>
               </div>
-            )}
+            </section>
 
-          {/* Linked Cases */}
-          {(complaint.linksAsA?.length > 0 ||
-            complaint.linksAsB?.length > 0) && (
-              <div
-                className="card"
-                style={{ border: "1px solid rgba(139, 92, 246, 0.2)" }}
-              >
-                <h4
-                  style={{
-                    marginBottom: "12px",
-                    fontSize: "0.95rem",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                  }}
-                >
-                  <span style={{ color: "var(--clr-primary)" }}>🔗</span> Linked
-                  Complaints
-                </h4>
-                <div style={{ display: "grid", gap: "8px" }}>
-                  {[
-                    ...complaint.linksAsA.map((l) => ({
-                      ...l.complaintB,
-                      reason: l.linkReason,
-                    })),
-                    ...complaint.linksAsB.map((l) => ({
-                      ...l.complaintA,
-                      reason: l.linkReason,
-                    })),
-                  ].map((c, idx) => (
-                    <div
-                      key={idx}
-                      onClick={() => router.push(`/police/complaints/${c.id}`)}
-                      style={{
-                        padding: "10px",
-                        borderRadius: "8px",
-                        background: "rgba(255,255,255,0.03)",
-                        border: "1px solid var(--clr-border)",
-                        fontSize: "0.82rem",
-                        cursor: "pointer",
-                        transition: "background 0.2s",
-                      }}
-                      onMouseEnter={(e) =>
-                      (e.currentTarget.style.background =
-                        "rgba(255,255,255,0.06)")
-                      }
-                      onMouseLeave={(e) =>
-                      (e.currentTarget.style.background =
-                        "rgba(255,255,255,0.03)")
-                      }
-                    >
-                      <div
-                        style={{
-                          fontWeight: 600,
-                          color: "var(--clr-primary-light)",
-                        }}
-                      >
-                        {c.trackingId}
-                      </div>
-                      <div
-                        style={{
-                          color: "var(--clr-text-muted)",
-                          fontSize: "0.75rem",
-                        }}
-                      >
-                        {c.incidentType} • {c.status}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: "0.7rem",
-                          color: "var(--clr-text-faint)",
-                          fontStyle: "italic",
-                          marginTop: "2px",
-                        }}
-                      >
-                        Reason: {c.reason}
+            {/* Officer Assignment */}
+            {["STATION_ADMIN", "SUPER_ADMIN", "GLOBAL_ADMIN"].includes(policeUser?.role) && (
+              <section className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-[2px] mb-4">Investigating Personnel</h3>
+                <div className="space-y-4">
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center">
+                      <User size={14} className="text-slate-500" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[9px] font-bold text-slate-400 uppercase">Assigned To</div>
+                      <div className="text-xs font-bold text-slate-900 truncate">
+                        {complaint.assignedOfficer?.name || "Unassigned"}
                       </div>
                     </div>
-                  ))}
+                  </div>
+                  <div className="relative">
+                    <select
+                      value={selectedOfficer}
+                      onChange={(e) => setSelectedOfficer(e.target.value)}
+                      className="w-full appearance-none bg-white border border-slate-200 p-3 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-slate-900/5 outline-none"
+                    >
+                      <option value="">Choose Officer...</option>
+                      {officers.map(o => (
+                        <option key={o.id} value={o.id}>{o.name} ({o._count?.assignedComplaints || 0} active)</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  </div>
+                  <button
+                    onClick={handleAssign}
+                    disabled={!selectedOfficer}
+                    className="w-full py-3 bg-white border border-slate-900 text-slate-900 text-[10px] font-bold uppercase tracking-widest rounded-xl hover:bg-slate-50 transition-all disabled:opacity-30"
+                  >
+                    Assign Personnel
+                  </button>
                 </div>
-              </div>
+              </section>
             )}
 
-          {/* Evidence */}
-          {complaint.evidence?.length > 0 && (
-            <div className="card">
-              <h4 style={{ marginBottom: "16px", fontSize: "0.95rem" }}>
-                Evidence ({complaint.evidence.length})
-              </h4>
-              {complaint.evidence.map((e, i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    padding: "8px 0",
-                    borderBottom: "1px solid var(--clr-border)",
-                    fontSize: "0.82rem",
-                  }}
-                >
-                  <span style={{ color: "var(--clr-text-muted)" }}>
-                    {e.mediaCategory}
-                  </span>
-                  <span style={{ color: "var(--clr-text-faint)" }}>
-                    {new Date(e.uploadedAt).toLocaleDateString("en-IN")}
-                  </span>
+            {/* Jurisdiction Transfer */}
+            {["STATION_ADMIN", "SUPER_ADMIN", "GLOBAL_ADMIN"].includes(policeUser?.role) && (
+              <section className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-2 h-2 rounded-full bg-indigo-600" />
+                  <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-[2px]">Jurisdiction Transfer</h3>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+                <p className="text-[10px] text-slate-500 font-medium leading-relaxed mb-4">
+                  Routing this case to another station will transfer all forensic data and ownership immediately.
+                </p>
+                <div className="space-y-3">
+                  <div className="relative">
+                    <select
+                      value={selectedTargetStation}
+                      onChange={(e) => setSelectedTargetStation(e.target.value)}
+                      className="w-full appearance-none bg-slate-50 border border-slate-200 p-3 rounded-xl text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500/5"
+                    >
+                      <option value="">Select Target Station...</option>
+                      {stations.filter(s => s.id !== complaint.stationId).map(s => (
+                        <option key={s.id} value={s.id}>{s.stationName} ({s.district})</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Official Reason for Transfer"
+                    value={migrationReason}
+                    onChange={(e) => setMigrationReason(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-xs text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500/5"
+                  />
+                  <button
+                    onClick={handleMigrate}
+                    disabled={!selectedTargetStation || isMigrating}
+                    className="w-full py-3 bg-indigo-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl hover:bg-indigo-700 transition-all disabled:opacity-30 flex items-center justify-center gap-2 shadow-lg shadow-indigo-200"
+                  >
+                    {isMigrating ? <RefreshCw size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                    Execute Transfer
+                  </button>
+                </div>
+              </section>
+            )}
+          </aside>
+        </div >
+      </main >
+    </div >
   );
 }
 
 function InfoRow({ label, value }) {
   return (
-    <div
-      style={{ display: "flex", justifyContent: "space-between", gap: "8px" }}
-    >
-      <span style={{ color: "var(--clr-text-faint)", flexShrink: 0 }}>
+    <div className="flex items-center justify-between gap-4 py-1.5 border-b border-slate-50 last:border-0">
+      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex-shrink-0">
         {label}
       </span>
-      <span
-        style={{
-          color: "var(--clr-text)",
-          textAlign: "right",
-          wordBreak: "break-word",
-        }}
-      >
+      <span className="text-[11px] font-bold text-slate-700 text-right break-words">
         {value || "—"}
       </span>
     </div>
