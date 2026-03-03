@@ -6,12 +6,12 @@ const { v4: uuidv4 } = require('uuid');
 const { prisma } = require('../utils/prisma');
 const { logger } = require('../utils/logger');
 const { AppError } = require('../middleware/errorHandler');
-const { 
-  verifyPan, 
+const {
+  verifyPan,
   sendMobileOtp, verifyMobileOtp,
-  maskAadhaar, validateAadhaar, validatePan 
+  maskAadhaar, validateAadhaar, validatePan
 } = require('../services/idfyService');
-const aadhaarKyc = require('../services/aadhaarKycService');
+const aadhaarKyc = require('../services/sandboxKycService');
 
 /**
  * TOKEN UTILS
@@ -93,7 +93,7 @@ router.post('/verify-otp', async (req, res, next) => {
     if (!result.verified) throw new AppError('Invalid OTP', 400);
 
     pendingAadhaarTasks.delete(cleaned);
-    
+
     // Prioritize KYC name, fallback to manual name
     const finalName = result.name || manualName;
     const user = await upsertCitizenUser(maskAadhaar(cleaned), finalName, pending.language);
@@ -214,13 +214,13 @@ router.post('/mobile/login', async (req, res, next) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function upsertCitizenUser(idMasked, name, language) {
-  let user = await prisma.user.findFirst({ 
-    where: { 
+  let user = await prisma.user.findFirst({
+    where: {
       OR: [
         { aadhaarMasked: idMasked },
         // If we have more identifiers we'd add them here
       ]
-    } 
+    }
   });
 
   if (!user) {
@@ -275,7 +275,7 @@ router.post('/logout', async (req, res, next) => {
     try {
       const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
       await prisma.user.update({ where: { id: decoded.userId }, data: { refreshToken: null } });
-    } catch (_) {}
+    } catch (_) { }
   }
   res.clearCookie('accessToken');
   res.clearCookie('refreshToken');
