@@ -69,14 +69,20 @@ services:
       - ./backend:/app
       - /app/node_modules
 
-  # Citizen-facing frontend (port 3000)
+  # Citizen-facing frontend — Next.js (port 3000)
   frontend:
     build:
-      context: ./frontend
+      context: ./frontend-next
       dockerfile: Dockerfile
     container_name: reva_frontend
+    environment:
+      NEXT_PUBLIC_AZURE_OPENAI_ENDPOINT: ${NEXT_PUBLIC_AZURE_OPENAI_ENDPOINT}
+      NEXT_PUBLIC_AZURE_OPENAI_KEY: ${NEXT_PUBLIC_AZURE_OPENAI_KEY}
+      NEXT_PUBLIC_AZURE_OPENAI_DEPLOYMENT: ${NEXT_PUBLIC_AZURE_OPENAI_DEPLOYMENT:-sih-vision}
+      NEXT_PUBLIC_AZURE_SPEECH_KEY: ${NEXT_PUBLIC_AZURE_SPEECH_KEY}
+      NEXT_PUBLIC_AZURE_SPEECH_REGION: ${NEXT_PUBLIC_AZURE_SPEECH_REGION}
     ports:
-      - "3000:80"
+      - "3000:3000"
     depends_on:
       - backend
 

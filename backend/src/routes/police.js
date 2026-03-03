@@ -189,8 +189,8 @@ router.get('/complaints/:id', async (req, res, next) => {
 
     if (!isStationStaff && !isPrivileged) {
       logger.warn(`Unauthorized access attempt to complaint ${req.params.id} by officer ${req.policeUser.id}`);
-      return res.status(403).json({ 
-        error: 'Access denied: This complaint belongs to another jurisdiction', 
+      return res.status(403).json({
+        error: 'Access denied: This complaint belongs to another jurisdiction',
         code: 'FORBIDDEN',
         yourStation: req.policeUser.station?.stationName || 'Unknown',
         targetStation: complaint.station?.stationName || 'Unknown'
@@ -306,12 +306,12 @@ router.patch('/complaints/:id/status', enforceStationScope, async (req, res, nex
 
 // PATCH /api/police/complaints/:id/migrate
 // Transfers complaint to another jurisdiction
-router.patch('/complaints/:id/migrate', 
+router.patch('/complaints/:id/migrate',
   requireRole('STATION_ADMIN', 'SUPER_ADMIN', 'GLOBAL_ADMIN', 'OFFICER'),
   async (req, res, next) => {
     try {
       const { targetStationId, reason } = req.body;
-      
+
       if (!targetStationId) throw new AppError('Target station ID required', 400, 'STATION_REQUIRED');
 
       const complaint = await prisma.complaint.findUnique({
@@ -333,7 +333,7 @@ router.patch('/complaints/:id/migrate',
 
       const updated = await prisma.complaint.update({
         where: { id: req.params.id },
-        data: { 
+        data: {
           stationId: targetStationId,
           assignedOfficerId: null, // Reset assignment on migration
         },
