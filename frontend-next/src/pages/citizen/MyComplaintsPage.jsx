@@ -52,15 +52,15 @@ export default function MyComplaintsPage() {
 
           <div className="flex items-center gap-1.5 sm:gap-2">
             <Link href="/track" className="px-3 py-1.5 text-[13px] font-semibold text-neutral-500 hover:text-neutral-900 transition-colors rounded-lg hover:bg-neutral-50">
-              Track Complaint
+              {t("nav.track")}
             </Link>
             {user && (
               <>
                 <Link href="/my-complaints" className="px-3 py-1.5 text-[13px] font-semibold text-neutral-500 hover:text-neutral-900 transition-colors rounded-lg hover:bg-neutral-50">
-                  My Cases
+                  {t("nav.myCases")}
                 </Link>
                 <Link href="/complaint" className="px-3 py-1.5 text-[13px] font-semibold text-neutral-500 hover:text-neutral-900 transition-colors rounded-lg hover:bg-neutral-50">
-                  New Complaint
+                  {t("nav.fileComplaint")}
                 </Link>
               </>
             )}
@@ -69,7 +69,7 @@ export default function MyComplaintsPage() {
               <User size={18} className="text-neutral-600" />
             </Link>
             <button onClick={logoutCitizen} className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-bold text-neutral-500 hover:text-red-500 rounded-lg transition-colors">
-              <LogOut size={14} /> Logout
+              <LogOut size={14} /> {t("common.logout")}
             </button>
           </div>
         </div>
@@ -81,13 +81,13 @@ export default function MyComplaintsPage() {
           onClick={() => router.back()}
           className="fixed top-4 left-4 sm:top-[88px] sm:left-8 z-[60] flex items-center gap-1.5 bg-white/85 backdrop-blur-md border border-neutral-200 rounded-[10px] px-2.5 py-1 sm:px-3.5 sm:py-[7px] text-[12px] sm:text-[13px] font-semibold text-neutral-600 cursor-pointer shadow-sm"
         >
-          <ArrowLeft size={14} /> <span className="hidden xs:inline">Back</span>
+          <ArrowLeft size={14} /> <span className="hidden xs:inline">{t("common.back")}</span>
         </button>
 
         {/* Header */}
         <div className="mb-8 sm:mb-10 text-center sm:text-left mt-12 sm:mt-0">
           <p className="text-[10px] sm:text-[0.72rem] font-bold tracking-[2px] uppercase text-slate-500 mb-2">My History</p>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">My Complaints</h1>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">{t("myComplaints.navTitle")}</h1>
         </div>
 
         {/* Loading skeletons */}
@@ -103,10 +103,10 @@ export default function MyComplaintsPage() {
             <div className="w-14 h-14 bg-white border border-slate-200 rounded-2xl flex items-center justify-center mx-auto mb-5">
               <FileText size={24} className="text-slate-500" />
             </div>
-            <h3 className="text-lg font-semibold text-slate-500 mb-2">No complaints yet</h3>
-            <p className="text-sm text-slate-500 mb-7">File your first complaint to get started</p>
+            <h3 className="text-lg font-semibold text-slate-500 mb-2">{t("myComplaints.noComplaints")}</h3>
+            <p className="text-sm text-slate-500 mb-7">{t("myComplaints.noComplaintsStart")}</p>
             <Link href="/complaint" className="inline-flex items-center gap-2 px-6 py-3 bg-slate-900 text-white font-bold text-sm rounded-xl hover:bg-slate-800 transition-colors no-underline">
-              <Plus size={15} strokeWidth={2.5} /> File a Complaint
+              <Plus size={15} strokeWidth={2.5} /> {t("myComplaints.fileFirst")}
             </Link>
           </div>
         ) : (

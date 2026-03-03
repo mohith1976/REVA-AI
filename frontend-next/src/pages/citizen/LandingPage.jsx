@@ -47,8 +47,7 @@ export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   function handleLangChange(code) {
-    i18n.changeLanguage(code);
-    localStorage.setItem("reva_language", code);
+    auth?.setLanguage?.(code);
     setActiveLang(code);
   }
 

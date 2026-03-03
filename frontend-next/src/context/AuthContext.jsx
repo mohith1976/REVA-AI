@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/utils/api';
+import i18n from '@/i18n';
 
 const AuthContext = createContext(null);
 
@@ -10,12 +11,15 @@ export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [policeUser, setPoliceUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    // Start with 'en' to match server render, then sync to stored language after hydration
+    const [language, setLanguageState] = useState('en');
 
     useEffect(() => {
         const savedUser = localStorage.getItem('reva_user');
         const savedPoliceUser = localStorage.getItem('reva_police_user');
         const accessToken = localStorage.getItem('reva_token');
         const policeToken = localStorage.getItem('reva_police_token');
+        const savedLang = localStorage.getItem('reva_language');
 
         if (savedUser && accessToken) {
             setUser(JSON.parse(savedUser));
@@ -24,8 +28,20 @@ export function AuthProvider({ children }) {
         if (savedPoliceUser && policeToken) {
             setPoliceUser(JSON.parse(savedPoliceUser));
         }
+        // Apply stored language after hydration to avoid SSR mismatch
+        if (savedLang && savedLang !== 'en') {
+            i18n.changeLanguage(savedLang);
+            setLanguageState(savedLang);
+        }
         setLoading(false);
     }, []);
+
+    // Global language change — updates i18n, localStorage, and React state simultaneously
+    const setLanguage = (code) => {
+        i18n.changeLanguage(code);
+        localStorage.setItem('reva_language', code);
+        setLanguageState(code);
+    };
 
     const loginCitizen = (userData, token) => {
         setUser(userData);
@@ -73,6 +89,8 @@ export function AuthProvider({ children }) {
                 user,
                 policeUser,
                 loading,
+                language,
+                setLanguage,
                 loginCitizen,
                 loginPolice,
                 logoutCitizen,

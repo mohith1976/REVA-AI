@@ -32,6 +32,10 @@ export default function ProfilePage() {
     try {
       const res = await api.patch("/api/users/profile", formData);
       loginCitizen(res.data.user, localStorage.getItem("reva_token"));
+      // Apply language globally if it changed
+      if (formData.language && formData.language !== auth?.language) {
+        auth?.setLanguage?.(formData.language);
+      }
       toast.success("Profile updated successfully");
       setIsEditing(false);
     } catch (err) {
@@ -82,15 +86,15 @@ export default function ProfilePage() {
 
           <div className="flex items-center gap-1.5 sm:gap-2">
             <Link href="/track" className="px-3 py-1.5 text-[13px] font-semibold text-neutral-500 hover:text-neutral-900 transition-colors rounded-lg hover:bg-neutral-50">
-              Track Complaint
+              {t("nav.track")}
             </Link>
             {user && (
               <>
                 <Link href="/my-complaints" className="px-3 py-1.5 text-[13px] font-semibold text-neutral-500 hover:text-neutral-900 transition-colors rounded-lg hover:bg-neutral-50">
-                  My Cases
+                  {t("nav.myCases")}
                 </Link>
                 <Link href="/complaint" className="px-3 py-1.5 text-[13px] font-semibold text-neutral-500 hover:text-neutral-900 transition-colors rounded-lg hover:bg-neutral-50">
-                  New Complaint
+                  {t("nav.fileComplaint")}
                 </Link>
               </>
             )}
@@ -100,7 +104,7 @@ export default function ProfilePage() {
               className="flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-bold text-neutral-500 hover:text-red-500 rounded-lg transition-colors"
             >
               <LogOut size={14} />
-              <span className="hidden xs:inline">Logout</span>
+              <span className="hidden xs:inline">{t("common.logout")}</span>
             </button>
           </div>
         </div>
@@ -112,7 +116,7 @@ export default function ProfilePage() {
           onClick={() => router.back()}
           className="fixed top-4 left-4 sm:top-[88px] sm:left-8 z-[60] flex items-center gap-1.5 bg-white/85 backdrop-blur-md border border-neutral-200 rounded-[10px] px-2.5 py-1 sm:px-3.5 sm:py-[7px] text-[12px] sm:text-[13px] font-semibold text-neutral-600 cursor-pointer shadow-sm"
         >
-          <ArrowLeft size={14} /> <span className="hidden xs:inline">Back</span>
+          <ArrowLeft size={14} /> <span className="hidden xs:inline">{t("common.back")}</span>
         </button>
 
         <div className="bg-white border border-neutral-100 rounded-[28px] p-6 sm:p-10 shadow-2xl shadow-black/5 mt-10">

@@ -117,15 +117,15 @@ export default function TrackingPage() {
 
           <div className="flex items-center gap-1.5 sm:gap-2">
             <Link href="/track" className="px-3 py-1.5 text-[13px] font-semibold text-neutral-500 hover:text-neutral-900 transition-colors rounded-lg hover:bg-neutral-50">
-              Track Complaint
+              {t("nav.track")}
             </Link>
             {user && (
               <>
                 <Link href="/my-complaints" className="px-3 py-1.5 text-[13px] font-semibold text-neutral-500 hover:text-neutral-900 transition-colors rounded-lg hover:bg-neutral-50">
-                  My Cases
+                  {t("nav.myCases")}
                 </Link>
                 <Link href="/complaint" className="px-3 py-1.5 text-[13px] font-semibold text-neutral-500 hover:text-neutral-900 transition-colors rounded-lg hover:bg-neutral-50">
-                  New Complaint
+                  {t("nav.fileComplaint")}
                 </Link>
               </>
             )}
@@ -136,7 +136,7 @@ export default function TrackingPage() {
               </Link>
             ) : (
               <Link href="/login" className="px-4 py-2 bg-neutral-900 text-white text-[13px] font-bold rounded-full hover:bg-neutral-800 transition-all">
-                Sign In
+                {t("nav.signIn")}
               </Link>
             )}
           </div>
@@ -149,14 +149,14 @@ export default function TrackingPage() {
           onClick={() => router.back()}
           className="fixed top-4 left-4 sm:top-[88px] sm:left-8 z-[60] flex items-center gap-1.5 bg-white/85 backdrop-blur-md border border-neutral-200 rounded-[10px] px-2.5 py-1 sm:px-3.5 sm:py-[7px] text-[12px] sm:text-[13px] font-semibold text-neutral-600 cursor-pointer shadow-sm"
         >
-          <ArrowLeft size={14} /> <span className="hidden xs:inline">Back</span>
+          <ArrowLeft size={14} /> <span className="hidden xs:inline">{t("common.back")}</span>
         </button>
 
         {/* Header */}
         <div className="mb-8 sm:mb-10 text-center sm:text-left mt-12 sm:mt-0">
           <p className="text-[10px] sm:text-[0.72rem] font-bold tracking-[2px] uppercase text-slate-500 mb-2">Public Portal</p>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-2">Track Complaint</h1>
-          <p className="text-[13px] sm:text-sm text-slate-500">Enter your tracking ID to check the status</p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-2">{t("tracking.heading")}</h1>
+          <p className="text-[13px] sm:text-sm text-slate-500">{t("tracking.subtitle")}</p>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-8 sm:mb-10">
@@ -176,7 +176,7 @@ export default function TrackingPage() {
             className="flex items-center justify-center gap-2 px-6 py-3 bg-neutral-900 text-white font-bold text-sm rounded-xl hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             <Search size={15} strokeWidth={2.5} />
-            {loading ? "Tracking…" : "Track"}
+            {loading ? t("common.loading") : t("tracking.trackBtn")}
           </button>
         </div>
 
@@ -210,7 +210,7 @@ export default function TrackingPage() {
             {/* Activity timeline */}
             {complaint.updates?.length > 0 && (
               <div className="bg-white border border-slate-200 rounded-2xl p-6">
-                <h4 className="text-[0.72rem] font-bold tracking-[2px] uppercase text-slate-500 mb-5">Activity Timeline</h4>
+                <h4 className="text-[0.72rem] font-bold tracking-[2px] uppercase text-slate-500 mb-5">{t("tracking.activityTimeline")}</h4>
                 <div className="relative pl-5">
                   <div className="absolute left-[7px] top-0 bottom-0 w-px bg-slate-100" />
                   {complaint.updates.map((update, i) => (

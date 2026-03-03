@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/utils/api";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
 import {
@@ -87,6 +88,7 @@ export default function ComplaintPage() {
   const user = _auth?.user;
   const logoutCitizen = _auth?.logoutCitizen;
   const router = useRouter();
+  const { t } = useTranslation();
 
   const [messages, setMessages] = useState([]);
 
@@ -1142,7 +1144,7 @@ export default function ComplaintPage() {
           whileTap={{ scale: 0.95 }}
           className="fixed top-4 left-4 sm:top-[22px] sm:left-7 z-[60] flex items-center gap-1.5 bg-white/85 backdrop-blur-md border border-neutral-200 rounded-[10px] px-2.5 py-1 sm:px-3.5 sm:py-[7px] text-[12px] sm:text-[13px] font-semibold text-neutral-600 cursor-pointer shadow-sm"
         >
-          <ArrowLeft size={14} /> <span className="hidden xs:inline">Back</span>
+          <ArrowLeft size={14} /> <span className="hidden xs:inline">{t("common.back")}</span>
         </motion.button>
 
         {/* ── Header (Ultra Minimal) ─────────────────────────────────── */}
