@@ -88,7 +88,7 @@ export default function ComplaintPage() {
   const _auth = useAuth();
   const user = _auth?.user;
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, i18n: i18nInstance } = useTranslation();
 
   const [messages, setMessages] = useState([]);
 
@@ -98,8 +98,15 @@ export default function ComplaintPage() {
   const [autoResumeMic, setAutoResumeMic] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [language, setLanguage] = useState(
-    user?.language === "hi" ? "hi" : "en",
+    _auth?.language || i18nInstance.language || "en"
   );
+
+  // Sync language when user changes it globally (e.g., on the Landing page)
+  useEffect(() => {
+    if (_auth?.language && _auth.language !== language) {
+      setLanguage(_auth.language);
+    }
+  }, [_auth?.language]);
 
   const [location, setLocation] = useState(null);
   const [activeStation, setActiveStation] = useState(null);
@@ -464,12 +471,7 @@ export default function ComplaintPage() {
     // ── STEP 1: First user reply → ask for age ─────────────────────────────
     if (!isGreetingResponded) {
       setIsGreetingResponded(true);
-      const ageQuestions = {
-        en: "Before we continue, may I know your age?",
-        hi: "आगे बढ़ने से पहले, क्या मैं आपकी उम्र जान सकता हूँ?",
-        te: "కొనసాగడానికి ముందు, మీ వయస్సు చెప్పగలరా?",
-      };
-      const q = ageQuestions[language] || ageQuestions.en;
+      const q = t("intake.askAge");
       addAIMsg(q);
       speakReply(q);
       return;
@@ -481,12 +483,7 @@ export default function ComplaintPage() {
       const age = ageMatch ? parseInt(ageMatch[0], 10) : null;
 
       if (!age || age < 1 || age > 120) {
-        const retryMessages = {
-          en: "I didn't catch a valid age. Could you please tell me your age? (1–120)",
-          hi: "मुझे सही उम्र समझ नहीं आई। कृपया अपनी उम्र बताएं? (1–120)",
-          te: "సరైన వయస్సు అర్థం కాలేదు. దయచేసి మీ వయస్సు చెప్పగలరా? (1–120)",
-        };
-        const retry = retryMessages[language] || retryMessages.en;
+        const retry = t("intake.invalidAge");
         addAIMsg(retry);
         speakReply(retry);
         return;
@@ -541,19 +538,7 @@ export default function ComplaintPage() {
       setUserFathersName(name);
       setIsFathersNameCollected(true);
 
-      const occQuestions = {
-        en: "Thank you. What is your occupation?",
-        hi: "धन्यवाद। आपका व्यवसाय क्या है?",
-        te: "ధన్యవాదాలు. మీ వృత్తి లేదా పని ఏమిటి?",
-        ta: "நன்றி. உங்கள் தொழில் என்ன?",
-        kn: "ಧನ್ಯವಾದ. ನಿಮ್ಮ ವೃತ್ತಿ ಏನು?",
-        mr: "धन्यवाद. तुमचा व्यवसाय काय आहे?",
-        bn: "ধন্যবাদ। আপনার পেশা কী?",
-        gu: "આભાર. તમારો વ્યવસાય શું છે?",
-        ml: "നന്ദി. നിങ്ങളുടെ തൊഴിൽ എന്താണ്?",
-        pa: "ਧੰਨਵਾਦ। ਤੁਹਾਡਾ ਕਿੱਤਾ ਕੀ ਹੈ?",
-      };
-      const oQ = occQuestions[language] || occQuestions.en;
+      const oQ = t("intake.occupation");
       addAIMsg(oQ);
       speakReply(oQ);
       return;
@@ -583,19 +568,7 @@ export default function ComplaintPage() {
       setUserOccupation(occ);
       setIsOccupationCollected(true);
 
-      const addrQuestions = {
-        en: "Thank you. Please tell me your complete residential address.",
-        hi: "धन्यवाद। कृपया अपना पूरा निवास पता बताएं।",
-        te: "ధన్యవాదాలు. దయచేసి మీ పూర్తి నివాస చిరునామా చెప్పండి.",
-        ta: "நன்றி. தயவுசெய்து உங்கள் முழு வீட்டு முகவரியைச் சொல்லுங்கள்.",
-        kn: "ಧನ್ಯವಾದ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಸಂಪೂರ್ಣ ವಾಸಸ್ಥಳದ ವಿಳಾಸ ಹೇಳಿ.",
-        mr: "धन्यवाद. कृपया तुमचा पूर्ण निवासी पत्ता सांगा.",
-        bn: "ধন্যবাদ। দয়া করে আপনার সম্পূর্ণ বাড়ির ঠিকানা বলুন।",
-        gu: "આભાર. કૃપા કરીને તમારું સંપૂર્ણ રહેઠાણ સરનામું જણાવો.",
-        ml: "നന്ദി. ദയവായി നിങ്ങളുടെ പൂർണ്ണ വാസസ്ഥല വിലാസം പറയൂ.",
-        pa: "ਧੰਨਵਾਦ। ਕਿਰਪਾ ਕਰਕੇ ਆਪਣਾ ਪੂਰਾ ਰਿਹਾਇਸ਼ੀ ਪਤਾ ਦੱਸੋ।",
-      };
-      const aQ = addrQuestions[language] || addrQuestions.en;
+      const aQ = t("intake.address");
       addAIMsg(aQ);
       speakReply(aQ);
       return;
@@ -605,19 +578,7 @@ export default function ComplaintPage() {
     if (!isAddressCollected) {
       const addr = text.trim();
       if (addr.length < 5) {
-        const retryAddr = {
-          en: "Please provide your complete residential address including house number, street, and city.",
-          hi: "कृपया अपना पूरा पता दें — मकान नंबर, गली और शहर सहित।",
-          te: "దయచేసి మీ పూర్తి చిరునామా చెప్పండి — ఇంటి నంబర్, వీధి మరియు నగరం సహా.",
-          ta: "தயவுசெய்து வீட்டு எண், தெரு மற்றும் நகரம் உள்பட உங்கள் முழு முகவரியை வழங்குங்கள்.",
-          kn: "ದಯವಿಟ್ಟು ಮನೆ ಸಂಖ್ಯೆ, ಬೀದಿ ಮತ್ತು ನಗರ ಸೇರಿದಂತೆ ನಿಮ್ಮ ಸಂಪೂರ್ಣ ವಿಳಾಸ ನೀಡಿ.",
-          mr: "कृपया घर क्रमांक, रस्ता आणि शहरासह तुमचा पूर्ण पत्ता द्या.",
-          bn: "দয়া করে বাড়ির নম্বর, রাস্তা এবং শহরসহ আপনার সম্পূর্ণ ঠিকানা দিন।",
-          gu: "કૃપા કરી ઘર નંબર, ગલી અને શહેર સહિત તમારું સંપૂર્ણ સરનામું આપો.",
-          ml: "ദയവായി വീട് നമ്പർ, തെരുവ്, നഗരം ഉൾക്കൊള്ളുന്ന നിങ്ങളുടെ പൂർണ്ണ വിലാസം നൽകൂ.",
-          pa: "ਕਿਰਪਾ ਕਰਕੇ ਆਪਣਾ ਪੂਰਾ ਰਿਹਾਇਸ਼ੀ ਪਤਾ ਦਿਓ।",
-        };
-        const r = retryAddr[language] || retryAddr.en;
+        const r = t("intake.retryAddr");
         addAIMsg(r);
         speakReply(r);
         return;
@@ -625,60 +586,8 @@ export default function ComplaintPage() {
       setUserAddress(addr);
       setIsAddressCollected(true);
 
-      const proceedMessages = {
-        en: {
-          child: "Thank you, dear. I have noted all your details. Now, please tell me what happened. I am here to help you.",
-          adult: "Thank you. I have noted all your details. Now, how can I help you today? Please describe what happened.",
-          senior: "Thank you. I have noted all your details. Please take your time and tell me what happened.",
-        },
-        hi: {
-          child: "धन्यवाद, प्रिय। मैंने आपकी सभी जानकारी नोट कर ली है। अब बताइए क्या हुआ। मैं आपकी मदद के लिए यहाँ हूँ।",
-          adult: "धन्यवाद। मैंने आपकी सभी जानकारी नोट कर ली है। अब बताइए, मैं आज आपकी कैसे मदद करूं?",
-          senior: "धन्यवाद। मैंने आपकी सभी जानकारी नोट कर ली है। कृपया अपने समय से बताइए क्या हुआ।",
-        },
-        te: {
-          child: "ధన్యవాదాలు, నేస్తమా. మీ వివరాలన్నీ నమోదు చేసాను. ఇప్పుడు ఏం జరిగిందో చెప్పండి. నేను మీకు సహాయపడేందుకు ఇక్కడ ఉన్నాను.",
-          adult: "ధన్యవాదాలు. మీ వివరాలన్నీ నమోదు చేసాను. ఇప్పుడు ఏం జరిగిందో చెప్పండి.",
-          senior: "ధన్యవాదాలు. మీ వివరాలన్నీ నమోదు చేసాను. దయచేసి మీకు సౌకర్యంగా ఉన్నప్పుడు చెప్పండి ఏం జరిగిందో.",
-        },
-        ta: {
-          child: "நன்றி. உங்கள் விவரங்கள் குறிப்பிட்டுள்ளேன். இப்போது என்ன நடந்தது என்று சொல்லுங்கள்.",
-          adult: "நன்றி. உங்கள் விவரங்கள் குறிப்பிட்டுள்ளேன். இப்போது நான் எப்படி உதவலாம்?",
-          senior: "நன்றி. உங்கள் விவரங்கள் குறிப்பிட்டுள்ளேன். தயவுசெய்து என்ன நடந்தது என்று சொல்லுங்கள்.",
-        },
-        kn: {
-          child: "ಧನ್ಯವಾದ. ನಿಮ್ಮ ವಿವರಗಳನ್ನು ದಾಖಲಿಸಿದ್ದೇನೆ. ಈಗ ಏನಾಯಿತು ಎಂದು ಹೇಳಿ.",
-          adult: "ಧನ್ಯವಾದ. ನಿಮ್ಮ ವಿವರಗಳನ್ನು ದಾಖಲಿಸಿದ್ದೇನೆ. ಇಂದು ನಾನು ಹೇಗೆ ಸಹಾಯ ಮಾಡಬಹುದು?",
-          senior: "ಧನ್ಯವಾದ. ನಿಮ್ಮ ವಿವರಗಳನ್ನು ದಾಖಲಿಸಿದ್ದೇನೆ. ದಯವಿಟ್ಟು ಏನಾಯಿತು ಎಂದು ಹೇಳಿ.",
-        },
-        mr: {
-          child: "धन्यवाद. तुमचे तपशील नोंदवले आहेत. आता काय झाले ते सांगा.",
-          adult: "धन्यवाद. तुमचे तपशील नोंदवले आहेत. मी आज तुमची कशी मदत करू?",
-          senior: "धन्यवाद. तुमचे तपशील नोंदवले आहेत. काय झाले ते सांगा.",
-        },
-        bn: {
-          child: "ধন্যবাদ। আপনার তথ্য নোট করেছি। এখন কী হয়েছে বলুন।",
-          adult: "ধন্যবাদ। আপনার তথ্য নোট করেছি। আজ আমি কীভাবে সাহায্য করতে পারি?",
-          senior: "ধন্যবাদ। আপনার তথ্য নোট করেছি। কী হয়েছে বলুন।",
-        },
-        gu: {
-          child: "આભાર. તમારી વિગતો નોંધ લઈ છે. હવે શું થયું તે જણાવો.",
-          adult: "આભાર. તમારી વિગતો નોંધ લઈ છે. આવ, હું આજ તમારી કેવી રીતે મદદ કરી શકું?",
-          senior: "આભાર. તમારી વિગતો નોંધ લઈ છે. શું થયું તે જણાવો.",
-        },
-        ml: {
-          child: "നന്ദി. നിങ്ങളുടെ വിവരങ്ങൾ കുറിച്ചു. ഇനി എന്ത് സംഭവിച്ചു എന്ന് പറയൂ.",
-          adult: "നന്ദി. നിങ്ങളുടെ വിവരങ്ങൾ കുറിച്ചു. ഇന്ന് ഞാൻ എങ്ങനെ സഹായിക്കണം?",
-          senior: "നന്ദി. നിങ്ങളുടെ വിവരങ്ങൾ കുറിച്ചു. എന്ത് സംഭവിച്ചു എന്ന് പറയൂ.",
-        },
-        pa: {
-          child: "ਧੰਨਵਾਦ। ਤੁਹਾਡੇ ਵੇਰਵੇ ਨੋਟ ਕਰ ਲਏ। ਹੁਣ ਦੱਸੋ ਕੀ ਹੋਇਆ।",
-          adult: "ਧੰਨਵਾਦ। ਤੁਹਾਡੇ ਵੇਰਵੇ ਨੋਟ ਕਰ ਲਏ। ਅੱਜ ਮੈਂ ਤੁਹਾਡੀ ਕਿਵੇਂ ਮਦਦ ਕਰ ਸਕਦਾ ਹਾਂ?",
-          senior: "ਧੰਨਵਾਦ। ਤੁਹਾਡੇ ਵੇਰਵੇ ਨੋਟ ਕਰ ਲਏ। ਕੀ ਹੋਇਆ ਦੱਸੋ।",
-        },
-      };
-      const langProc = proceedMessages[language] || proceedMessages.en;
-      const proceed = (langProc[userCategory] || langProc.adult);
+      const categoryKeys = { child: "proceedChild", adult: "proceedAdult", senior: "proceedSenior" };
+      const proceed = t(`intake.${categoryKeys[userCategory] || "proceedAdult"}`);
       addAIMsg(proceed);
       speakReply(proceed);
       return;
@@ -1493,6 +1402,8 @@ export default function ComplaintPage() {
                                 key={lang.code}
                                 onClick={() => {
                                   setLanguage(lang.code);
+                                  i18nInstance.changeLanguage(lang.code);
+                                  _auth?.setLanguage?.(lang.code);
                                   setShowLangMenu(false);
                                   toast.success(`Language set to ${lang.label}`);
                                 }}

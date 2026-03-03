@@ -114,8 +114,8 @@ export default function ProfilePage() {
           {/* Header */}
           <div className="mb-8 flex items-center justify-between">
             <div>
-              <p className="text-[10px] sm:text-[0.72rem] font-bold tracking-[2px] uppercase text-neutral-400 mb-1">Account</p>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-neutral-900 tracking-tight">My Profile</h1>
+              <p className="text-[10px] sm:text-[0.72rem] font-bold tracking-[2px] uppercase text-neutral-400 mb-1">{t("profile.account")}</p>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-neutral-900 tracking-tight">{t("profile.heading")}</h1>
             </div>
 
             {!isEditing && (
@@ -124,7 +124,7 @@ export default function ProfilePage() {
                 className="flex items-center gap-1.5 px-3.5 py-2 bg-neutral-900 text-white text-[13px] font-bold rounded-xl hover:bg-neutral-800 transition-all shadow-lg shadow-black/10"
               >
                 <Edit2 size={14} />
-                <span className="hidden xs:inline">Edit</span>
+                <span className="hidden xs:inline">{t("profile.edit")}</span>
               </button>
             )}
           </div>
@@ -132,33 +132,33 @@ export default function ProfilePage() {
           <form className="space-y-6" onSubmit={handleUpdate}>
             {/* Name */}
             <div>
-              <label className={labelCls}><User size={12} />Full Name</label>
+              <label className={labelCls}><User size={12} />{t("profile.name")}</label>
               <input
                 type="text"
                 className={inputCls}
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Enter your full name"
+                placeholder={t("profile.namePlaceholder")}
                 readOnly={!isEditing}
               />
             </div>
 
             {/* Mobile */}
             <div>
-              <label className={labelCls}><Phone size={12} />Mobile Number</label>
+              <label className={labelCls}><Phone size={12} />{t("profile.mobile")}</label>
               <input
                 type="text"
                 className={inputCls}
                 value={formData.mobileNumber}
                 onChange={(e) => setFormData({ ...formData, mobileNumber: e.target.value })}
-                placeholder="10-digit mobile number"
+                placeholder={t("profile.mobilePlaceholder")}
                 readOnly={!isEditing}
               />
             </div>
 
             {/* Language */}
             <div>
-              <label className={labelCls}><Globe size={12} />Preferred Language</label>
+              <label className={labelCls}><Globe size={12} />{t("profile.language")}</label>
               <select
                 className={inputCls}
                 value={formData.language}
@@ -175,14 +175,14 @@ export default function ProfilePage() {
 
             {/* Location */}
             <div>
-              <label className={labelCls}><MapPin size={12} />GPS Location</label>
+              <label className={labelCls}><MapPin size={12} />{t("profile.location")}</label>
               <div className="flex gap-2">
                 <input
                   type="text"
                   className={`${inputCls} flex-1 font-mono tracking-tight`}
                   value={formData.latitude ? `${Number(formData.latitude).toFixed(4)}, ${Number(formData.longitude).toFixed(4)}` : ""}
                   readOnly
-                  placeholder="No location set"
+                  placeholder={t("profile.noLocation")}
                 />
                 {isEditing && (
                   <button
@@ -190,17 +190,17 @@ export default function ProfilePage() {
                     onClick={setLocation}
                     className="px-4 py-2 bg-neutral-900 text-white text-[13px] font-bold rounded-xl hover:bg-neutral-800 transition-all shadow-sm"
                   >
-                    Capture
+                    {t("profile.getGps")}
                   </button>
                 )}
               </div>
-              <p className="text-[11px] text-neutral-400 mt-2 px-1">Used to route complaints to your nearest police station</p>
+              <p className="text-[11px] text-neutral-400 mt-2 px-1">{t("profile.locationNote")}</p>
             </div>
 
             {/* Assigned station badge */}
             {user?.policeStation && (
               <div className="p-5 bg-neutral-50 border border-neutral-100 rounded-[20px]">
-                <div className="text-[10px] font-bold uppercase text-neutral-400 tracking-[1.5px] mb-2 px-1">Assigned Station</div>
+                <div className="text-[10px] font-bold uppercase text-neutral-400 tracking-[1.5px] mb-2 px-1">{t("profile.assignedStation")}</div>
                 <div className="font-bold text-neutral-900 text-base">{user.policeStation.stationName}</div>
                 <div className="text-[13px] text-neutral-500">{user.policeStation.district}, {user.policeStation.state}</div>
               </div>
@@ -219,7 +219,7 @@ export default function ProfilePage() {
                     disabled={loading}
                     className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-white text-neutral-600 font-bold text-[13px] border border-neutral-200 rounded-2xl hover:bg-neutral-50 transition-colors"
                   >
-                    Cancel
+                    {t("profile.cancel")}
                   </button>
                   <button
                     type="submit"
@@ -227,7 +227,7 @@ export default function ProfilePage() {
                     className="flex-[2] flex items-center justify-center gap-2 py-3.5 bg-neutral-900 text-white font-bold text-[13px] rounded-2xl hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-black/10"
                   >
                     <Save size={16} strokeWidth={2.5} />
-                    {loading ? "Saving..." : "Save Changes"}
+                    {loading ? t("profile.saving") : t("profile.save")}
                   </button>
                 </div>
               </>

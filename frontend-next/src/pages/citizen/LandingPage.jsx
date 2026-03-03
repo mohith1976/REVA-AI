@@ -1,6 +1,6 @@
 'use client';
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -42,14 +42,30 @@ export default function LandingPage() {
   const auth = useAuth();
   const user = auth?.user;
   const { t, i18n } = useTranslation();
-  const [activeLang, setActiveLang] = useState(i18n.language || "en");
+  const [activeLang, setActiveLang] = useState("en");
   const [hoverFeature, setHoverFeature] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  // Prevents hydration mismatch: translations only applied after client mount
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    setActiveLang(i18n.language || "en");
+  }, [i18n.language]);
+
+  // Keep activeLang in sync when auth language changes from another page
+  useEffect(() => {
+    if (auth?.language) setActiveLang(auth.language);
+  }, [auth?.language]);
 
   function handleLangChange(code) {
     auth?.setLanguage?.(code);
     setActiveLang(code);
   }
+
+  // Use a stable translation function that returns empty string before mount
+  // to avoid SSR mismatch when localStorage has a non-English language saved.
+  const tt = (key) => (mounted ? t(key) : "");
 
   return (
     <div className="bg-slate-50 min-h-screen text-slate-900 font-santoshi">
@@ -69,15 +85,15 @@ export default function LandingPage() {
           <div className="hidden md:flex items-center gap-2">
             {/* Navigation Links */}
             <Link href="/track" className="px-3 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100">
-              {t("nav.track")}
+              {tt("nav.track")}
             </Link>
             {user && (
               <>
                 <Link href="/my-complaints" className="px-3 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100">
-                  {t("nav.myCases")}
+                  {tt("nav.myCases")}
                 </Link>
                 <Link href="/complaint" className="px-3 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100">
-                  {t("nav.fileComplaint")}
+                  {tt("nav.fileComplaint")}
                 </Link>
               </>
             )}
@@ -97,10 +113,10 @@ export default function LandingPage() {
             ) : (
               <>
                 <Link href="/login" id="login-nav" className="px-4 py-1.5 text-sm font-semibold text-slate-900 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors">
-                  {t("nav.signIn")}
+                  {tt("nav.signIn")}
                 </Link>
                 <Link href="/police/login" id="police-login-nav" className="px-3.5 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100">
-                  {t("nav.policePortal")}
+                  {tt("nav.policePortal")}
                 </Link>
               </>
             )}
@@ -120,27 +136,27 @@ export default function LandingPage() {
           <div className="md:hidden bg-white border-b border-slate-200 py-4 px-6 animate-in slide-in-from-top duration-300">
             <div className="flex flex-col gap-4">
               <Link href="/track" className="text-sm font-medium text-slate-600 no-underline" onClick={() => setMobileMenuOpen(false)}>
-                {t("nav.track")}
+                {tt("nav.track")}
               </Link>
               {user ? (
                 <>
                   <Link href="/my-complaints" className="text-sm font-medium text-slate-600 no-underline" onClick={() => setMobileMenuOpen(false)}>
-                    {t("nav.myCases")}
+                    {tt("nav.myCases")}
                   </Link>
                   <Link href="/complaint" className="text-sm font-medium text-slate-600 no-underline" onClick={() => setMobileMenuOpen(false)}>
-                    {t("nav.fileComplaint")}
+                    {tt("nav.fileComplaint")}
                   </Link>
                   <Link href="/profile" className="text-sm font-medium text-slate-600 no-underline" onClick={() => setMobileMenuOpen(false)}>
-                    Profile
+                    {tt("nav.profile")}
                   </Link>
                 </>
               ) : (
                 <>
                   <Link href="/login" className="text-sm font-semibold text-slate-900 no-underline" onClick={() => setMobileMenuOpen(false)}>
-                    {t("nav.signIn")}
+                    {tt("nav.signIn")}
                   </Link>
                   <Link href="/police/login" className="text-sm font-medium text-slate-600 no-underline" onClick={() => setMobileMenuOpen(false)}>
-                    {t("nav.policePortal")}
+                    {tt("nav.policePortal")}
                   </Link>
                 </>
               )}
@@ -157,13 +173,13 @@ export default function LandingPage() {
         <div className="max-w-3xl relative z-10">
 
           <h1 className="text-[clamp(2.8rem,6vw,4.5rem)] font-extrabold leading-[1.08] tracking-[-1.5px] mb-6 text-slate-900">
-            {t("hero.title1")}
+            {tt("hero.title1")}
             <br />
-            <span className="text-slate-500">{t("hero.title2")}</span>
+            <span className="text-slate-500">{tt("hero.title2")}</span>
           </h1>
 
           <p className="text-lg text-slate-500 max-w-[560px] mx-auto mb-10 leading-relaxed">
-            {t("hero.subtitle")}
+            {tt("hero.subtitle")}
           </p>
 
           <div className="flex gap-3 justify-center flex-col sm:flex-row items-center sm:flex-wrap px-4">
@@ -173,14 +189,14 @@ export default function LandingPage() {
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-slate-900 text-white font-bold text-sm rounded-[10px] hover:bg-slate-800 transition-opacity"
             >
               <Mic size={16} strokeWidth={2.5} />
-              {t("hero.fileBtn")}
+              {tt("hero.fileBtn")}
             </Link>
             <Link
               href="/track"
               id="hero-track-btn"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-transparent text-slate-900 font-semibold text-sm rounded-[10px] border border-slate-200 hover:border-white/40 transition-colors"
             >
-              {t("hero.trackBtn")}
+              {tt("hero.trackBtn")}
               <ArrowRight size={16} />
             </Link>
           </div>
