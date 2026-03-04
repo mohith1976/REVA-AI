@@ -105,8 +105,11 @@ router.post('/submit', authenticateUser, async (req, res, next) => {
     } = req.body;
 
     if (!legalConfirmed) {
+      logger.warn('[complaints] Submission failed: Legal not confirmed');
       throw new AppError('Legal confirmation required', 400, 'LEGAL_NOT_CONFIRMED');
     }
+
+    logger.debug(`[complaints] Processing submission for user ${req.user.id} | Station: ${structuredJson?.stationId}`);
 
     const crypto = require('crypto');
 
@@ -374,35 +377,13 @@ router.get('/:id', authenticateUser, async (req, res, next) => {
   }
 });
 
-// Helper: find nearest station by coordinates
+
+// ─── Helper: find responsible station via PostGIS (shared routing engine) ─────
+// Uses ST_Contains (polygon match) → ST_Distance (nearest fallback)
+const { findStationForPoint } = require('./geofence');
+
 async function findNearestStation(lat, lng) {
-  // Get all active stations and calculate distance
-  const stations = await prisma.policeStation.findMany({
-    where: { status: true },
-  });
-
-  let nearest = null;
-  let minDistance = Infinity;
-
-  for (const station of stations) {
-    const distance = haversineDistance(lat, lng, station.latitude, station.longitude);
-    if (distance <= station.radiusKm && distance < minDistance) {
-      minDistance = distance;
-      nearest = station;
-    }
-  }
-
-  return nearest;
-}
-
-function haversineDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return findStationForPoint(lat, lng);
 }
 
 module.exports = router;

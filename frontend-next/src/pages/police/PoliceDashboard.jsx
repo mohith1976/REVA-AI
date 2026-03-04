@@ -200,16 +200,6 @@ export default function PoliceDashboard() {
                     </div>
                   ))}
                 </div>
-                <div>
-                  <label className="text-[0.65rem] text-slate-400 block mb-1">Radius (km)</label>
-                  <input type="number" className={`${INPUT_CLASS} w-full text-xs py-1.5`}
-                    defaultValue={policeUser?.station?.radiusKm || 5}
-                    onBlur={async (e) => {
-                      const radius = parseFloat(e.target.value);
-                      try { await api.patch(`/api/stations/${policeUser.stationId}`, { radiusKm: radius }); } catch { }
-                    }}
-                  />
-                </div>
               </div>
             )}
           </div>
@@ -383,8 +373,8 @@ export default function PoliceDashboard() {
             </div>
           )}
         </main>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 
 }

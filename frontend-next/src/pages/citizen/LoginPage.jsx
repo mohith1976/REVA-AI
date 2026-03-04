@@ -120,6 +120,16 @@ export default function LoginPage() {
     try {
       const res = await api.post("/api/auth/send-mobile-otp", { mobile });
       setStep("otp"); setMasked(`+91 ${mobile.slice(0, 2)}******${mobile.slice(-2)}`);
+
+      if (res.data.devOtp) {
+        toast((t_inner) => (
+          <div className="flex flex-col gap-1">
+            <span className="font-bold text-neutral-900 text-sm">Twilio Trial OTP:</span>
+            <span className="text-lg font-mono tracking-widest text-neutral-600 bg-neutral-50 px-2 py-1 rounded border border-neutral-100">{res.data.devOtp}</span>
+          </div>
+        ), { duration: 10000, icon: '🛡️' });
+      }
+
       toast.success(res.data.message || "OTP sent to your mobile");
     } catch (err) { toast.error(err.response?.data?.error || "Failed to send OTP"); }
     finally { setLoading(false); }

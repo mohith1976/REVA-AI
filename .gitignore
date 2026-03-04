@@ -69,3 +69,6 @@ setup-db.js
 # Extra
 ai_voice_chat_1/
 env_copy.txt
+
+# Plans
+geofencing_execution_plan.md
