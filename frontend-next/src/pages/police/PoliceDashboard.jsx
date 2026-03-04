@@ -384,7 +384,6 @@ function SidebarContent({ onClose, isCollapsed, setIsCollapsed, policeUser, logo
     { to: "/police/dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { to: "/police/complaints", icon: Folder, label: "All Cases" },
     { to: "/police/map", icon: Map, label: "Crime Map" },
-    { to: "/police/analytics", icon: BarChart2, label: "Analytics" },
     { to: "/police/officers", icon: Users, label: "Officers" },
     { to: "/police/linked-complaints", icon: Link2, label: "Joint Complaints" },
     ...(policeUser?.role === "GLOBAL_ADMIN" ? [{ to: "/police/stations", icon: Building, label: "Stations" }] : []),
