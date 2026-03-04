@@ -48,5 +48,8 @@
   "devDependencies": {
     "nodemon": "^3.0.3",
     "prisma": "^5.10.0"
+  },
+  "prisma": {
+    "seed": "node prisma/police_seed.js"
   }
 }
