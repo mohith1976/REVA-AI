@@ -280,16 +280,25 @@ export default function ComplaintPage() {
   };
 
   useEffect(() => {
-    const fetchLocationAndGeofence = async () => {
+    const fetchLocationAndGeofence = async (retryCount = 0) => {
       // Prevent redundant checks (e.g. React StrictMode double-fire)
-      if (geofenceCheckInProgressRef.current) return;
+      if (geofenceCheckInProgressRef.current && retryCount === 0) return;
       geofenceCheckInProgressRef.current = true;
 
       setIsCheckingGeofence(true);
       if ("geolocation" in navigator) {
         navigator.geolocation.getCurrentPosition(
           async (position) => {
-            const { latitude, longitude } = position.coords;
+            const { latitude, longitude, accuracy } = position.coords;
+            console.log(`Detected Location: ${latitude}, ${longitude} (Accuracy: ${accuracy}m)`);
+
+            // If accuracy is worse than 1000m and we haven't retried yet, try one more time
+            if (accuracy > 1000 && retryCount < 1) {
+              console.warn("Location accuracy poor. Retrying...");
+              setTimeout(() => fetchLocationAndGeofence(retryCount + 1), 1000);
+              return;
+            }
+
             setLocation({ latitude, longitude });
             try {
               const res = await api.get(
@@ -313,10 +322,20 @@ export default function ComplaintPage() {
             }
           },
           (err) => {
-            console.warn("Location access denied — user will be prompted to select station manually.", err);
-            setIsCheckingGeofence(false);
+            console.warn("Location access denied or timed out", err);
+            if (retryCount < 1) {
+              console.log("Retrying location fetch...");
+              fetchLocationAndGeofence(retryCount + 1);
+            } else {
+              setIsCheckingGeofence(false);
+              toast.error("Could not get accurate location. Please select station manually.");
+            }
           },
-          { enableHighAccuracy: true },
+          {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 0
+          },
         );
       } else {
         setIsCheckingGeofence(false);
