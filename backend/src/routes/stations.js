@@ -7,9 +7,13 @@ const { AppError } = require('../middleware/errorHandler');
 // GET /api/stations - Public endpoint to list active stations
 router.get('/', async (req, res, next) => {
   try {
-    const { rank, search, page = 1, limit = 10 } = req.query;
-    const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
+    const { rank, search, page, limit } = req.query;
+
+    // Default to pagination if either 'page' or 'limit' is provided
+    // Otherwise, default to a large limit (2000) for map/all stations
+    const isPaginated = page !== undefined || limit !== undefined;
+    const pageNum = parseInt(page) || 1;
+    const limitNum = parseInt(limit) || 2000;
     const offset = (pageNum - 1) * limitNum;
 
     let baseQuery = `FROM police_stations WHERE status = true`;
@@ -27,12 +31,12 @@ router.get('/', async (req, res, next) => {
       paramIdx++;
     }
 
-    // Get total count for pagination
+    // Get total count
     const countQuery = `SELECT COUNT(*)::int as count ${baseQuery}`;
     const countResult = await prisma.$queryRawUnsafe(countQuery, ...params);
     const totalCount = countResult[0].count;
 
-    // Get paginated data
+    // Get data
     const dataQuery = `
       SELECT 
         id, 
@@ -60,7 +64,8 @@ router.get('/', async (req, res, next) => {
         totalCount,
         totalPages: Math.ceil(totalCount / limitNum),
         currentPage: pageNum,
-        limit: limitNum
+        limit: limitNum,
+        isPaginated
       }
     });
   } catch (error) {
