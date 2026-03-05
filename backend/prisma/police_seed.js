@@ -1,22 +1,111 @@
+/**
+ * police_seed.js — Fast, Production-Ready Database Seeder
+ * ---------------------------------------------------------
+ * Safe for EMPTY databases and re-runs (idempotent upserts).
+ * Uses concurrent Promise.all within batches for speed.
+ *
+ * Sections:
+ *  1. Global Admin
+ *  2. Police Stations — Pass 1 (base data, no FK parent links)
+ *  3. Police Stations — Pass 2 (link parentStationId hierarchy)
+ *  4. Police Users    — 1 per station, role from rank
+ *  5. Sample Citizen Users
+ *
+ * Config: prisma/seed_config.json (no hardcoded values)
+ * Run:    node prisma/police_seed.js
+ */
+
+'use strict';
+
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const path = require('path');
 
-// Load configuration
+// ── Config ────────────────────────────────────────────────────────────────────
 const configPath = path.join(__dirname, 'seed_config.json');
+if (!fs.existsSync(configPath)) {
+    console.error('❌ seed_config.json not found at', configPath);
+    process.exit(1);
+}
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+
+for (const field of ['adminEmail', 'adminPassword', 'policeDomain', 'stationDataPath']) {
+    if (!config[field]) {
+        console.error(`❌ Missing "${field}" in seed_config.json`);
+        process.exit(1);
+    }
+}
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+const RANK_TO_ROLE = {
+    DISTRICT: 'DISTRICT_ADMIN',
+    SUBDIVISION: 'DIVISION_ADMIN',
+    CIRCLE: 'CIRCLE_ADMIN',
+    STATION: 'STATION_ADMIN',
+};
+
+const RANK_LABEL = {
+    DISTRICT: 'District Admin',
+    SUBDIVISION: 'Division Admin',
+    CIRCLE: 'Circle Inspector',
+    STATION: 'Station Admin',
+};
+
+const CONCURRENCY = 20; // concurrent queries per batch — tuned for Supabase
 
 const prisma = new PrismaClient();
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function stationEmail(id) {
+    return `admin.${id.toLowerCase().replace(/[^a-z0-9]/g, '.')}@${config.policeDomain}`;
+}
+
+/**
+ * Runs handler() on every item concurrently CONCURRENCY-at-a-time.
+ * Much faster than sequential, but won't flood the connection pool.
+ */
+async function runConcurrent(items, handler) {
+    for (let i = 0; i < items.length; i += CONCURRENCY) {
+        await Promise.all(items.slice(i, i + CONCURRENCY).map(handler));
+    }
+}
+
+function stationUpsertData(s, includeParent = false) {
+    const base = {
+        stationName: s.stationName,
+        district: s.district,
+        state: s.state,
+        latitude: s.latitude ?? 0,
+        longitude: s.longitude ?? 0,
+        contactNumber: s.contactNumber ?? 'NA',
+        address: s.address ?? null,
+        pincode: s.pincode ?? null,
+        circleName: s.circleName ?? null,
+        subDivisionName: s.subDivisionName ?? null,
+        divisionName: s.divisionName ?? null,
+        districtCode: s.districtCode ?? null,
+        externalId: s.externalId ?? null,
+        dataSource: s.dataSource ?? 'MANUAL',
+        rank: s.rank ?? 'STATION',
+        status: s.status ?? true,
+    };
+    if (includeParent) base.parentStationId = s.parentStationId ?? null;
+    return base;
+}
+
+// ── Main ──────────────────────────────────────────────────────────────────────
+
 async function main() {
-    console.log('🚀 Starting Consolidated Database Seeding (police_seed.js)...');
+    console.log('\n🚀 REVA-AI Database Seeding (Fast Mode)\n');
+    const t0 = Date.now();
 
     const hashedPwd = await bcrypt.hash(config.adminPassword, 12);
 
-    // 1. Upsert GLOBAL_ADMIN
-    console.log(`🌍 Upserting Global Admin (${config.adminEmail})...`);
+    // ── 1. Global Admin ───────────────────────────────────────────────────────
+    process.stdout.write('👤 Global Admin ... ');
     await prisma.policeUser.upsert({
         where: { email: config.adminEmail },
         update: {},
@@ -27,119 +116,77 @@ async function main() {
             passwordHash: hashedPwd,
             role: 'GLOBAL_ADMIN',
             isActive: true,
-            stationId: null
-        }
+            stationId: null,
+        },
     });
+    console.log('done');
 
-    // 2. Upsert Police Stations from Data File
-    console.log('📍 Seeding Official Police Stations...');
-    const stationDataPath = path.join(__dirname, config.stationDataPath);
-    if (fs.existsSync(stationDataPath)) {
-        const stationsData = JSON.parse(fs.readFileSync(stationDataPath, 'utf8'));
-        console.log(`📊 Found ${stationsData.length} stations in JSON.`);
-
-        // Using sequential upserts within batches to avoid connection pool timeouts
-        const BATCH_SIZE = 100;
-        for (let i = 0; i < stationsData.length; i += BATCH_SIZE) {
-            const batch = stationsData.slice(i, i + BATCH_SIZE);
-            for (const s of batch) {
-                await prisma.policeStation.upsert({
-                    where: { id: s.id },
-                    update: {
-                        stationName: s.stationName,
-                        district: s.district,
-                        state: s.state,
-                        latitude: s.latitude,
-                        longitude: s.longitude,
-                        contactNumber: s.contactNumber || 'NA',
-                        address: s.address,
-                        circleName: s.circleName,
-                        dataSource: s.dataSource || 'MANUAL',
-                        districtCode: s.districtCode,
-                        divisionName: s.divisionName,
-                        externalId: s.externalId,
-                        parentStationId: s.parentStationId,
-                        pincode: s.pincode,
-                        subDivisionName: s.subDivisionName,
-                        rank: s.rank || 'STATION'
-                    },
-                    create: {
-                        id: s.id,
-                        stationName: s.stationName,
-                        district: s.district,
-                        state: s.state,
-                        latitude: s.latitude,
-                        longitude: s.longitude,
-                        contactNumber: s.contactNumber || 'NA',
-                        address: s.address,
-                        circleName: s.circleName,
-                        dataSource: s.dataSource || 'MANUAL',
-                        districtCode: s.districtCode,
-                        divisionName: s.divisionName,
-                        externalId: s.externalId,
-                        parentStationId: s.parentStationId,
-                        pincode: s.pincode,
-                        subDivisionName: s.subDivisionName,
-                        rank: s.rank || 'STATION'
-                    }
-                });
-            }
-            if (i % 500 === 0 && i > 0) console.log(`   ... processed ${i} stations`);
-        }
+    // ── 2–4. Stations & Users ─────────────────────────────────────────────────
+    const dataPath = path.resolve(__dirname, config.stationDataPath);
+    if (!fs.existsSync(dataPath)) {
+        console.warn(`⚠️  ${dataPath} not found — skipping stations & users.`);
     } else {
-        console.warn(`⚠️ ${config.stationDataPath} not found. Skipping station seeding.`);
-    }
+        const stations = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+        console.log(`🏛️  ${stations.length} stations loaded from JSON\n`);
 
-    // 3. Create Personnel for ALL Stations (Admin/Inspector per station)
-    console.log('👮 Seeding Personnel for all stations...');
+        // ── Pass 1: base data (no parentStationId) ────────────────────────────
+        const t1 = Date.now();
+        process.stdout.write(`   📥 Pass 1 — base records (${stations.length}) ... `);
+        await runConcurrent(stations, (s) =>
+            prisma.policeStation.upsert({
+                where: { id: s.id },
+                update: stationUpsertData(s, false),
+                create: { id: s.id, ...stationUpsertData(s, false) },
+            })
+        );
+        console.log(`done  (${((Date.now() - t1) / 1000).toFixed(1)}s)`);
 
-    // Mapping StationRank to UserRole
-    const rankRoleMap = {
-        'DISTRICT': 'DISTRICT_ADMIN',
-        'SUBDIVISION': 'DIVISION_ADMIN',
-        'CIRCLE': 'CIRCLE_ADMIN',
-        'STATION': 'STATION_ADMIN'
-    };
+        // ── Pass 2: link hierarchies ───────────────────────────────────────────
+        const withParent = stations.filter(s => s.parentStationId);
+        const t2 = Date.now();
+        process.stdout.write(`   🔗 Pass 2 — hierarchy links (${withParent.length}) ... `);
+        await runConcurrent(withParent, (s) =>
+            prisma.policeStation.update({
+                where: { id: s.id },
+                data: { parentStationId: s.parentStationId },
+            })
+        );
+        console.log(`done  (${((Date.now() - t2) / 1000).toFixed(1)}s)`);
 
-    const stations = await prisma.policeStation.findMany();
-    console.log(`📊 Processing personnel for ${stations.length} stations...`);
+        // ── Police Users (1 per station) ───────────────────────────────────────
+        const t3 = Date.now();
+        process.stdout.write(`\n👮 Police Users (${stations.length}) ... `);
 
-    const PERSONNEL_BATCH_SIZE = 100;
-    for (let i = 0; i < stations.length; i += PERSONNEL_BATCH_SIZE) {
-        const batch = stations.slice(i, i + PERSONNEL_BATCH_SIZE);
-        for (const station of batch) {
-            const role = rankRoleMap[station.rank] || 'OFFICER';
-            const adminEmail = `admin.${station.id.toLowerCase().replace(/[^a-z0-9]/g, '.')}@${config.policeDomain}`;
-
-            await prisma.policeUser.upsert({
-                where: { email: adminEmail },
-                update: {
-                    stationId: station.id,
-                    role: role
-                },
+        // eagerly build upsert data from JSON (avoid extra DB query)
+        await runConcurrent(stations, (s) => {
+            const role = RANK_TO_ROLE[s.rank] ?? 'OFFICER';
+            const label = RANK_LABEL[s.rank] ?? 'Station Admin';
+            const email = stationEmail(s.id);
+            return prisma.policeUser.upsert({
+                where: { email },
+                update: { stationId: s.id, role },
                 create: {
                     id: uuidv4(),
-                    stationId: station.id,
-                    name: `${station.stationName} ${role.replace('_ADMIN', '').replace('_', ' ')}`,
-                    email: adminEmail,
+                    stationId: s.id,
+                    name: `${label} — ${s.stationName}`,
+                    email,
                     passwordHash: hashedPwd,
-                    role: role,
-                    isActive: true
-                }
+                    role,
+                    isActive: true,
+                },
             });
-        }
-        if (i % 500 === 0 && i > 0) console.log(`   ... processed ${i} station personnel`);
+        });
+        console.log(`done  (${((Date.now() - t3) / 1000).toFixed(1)}s)`);
     }
 
-    // 4. Create Citizen Users
-    console.log('👥 Upserting Citizen Users...');
-    const citizenData = [
+    // ── 5. Sample Citizens ────────────────────────────────────────────────────
+    process.stdout.write('\n👥 Sample citizens ... ');
+    const citizens = [
         { name: 'Rahul Sharma', mobile: '9876543210', aadhaar: 'XXXX-XXXX-1234' },
         { name: 'Priya Verma', mobile: '9888877777', aadhaar: 'XXXX-XXXX-5678' },
-        { name: 'Kiran Kumar', mobile: '9999900000', aadhaar: 'XXXX-XXXX-9000' }
+        { name: 'Kiran Kumar', mobile: '9999900000', aadhaar: 'XXXX-XXXX-9000' },
     ];
-
-    for (const c of citizenData) {
+    for (const c of citizens) {
         await prisma.user.upsert({
             where: { mobileNumber: c.mobile },
             update: { name: c.name, aadhaarMasked: c.aadhaar },
@@ -150,23 +197,27 @@ async function main() {
                 aadhaarMasked: c.aadhaar,
                 internalRef: uuidv4(),
                 isVerified: true,
-                language: 'en'
-            }
+                language: 'en',
+            },
         });
     }
+    console.log('done');
 
-    console.log('\n✅ Consolidated Seeding Complete!');
-    console.log('--------------------------------------------------');
-    console.log(`GLOBAL ADMIN: ${config.adminEmail} / ${config.adminPassword}`);
-    console.log(`OFFICER EMAIL DOMAIN: @${config.policeDomain}`);
-    console.log('--------------------------------------------------');
+    // ── Summary ───────────────────────────────────────────────────────────────
+    const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+    console.log(`
+✅ Seeding complete in ${elapsed}s
+═══════════════════════════════════════════
+  Global Admin : ${config.adminEmail}
+  Password     : ${config.adminPassword}  (all users)
+  Login email  : admin.[station-id]@${config.policeDomain}
+═══════════════════════════════════════════
+`);
 }
 
 main()
-    .catch((e) => {
-        console.error('❌ Seeding failed:', e);
+    .catch((err) => {
+        console.error('\n❌ Seeding failed:', err.message ?? err);
         process.exit(1);
     })
-    .finally(async () => {
-        await prisma.$disconnect();
-    });
+    .finally(() => prisma.$disconnect());

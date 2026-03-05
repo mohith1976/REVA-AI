@@ -1,9 +1,15 @@
-/*
-  Warnings:
-
   - A unique constraint covering the columns `[external_id]` on the table `police_stations` will be added.
 
 */
+-- CreateEnum
+CREATE TYPE "StationRank" AS ENUM ('STATION', 'CIRCLE', 'SUBDIVISION', 'DISTRICT');
+
+-- AlterEnum: add missing roles
+ALTER TYPE "UserRole" ADD VALUE IF NOT EXISTS 'GLOBAL_ADMIN';
+ALTER TYPE "UserRole" ADD VALUE IF NOT EXISTS 'DISTRICT_ADMIN';
+ALTER TYPE "UserRole" ADD VALUE IF NOT EXISTS 'DIVISION_ADMIN';
+ALTER TYPE "UserRole" ADD VALUE IF NOT EXISTS 'CIRCLE_ADMIN';
+
 -- AlterTable: complaints escalation tracking fields
 ALTER TABLE "complaints"
   ADD COLUMN IF NOT EXISTS "last_migrated_at" TIMESTAMP(3),
@@ -21,6 +27,7 @@ ALTER TABLE "police_stations"
   ADD COLUMN IF NOT EXISTS "parent_station_id" TEXT,
   ADD COLUMN IF NOT EXISTS "pincode"           TEXT,
   ADD COLUMN IF NOT EXISTS "sub_division_name" TEXT,
+  ADD COLUMN IF NOT EXISTS "rank"              "StationRank" NOT NULL DEFAULT 'STATION',
   ADD COLUMN IF NOT EXISTS "updated_at"        TIMESTAMP(3) NOT NULL DEFAULT NOW();
 
 -- CreateIndex: unique external_id for APSAC sync integrity
