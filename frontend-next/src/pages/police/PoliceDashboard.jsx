@@ -222,7 +222,7 @@ export default function PoliceDashboard() {
               <div className="lg:col-span-2 bg-white border border-neutral-200/60 rounded-2xl p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-6">
                   <div className="text-[12px] font-bold text-neutral-400 uppercase tracking-wider">Active Attack Vectors (Regional)</div>
-                  <div className="px-2 py-1 bg-neutral-50 rounded text-[10px] font-bold text-neutral-500">REAL-TIME DATA</div>
+                  <div className="px-2 py-1 bg-neutral-50 rounded text-[10px] font-bold text-neutral-500"></div>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
                   {[
@@ -242,19 +242,7 @@ export default function PoliceDashboard() {
                 </div>
               </div>
               {/* Audit stream */}
-              <div className="bg-neutral-900 rounded-2xl p-5 shadow-xl relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                  <Shield size={80} color="white" />
-                </div>
-                <div className="text-[10px] font-bold text-neutral-400 mb-4 tracking-[2px] uppercase">Immutable Security Stream</div>
-                <div className="space-y-2 font-mono text-[11px] text-neutral-300 leading-relaxed">
-                  <div className="flex gap-2"><span className="text-neutral-600">01</span> [SYS] Integrity: PASSED</div>
-                  <div className="flex gap-2"><span className="text-neutral-600">02</span> [SIGN] Envelope Sealed</div>
-                  <div className="flex gap-2"><span className="text-neutral-600">03</span> [IDS] Monitors: ACTIVE</div>
-                  <div className="flex gap-2"><span className="text-neutral-600">04</span> [LOG] Session: {policeUser?.name?.slice(0, 3).toUpperCase()}...</div>
-                  <div className="flex gap-2 animate-pulse"><span className="text-neutral-600">05</span> [WSS] Streaming...</div>
-                </div>
-              </div>
+
             </div>
           </div>
 
