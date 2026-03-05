@@ -13,6 +13,7 @@ export default function CrimeMap() {
   const [stations, setStations] = useState([]);
   const [selectedRank, setSelectedRank] = useState('STATION');
   const [showLocalStations, setShowLocalStations] = useState(true);
+  const [fetchingStations, setFetchingStations] = useState(false);
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
   const markersGroup = useRef(null);
@@ -43,9 +44,11 @@ export default function CrimeMap() {
 
   const fetchStations = async (rank) => {
     try {
+      setFetchingStations(true);
       const res = await api.get(`/api/stations?rank=${rank}`);
       setStations(res.data.stations || []);
     } catch (err) { console.error("Station Data Fetch Error:", err); }
+    finally { setFetchingStations(false); }
   };
 
   useEffect(() => {
@@ -151,7 +154,7 @@ export default function CrimeMap() {
   }, [loading, complaints, stations, showLocalStations]);
 
   return (
-    <div className="h-screen bg-[#0c0c0c] flex flex-col">
+    <div className="h-screen bg-[#0c0c0c] flex flex-col relative">
       <style>{`
         @keyframes pulse-red {
           0%   { box-shadow: 0 0 0 0px rgba(255,59,48,0.7); }
@@ -161,6 +164,16 @@ export default function CrimeMap() {
         .leaflet-popup-content-wrapper { border-radius: 12px; background: #fff; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
         .leaflet-popup-tip { background: #fff; }
       `}</style>
+
+      {/* Loading Overlay */}
+      {fetchingStations && (
+        <div className="absolute inset-0 z-[2000] bg-black/10 backdrop-blur-[2px] flex items-center justify-center pointer-events-none transition-all duration-300">
+          <div className="bg-white/90 backdrop-blur-md px-6 py-4 rounded-2xl shadow-2xl border border-white/20 flex items-center gap-4 animate-in fade-in zoom-in duration-300">
+            <div className="w-5 h-5 border-2 border-neutral-200 border-t-neutral-800 rounded-full animate-spin" />
+            <span className="text-[13px] font-bold text-neutral-800 tracking-tight">Syncing Intelligence Data...</span>
+          </div>
+        </div>
+      )}
 
       {/* Topbar */}
       <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 lg:gap-5 px-4 lg:px-6 py-4 bg-white/95 backdrop-blur-md border-b border-neutral-200 z-[1000] shadow-sm">
