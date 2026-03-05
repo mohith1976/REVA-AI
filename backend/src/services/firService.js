@@ -25,7 +25,33 @@ async function generateFormalFIR(complaintData) {
     const filingDate = new Date(createdAt || Date.now()).toLocaleDateString('en-IN');
 
     // Pull any profile fields that were pre-collected during chat intake
-    const knownAge = structuredJson?.userAge || structuredJson?.age || 'Extract from transcript';
+    // Calculate age from date of birth if available (most accurate source)
+    let knownAge;
+    if (user?.dateOfBirth) {
+        try {
+            let dob;
+            if (String(user.dateOfBirth).includes('/')) {
+                const parts = String(user.dateOfBirth).split('/');
+                // DD/MM/YYYY
+                dob = parts[0].length <= 2
+                    ? new Date(`${parts[2]}-${parts[1]}-${parts[0]}`)
+                    : new Date(user.dateOfBirth);
+            } else {
+                dob = new Date(user.dateOfBirth);
+            }
+            if (!isNaN(dob.getTime())) {
+                const today = new Date();
+                let age = today.getFullYear() - dob.getFullYear();
+                const dm = today.getMonth() - dob.getMonth();
+                if (dm < 0 || (dm === 0 && today.getDate() < dob.getDate())) age--;
+                knownAge = `${age} years`;
+            }
+        } catch (_) { /* fall through */ }
+    }
+    if (!knownAge) {
+        const rawAge = structuredJson?.userAge || structuredJson?.age;
+        knownAge = rawAge ? `${rawAge} years` : 'Extract from transcript';
+    }
     const knownFathersName = structuredJson?.userFathersName || structuredJson?.fathers_or_husbands_name || 'Extract from transcript';
     const knownOccupation = structuredJson?.userOccupation || structuredJson?.occupation || 'Extract from transcript';
     const knownAddress = structuredJson?.userAddress || structuredJson?.address || 'Extract from transcript';

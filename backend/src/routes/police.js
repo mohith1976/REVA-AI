@@ -473,7 +473,7 @@ router.post('/complaints/:id/generate-fir', async (req, res, next) => {
     const complaint = await prisma.complaint.findUnique({
       where: { id: req.params.id },
       include: {
-        user: { select: { name: true, mobileNumber: true, aadhaarMasked: true } },
+        user: { select: { name: true, mobileNumber: true, aadhaarMasked: true, dateOfBirth: true } },
         station: { select: { stationName: true, district: true, state: true } },
       },
     });

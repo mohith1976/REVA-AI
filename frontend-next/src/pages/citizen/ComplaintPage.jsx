@@ -115,6 +115,9 @@ export default function ComplaintPage() {
   const [showStationPicker, setShowStationPicker] = useState(false);
   const [availableStations, setAvailableStations] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isComplaintFiled, setIsComplaintFiled] = useState(false);
+  const [redirectCountdown, setRedirectCountdown] = useState(10);
+  const complaintFiledRef = useRef(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isMediaUploading, setIsMediaUploading] = useState(false);
   const [showMediaMenu, setShowMediaMenu] = useState(false);
@@ -227,9 +230,10 @@ export default function ComplaintPage() {
   useEffect(scrollToBottom, [messages, interimTranscript, isLoading]);
 
   // ── Refresh / tab-close guard ───────────────────────────────────────────
-  // Always warn when leaving the complaint page — browser dialog on F5/Ctrl-R/close
+  // Always warn when leaving the complaint page — skip once complaint is filed
   useEffect(() => {
     const handleBeforeUnload = (e) => {
+      if (complaintFiledRef.current) return;
       e.preventDefault();
       e.returnValue = "Your complaint session will be lost. Are you sure you want to leave?";
       return e.returnValue;
@@ -237,6 +241,25 @@ export default function ComplaintPage() {
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, []);
+
+  // ── After complaint filed: block chat, count down 10 s, redirect home ──
+  useEffect(() => {
+    if (!isComplaintFiled) return;
+    complaintFiledRef.current = true;
+    stopSTT();
+    cancelSpeech();
+    let count = 10;
+    setRedirectCountdown(count);
+    const interval = setInterval(() => {
+      count--;
+      setRedirectCountdown(count);
+      if (count <= 0) {
+        clearInterval(interval);
+        router.push('/');
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isComplaintFiled]);
 
   // ── Custom back-navigation confirmation modal state ─────────────────────
   const [showLeaveModal, setShowLeaveModal] = useState(false);
@@ -253,7 +276,7 @@ export default function ComplaintPage() {
       isSpeaking === false
     ) {
       const timer = setTimeout(() => {
-        if (!isListening && !isSpeaking && !isLoading && !isSubmitting) {
+        if (!isListening && !isSpeaking && !isLoading && !isSubmitting && !isComplaintFiled) {
           resetTranscript();
           startSTT();
         }
@@ -419,7 +442,7 @@ export default function ComplaintPage() {
           incidentDateTime: aiData?.dateTime || lastAiDataRef.current?.dateTime || new Date().toISOString(),
           // Personal intake fields for FIR
           userFathersName: userFathersName || null,
-          userOccupation: userOccupation || null,
+          userOccupation: aiData?.occupation || userOccupation || null,
           userAddress: userAddress || null,
           userAge: userAge || null,
         },
@@ -456,6 +479,9 @@ export default function ComplaintPage() {
       };
 
       setMessages((prev) => [...prev, receiptMsg]);
+      setIsComplaintFiled(true);
+      stopSTT();
+      cancelSpeech();
       toast.success("Complaint filed! Your tracking ID is " + trackingId);
     } catch (err) {
       console.error("Submission error FULL:", err);
@@ -481,7 +507,7 @@ export default function ComplaintPage() {
   }, [isListening, sttTranscript, autoStop]);
 
   const sendMessage = async (text) => {
-    if (!text?.trim() || isLoading) return;
+    if (!text?.trim() || isLoading || isComplaintFiled) return;
 
     const userMsg = {
       id: Date.now().toString(),
@@ -1430,6 +1456,18 @@ export default function ComplaintPage() {
             transition={{ duration: 0.4, ease: "easeInOut" }}
             className="pointer-events-auto w-full"
           >
+            {/* Complaint filed — countdown banner */}
+            <AnimatePresence>
+              {isComplaintFiled && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-3 px-5 py-2.5 bg-emerald-600/90 backdrop-blur-xl text-white text-[13px] font-semibold rounded-full shadow-lg text-center pointer-events-auto"
+                >
+                  ✅ Complaint filed successfully — returning home in {redirectCountdown}s
+                </motion.div>
+              )}
+            </AnimatePresence>
             <motion.div
               layout
               className={`bg-white/70 backdrop-blur-2xl border border-neutral-200/60 shadow-[0_8px_32px_rgba(0,0,0,0.06)] flex items-center p-2 rounded-full gap-2 transition-all ${messages.length === 0 ? "w-full max-w-[800px]" : "w-full max-w-[600px] sm:w-auto"}`}
@@ -1535,12 +1573,13 @@ export default function ComplaintPage() {
                   type="text"
                   value={textInput}
                   onChange={(e) => setTextInput(e.target.value)}
-                  onKeyPress={(e) => { if (e.key === "Enter" && textInput.trim()) { sendMessage(textInput); setTextInput(""); } }}
-                  placeholder="Ask REVA…"
-                  className="flex-1 bg-transparent border-none outline-none text-neutral-800 text-[12px] sm:text-[13px] py-1 sm:py-1.5 placeholder-neutral-400 min-w-0"
+                  onKeyPress={(e) => { if (e.key === "Enter" && textInput.trim() && !isComplaintFiled) { sendMessage(textInput); setTextInput(""); } }}
+                  placeholder={isComplaintFiled ? `Redirecting in ${redirectCountdown}s…` : "Ask REVA…"}
+                  disabled={isComplaintFiled}
+                  className="flex-1 bg-transparent border-none outline-none text-neutral-800 text-[12px] sm:text-[13px] py-1 sm:py-1.5 placeholder-neutral-400 min-w-0 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <AnimatePresence>
-                  {textInput.trim() && (
+                  {textInput.trim() && !isComplaintFiled && (
                     <motion.button
                       initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }}
                       onClick={() => { sendMessage(textInput); setTextInput(""); }}
@@ -1576,8 +1615,9 @@ export default function ComplaintPage() {
                   <motion.button
                     layout
                     onClick={handleToggleListening}
+                    disabled={isComplaintFiled}
                     animate={{
-                      backgroundColor: isListening ? "#3b82f6" : (micPermission === "denied" ? "#404040" : "#171717"),
+                      backgroundColor: isComplaintFiled ? "#d1d5db" : isListening ? "#3b82f6" : (micPermission === "denied" ? "#404040" : "#171717"),
                       scale: isListening ? [1, 1.1, 1] : 1,
                       boxShadow: isListening
                         ? "0 0 25px rgba(59, 130, 246, 0.5)"
@@ -1587,8 +1627,8 @@ export default function ComplaintPage() {
                       scale: { repeat: Infinity, duration: 1.5 },
                       backgroundColor: { duration: 0.3 }
                     }}
-                    className={`relative w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white cursor-pointer border-none z-10 ${micPermission === "denied" ? "opacity-60" : ""}`}
-                    title={micPermission === "denied" ? "Mic Blocked - Click to fix" : "Hold to speak"}
+                    className={`relative w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white cursor-pointer border-none z-10 ${isComplaintFiled ? "opacity-40 cursor-not-allowed" : micPermission === "denied" ? "opacity-60" : ""}`}
+                    title={isComplaintFiled ? "Complaint filed" : micPermission === "denied" ? "Mic Blocked - Click to fix" : "Hold to speak"}
                   >
                     <Mic className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
                   </motion.button>
@@ -1606,10 +1646,11 @@ export default function ComplaintPage() {
                 <div className="w-px h-5 bg-neutral-200/60 hidden sm:block mx-1" />
                 <motion.button
                   onClick={finalizeComplaint}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  title="Finalize Report"
-                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-transparent border-none text-neutral-400 hover:text-emerald-600 hover:bg-emerald-50 flex items-center justify-center cursor-pointer transition-colors"
+                  whileHover={{ scale: isComplaintFiled ? 1 : 1.05 }}
+                  whileTap={{ scale: isComplaintFiled ? 1 : 0.95 }}
+                  disabled={isComplaintFiled}
+                  title={isComplaintFiled ? "Complaint already filed" : "Finalize Report"}
+                  className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-transparent border-none flex items-center justify-center transition-colors ${isComplaintFiled ? "text-emerald-600 cursor-not-allowed opacity-50" : "text-neutral-400 hover:text-emerald-600 hover:bg-emerald-50 cursor-pointer"}`}
                 >
                   <ShieldCheck size={18} />
                 </motion.button>
