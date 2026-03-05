@@ -53,7 +53,7 @@ const RANK_LABEL = {
     STATION: 'Station Admin',
 };
 
-const CONCURRENCY = 20; // concurrent queries per batch — tuned for Supabase
+const CONCURRENCY = 5; // concurrent queries per batch — limited for Supabase pooler
 
 const prisma = new PrismaClient();
 
