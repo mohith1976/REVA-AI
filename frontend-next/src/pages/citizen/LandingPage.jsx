@@ -1,11 +1,20 @@
-'use client';
+"use client";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/context/AuthContext";
 import {
-  Shield, Mic, MapPin, Zap, FileText, Lock,
-  Phone, ArrowRight, AlertTriangle, User, ChevronDown
+  Shield,
+  Mic,
+  MapPin,
+  Zap,
+  FileText,
+  Lock,
+  Phone,
+  ArrowRight,
+  AlertTriangle,
+  User,
+  ChevronDown,
 } from "lucide-react";
 
 const STATS = [
@@ -69,7 +78,6 @@ export default function LandingPage() {
 
   return (
     <div className="bg-slate-50 min-h-screen text-slate-900 font-santoshi">
-
       {/* ── Navbar ── */}
       <nav className="sticky top-0 z-50 bg-slate-50/85 backdrop-blur-md border-b border-slate-200">
         <div className="max-w-6xl mx-auto px-4 md:px-8 flex items-center justify-between h-[60px]">
@@ -78,21 +86,32 @@ export default function LandingPage() {
             <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
               <Shield size={16} color="#000" strokeWidth={2.5} />
             </div>
-            <span className="font-bold text-base tracking-wide text-slate-900">REVA AI</span>
+            <span className="font-bold text-base tracking-wide text-slate-900">
+              REVA AI
+            </span>
           </Link>
 
           {/* Desktop Links */}
           <div className="hidden md:flex items-center gap-2">
             {/* Navigation Links */}
-            <Link href="/track" className="px-3 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100">
+            <Link
+              href="/track"
+              className="px-3 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100"
+            >
               {tt("nav.track")}
             </Link>
             {user && (
               <>
-                <Link href="/my-complaints" className="px-3 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100">
+                <Link
+                  href="/my-complaints"
+                  className="px-3 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100"
+                >
                   {tt("nav.myCases")}
                 </Link>
-                <Link href="/complaint" className="px-3 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100">
+                <Link
+                  href="/complaint"
+                  className="px-3 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100"
+                >
                   {tt("nav.fileComplaint")}
                 </Link>
               </>
@@ -100,7 +119,10 @@ export default function LandingPage() {
 
             {user ? (
               <div className="flex items-center gap-2">
-                <Link href="/profile" className="px-3.5 py-1.5 text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors rounded-lg hover:bg-slate-100">
+                <Link
+                  href="/profile"
+                  className="px-3.5 py-1.5 text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors rounded-lg hover:bg-slate-100"
+                >
                   <User size={16} strokeWidth={2.5} />
                 </Link>
                 <button
@@ -112,10 +134,18 @@ export default function LandingPage() {
               </div>
             ) : (
               <>
-                <Link href="/login" id="login-nav" className="px-4 py-1.5 text-sm font-semibold text-slate-900 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors">
+                <Link
+                  href="/login"
+                  id="login-nav"
+                  className="px-4 py-1.5 text-sm font-semibold text-slate-900 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors"
+                >
                   {tt("nav.signIn")}
                 </Link>
-                <Link href="/police/login" id="police-login-nav" className="px-3.5 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100">
+                <Link
+                  href="/police/login"
+                  id="police-login-nav"
+                  className="px-3.5 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100"
+                >
                   {tt("nav.policePortal")}
                 </Link>
               </>
@@ -135,27 +165,60 @@ export default function LandingPage() {
         {mobileMenuOpen && (
           <div className="md:hidden bg-white border-b border-slate-200 py-4 px-6 animate-in slide-in-from-top duration-300">
             <div className="flex flex-col gap-4">
-              <Link href="/track" className="text-sm font-medium text-slate-600 no-underline" onClick={() => setMobileMenuOpen(false)}>
+              <Link
+                href="/track"
+                className="text-sm font-medium text-slate-600 no-underline"
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 {tt("nav.track")}
               </Link>
               {user ? (
                 <>
-                  <Link href="/my-complaints" className="text-sm font-medium text-slate-600 no-underline" onClick={() => setMobileMenuOpen(false)}>
+                  <Link
+                    href="/my-complaints"
+                    className="text-sm font-medium text-slate-600 no-underline"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
                     {tt("nav.myCases")}
                   </Link>
-                  <Link href="/complaint" className="text-sm font-medium text-slate-600 no-underline" onClick={() => setMobileMenuOpen(false)}>
+                  <Link
+                    href="/complaint"
+                    className="text-sm font-medium text-slate-600 no-underline"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
                     {tt("nav.fileComplaint")}
                   </Link>
-                  <Link href="/profile" className="text-sm font-medium text-slate-600 no-underline" onClick={() => setMobileMenuOpen(false)}>
+                  <Link
+                    href="/profile"
+                    className="text-sm font-medium text-slate-600 no-underline"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
                     {tt("nav.profile")}
                   </Link>
+                  <button
+                    onClick={() => {
+                      auth?.logoutCitizen?.();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="text-sm font-semibold text-red-600 text-left bg-transparent border-none p-0"
+                  >
+                    Signout
+                  </button>
                 </>
               ) : (
                 <>
-                  <Link href="/login" className="text-sm font-semibold text-slate-900 no-underline" onClick={() => setMobileMenuOpen(false)}>
+                  <Link
+                    href="/login"
+                    className="text-sm font-semibold text-slate-900 no-underline"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
                     {tt("nav.signIn")}
                   </Link>
-                  <Link href="/police/login" className="text-sm font-medium text-slate-600 no-underline" onClick={() => setMobileMenuOpen(false)}>
+                  <Link
+                    href="/police/login"
+                    className="text-sm font-medium text-slate-600 no-underline"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
                     {tt("nav.policePortal")}
                   </Link>
                 </>
@@ -171,7 +234,6 @@ export default function LandingPage() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,rgba(255,255,255,0.04)_0%,transparent_70%)] pointer-events-none" />
 
         <div className="max-w-3xl relative z-10">
-
           <h1 className="text-[clamp(2.8rem,6vw,4.5rem)] font-extrabold leading-[1.08] tracking-[-1.5px] mb-6 text-slate-900">
             {tt("hero.title1")}
             <br />
@@ -207,10 +269,11 @@ export default function LandingPage() {
               <button
                 key={code}
                 onClick={() => handleLangChange(code)}
-                className={`px-3 py-1 text-xs rounded-full border transition-all font-sans cursor-pointer ${activeLang === code
-                  ? "bg-slate-100 border-slate-200 text-slate-900 font-semibold"
-                  : "bg-transparent border-slate-200 text-slate-500 hover:text-slate-500 hover:border-slate-200 font-normal"
-                  }`}
+                className={`px-3 py-1 text-xs rounded-full border transition-all font-sans cursor-pointer ${
+                  activeLang === code
+                    ? "bg-slate-100 border-slate-200 text-slate-900 font-semibold"
+                    : "bg-transparent border-slate-200 text-slate-500 hover:text-slate-500 hover:border-slate-200 font-normal"
+                }`}
               >
                 {label}
               </button>

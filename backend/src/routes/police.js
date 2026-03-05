@@ -391,7 +391,7 @@ router.post('/complaints/:id/notes', enforceStationScope, async (req, res, next)
 // GET /api/police/officers
 router.get('/officers', requireRole('GLOBAL_ADMIN', 'SUPER_ADMIN', 'STATION_ADMIN'), async (req, res, next) => {
   try {
-    const { stationId } = req.query;
+    const { stationId, role } = req.query;
     let where = {};
 
     if (req.policeUser.role === 'GLOBAL_ADMIN') {
@@ -403,6 +403,10 @@ router.get('/officers', requireRole('GLOBAL_ADMIN', 'SUPER_ADMIN', 'STATION_ADMI
     } else {
       // Station Admin and others are restricted to their own station
       where = { stationId: req.stationId };
+    }
+
+    if (role) {
+      where.role = role;
     }
 
     const officers = await prisma.policeUser.findMany({
