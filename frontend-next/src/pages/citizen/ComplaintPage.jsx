@@ -1093,7 +1093,7 @@ export default function ComplaintPage() {
             </motion.button>
 
             <button
-              onClick={() => router.back()}
+              onClick={() => router.push('/')}
               className="text-[12px] text-neutral-400 hover:text-neutral-600 transition-colors"
             >
               Go back
