@@ -280,24 +280,33 @@ export default function ComplaintPage() {
   };
 
   useEffect(() => {
-    const fetchLocationAndGeofence = async () => {
+    const fetchLocationAndGeofence = async (retryCount = 0) => {
       // Prevent redundant checks (e.g. React StrictMode double-fire)
-      if (geofenceCheckInProgressRef.current) return;
+      if (geofenceCheckInProgressRef.current && retryCount === 0) return;
       geofenceCheckInProgressRef.current = true;
 
       setIsCheckingGeofence(true);
       if ("geolocation" in navigator) {
         navigator.geolocation.getCurrentPosition(
           async (position) => {
-            const { latitude, longitude } = position.coords;
+            const { latitude, longitude, accuracy } = position.coords;
+            console.log(`Detected Location: ${latitude}, ${longitude} (Accuracy: ${accuracy}m)`);
+
+            // If accuracy is worse than 1000m and we haven't retried yet, try one more time
+            if (accuracy > 1000 && retryCount < 1) {
+              console.warn("Location accuracy poor. Retrying...");
+              setTimeout(() => fetchLocationAndGeofence(retryCount + 1), 1000);
+              return;
+            }
+
             setLocation({ latitude, longitude });
             try {
               const res = await api.get(
                 `/api/stations/nearest?lat=${latitude}&lng=${longitude}`,
               );
-              if (res.data.withinGeofence) {
+              if (res.data.station) {
                 setActiveStation(res.data.station);
-                setIsWithinGeofence(true);
+                setIsWithinGeofence(res.data.withinGeofence || false);
               } else {
                 setActiveStation(null);
                 setIsWithinGeofence(false);
@@ -313,10 +322,20 @@ export default function ComplaintPage() {
             }
           },
           (err) => {
-            console.warn("Location access denied — user will be prompted to select station manually.", err);
-            setIsCheckingGeofence(false);
+            console.warn("Location access denied or timed out", err);
+            if (retryCount < 1) {
+              console.log("Retrying location fetch...");
+              fetchLocationAndGeofence(retryCount + 1);
+            } else {
+              setIsCheckingGeofence(false);
+              toast.error("Could not get accurate location. Please select station manually.");
+            }
           },
-          { enableHighAccuracy: true },
+          {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 0
+          },
         );
       } else {
         setIsCheckingGeofence(false);
@@ -411,7 +430,10 @@ export default function ComplaintPage() {
       setMessages((prev) => [...prev, receiptMsg]);
       toast.success("Complaint filed! Your tracking ID is " + trackingId);
     } catch (err) {
-      toast.error(err.response?.data?.message || "Submission failed");
+      console.error("Submission error FULL:", err);
+      const backendError = err.response?.data?.error || err.response?.data?.message || "Submission failed";
+      const errorCode = err.response?.data?.code ? ` (${err.response.data.code})` : "";
+      toast.error(`${backendError}${errorCode}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -608,9 +630,11 @@ export default function ComplaintPage() {
       const context = {
         userName: user?.name,
         mobile: user?.mobileNumber,
-        location: user?.policeStation?.stationName
-          ? `${user.policeStation.stationName}, ${user.policeStation.district}`
-          : "Unknown",
+        location: activeStation?.stationName
+          ? `${activeStation.stationName}, ${activeStation.district} (Detected Jurisdiction)`
+          : user?.policeStation?.stationName
+            ? `${user.policeStation.stationName}, ${user.policeStation.district} (Home Station)`
+            : "Unknown",
         history: history.slice(-5), // Send last 5 messages for context
         userAge: userAge,
         userCategory: userCategory, // "child" | "adult" | "senior"
@@ -762,9 +786,11 @@ export default function ComplaintPage() {
       const context = {
         userName: user?.name,
         mobile: user?.mobileNumber,
-        location: user?.policeStation?.stationName
-          ? `${user.policeStation.stationName}, ${user.policeStation.district}`
-          : "Unknown",
+        location: activeStation?.stationName
+          ? `${activeStation.stationName}, ${activeStation.district} (Detected Jurisdiction)`
+          : user?.policeStation?.stationName
+            ? `${user.policeStation.stationName}, ${user.policeStation.district} (Home Station)`
+            : "Unknown",
         history: history.slice(-5),
         userAge: effectiveAge,
         userCategory: effectiveCategory,

@@ -15,6 +15,7 @@ export default function StationManagement() {
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [form, setForm] = useState({
     stationName: "", district: "", state: "",
     latitude: 12.9716, longitude: 77.5946, radiusKm: 5, contactNumber: "",
@@ -115,13 +116,30 @@ export default function StationManagement() {
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 mb-8">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900 mb-2">Police Station Management</h1>
-            <p className="text-sm text-neutral-500">Define geofences and coverage areas</p>
+            <p className="text-sm text-neutral-500">Search and manage jurisdiction geofences</p>
           </div>
           <button onClick={() => setShowAddForm(!showAddForm)}
             className="px-5 py-3 bg-neutral-900 text-white font-bold text-[13px] rounded-xl hover:bg-neutral-800 transition-all shadow-lg shadow-black/10 w-full sm:w-auto text-center"
           >
             {showAddForm ? "✕ Cancel" : "+ Create New Station"}
           </button>
+        </div>
+
+        {/* Search Bar */}
+        <div className="mb-8 relative max-w-xl">
+          <input
+            type="text"
+            placeholder="Search stations by name or district..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full px-5 py-4 bg-white border border-neutral-200 rounded-2xl text-neutral-900 text-[14px] font-medium placeholder:text-neutral-400 outline-none focus:border-neutral-900 focus:ring-4 focus:ring-neutral-900/5 transition-all shadow-sm"
+          />
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 font-bold text-[10px] tracking-widest uppercase px-3 py-1 bg-neutral-50 rounded-lg">
+            {stations.filter(s =>
+              s.stationName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              s.district.toLowerCase().includes(searchQuery.toLowerCase())
+            ).length} Results
+          </div>
         </div>
 
         {/* Add Station Form */}
@@ -153,19 +171,14 @@ export default function StationManagement() {
                   <input type="text" className={INPUT} value={form.state} onChange={e => setForm({ ...form, state: e.target.value })} />
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-[11px] font-bold text-neutral-400 uppercase tracking-widest mb-2 px-1">Lat</label>
+                  <label className="block text-[11px] font-bold text-neutral-400 uppercase tracking-widest mb-2 px-1">Latitude</label>
                   <input type="text" className={`${INPUT} opacity-60 font-mono`} value={form.latitude.toFixed(4)} readOnly />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-neutral-400 uppercase tracking-widest mb-2 px-1">Lng</label>
+                  <label className="block text-[11px] font-bold text-neutral-400 uppercase tracking-widest mb-2 px-1">Longitude</label>
                   <input type="text" className={`${INPUT} opacity-60 font-mono`} value={form.longitude.toFixed(4)} readOnly />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-neutral-400 uppercase tracking-widest mb-2 px-1">Radius (km)</label>
-                  <input type="number" className={INPUT} value={form.radiusKm}
-                    onChange={e => setForm({ ...form, radiusKm: parseFloat(e.target.value) || 0 })} />
                 </div>
               </div>
               <div>
@@ -184,37 +197,52 @@ export default function StationManagement() {
 
         {/* Stations grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {stations.map(station => (
-            <div key={station.id} className="bg-white border border-neutral-200/60 shadow-sm rounded-[24px] p-6 sm:p-7 hover:shadow-md transition-all group">
-              <div className="flex justify-between items-start mb-5">
-                <div>
-                  <h4 className="text-xl font-bold text-neutral-900 mb-1">{station.stationName}</h4>
-                  <div className="text-[13px] font-medium text-neutral-500">{station.district}, {station.state}</div>
+          {stations
+            .filter(station =>
+              station.stationName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              station.district.toLowerCase().includes(searchQuery.toLowerCase())
+            )
+            .map(station => (
+              <div key={station.id} className="bg-white border border-neutral-200/60 shadow-sm rounded-[24px] p-6 sm:p-7 hover:shadow-md transition-all group">
+                <div className="flex justify-between items-start mb-5">
+                  <div>
+                    <h4 className="text-xl font-bold text-neutral-900 mb-1">{station.stationName}</h4>
+                    <div className="text-[13px] font-medium text-neutral-500">{station.district}, {station.state}</div>
+                  </div>
+                  <div className={`w-3 h-3 rounded-full mt-1.5 shadow-sm ${station.status ? "bg-emerald-500 shadow-emerald-500/20" : "bg-neutral-300"}`} />
                 </div>
-                <div className={`w-3 h-3 rounded-full mt-1.5 shadow-sm ${station.status ? "bg-emerald-500 shadow-emerald-500/20" : "bg-neutral-300"}`} />
+
+                <div className="flex gap-4 mb-6 p-4 bg-neutral-50 rounded-[16px]">
+                  <div className="flex-1">
+                    <div className="text-[10px] font-bold text-neutral-400 tracking-widest uppercase mb-1">Status</div>
+                    <div className="text-neutral-900 font-bold text-[13px]">{station.boundary ? "✅ Official Polygon" : "⚠️ Point Only"}</div>
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-[10px] font-bold text-neutral-400 tracking-widest uppercase mb-1">Location</div>
+                    <div className="text-[13px] font-mono font-semibold text-neutral-600">{station.latitude.toFixed(3)}, {station.longitude.toFixed(3)}</div>
+                  </div>
+                </div>
+
+                <button onClick={() => router.push(`/police/officers?stationId=${station.id}`)}
+                  className="w-full py-3.5 text-[13px] font-bold text-neutral-700 bg-white border border-neutral-200 rounded-xl hover:bg-neutral-50 hover:border-neutral-300 hover:text-neutral-900 transition-all"
+                >
+                  Manage Station Officers
+                </button>
               </div>
+            ))}
 
-              <div className="flex gap-4 mb-6 p-4 bg-neutral-50 rounded-[16px]">
-                <div className="flex-1">
-                  <div className="text-[10px] font-bold text-neutral-400 tracking-widest uppercase mb-1">Geofence</div>
-                  <div className="text-neutral-900 font-bold text-[15px]">{station.radiusKm} km</div>
-                </div>
-                <div className="flex-1">
-                  <div className="text-[10px] font-bold text-neutral-400 tracking-widest uppercase mb-1">Location</div>
-                  <div className="text-[13px] font-mono font-semibold text-neutral-600">{station.latitude.toFixed(3)}, {station.longitude.toFixed(3)}</div>
-                </div>
+          {stations.filter(s =>
+            s.stationName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            s.district.toLowerCase().includes(searchQuery.toLowerCase())
+          ).length === 0 && (
+              <div className="col-span-full py-20 text-center">
+                <div className="text-4xl mb-4">🔍</div>
+                <h3 className="text-lg font-bold text-neutral-900">No stations found</h3>
+                <p className="text-neutral-500">Try searching for a different name or district</p>
               </div>
-
-              <button onClick={() => router.push(`/police/officers?stationId=${station.id}`)}
-                className="w-full py-3.5 text-[13px] font-bold text-neutral-700 bg-white border border-neutral-200 rounded-xl hover:bg-neutral-50 hover:border-neutral-300 hover:text-neutral-900 transition-all"
-              >
-                Manage Station Officers
-              </button>
-            </div>
-          ))}
-
+            )}
         </div>
       </div>
-    </div>
+    </div >
   );
 }

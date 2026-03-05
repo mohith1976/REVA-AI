@@ -11,8 +11,18 @@ datasource db {
 enum UserRole {
   GLOBAL_ADMIN
   SUPER_ADMIN
+  DISTRICT_ADMIN
+  DIVISION_ADMIN
+  CIRCLE_ADMIN
   STATION_ADMIN
   OFFICER
+}
+
+enum StationRank {
+  STATION
+  CIRCLE
+  SUBDIVISION
+  DISTRICT
 }
 
 enum ComplaintStatus {
@@ -94,6 +104,7 @@ model User {
 
 model PoliceStation {
   id            String   @id @default(uuid())
+  externalId    String?  @unique @map("external_id")     // APSAC ps_code or OSM ID
   stationName   String   @map("station_name")
   district      String
   state         String
@@ -101,9 +112,28 @@ model PoliceStation {
   longitude     Float
   radiusKm      Float    @default(5) @map("radius_km")
   contactNumber String?  @map("contact_number")
-  status        Boolean  @default(true)
-  createdAt     DateTime @default(now()) @map("created_at")
+  address       String?
+  pincode       String?
 
+  // AP Police Hierarchy (from APSAC layers)
+  circleName      String?  @map("circle_name")
+  subDivisionName String?  @map("sub_division_name")
+  divisionName    String?  @map("division_name")
+  districtCode    String?  @map("district_code")          // APSAC dist_code
+  rank            StationRank @default(STATION)
+
+  // Self-referential parent for escalation
+  // parentStationId points to District HQ PoliceStation record
+  parentStationId String?  @map("parent_station_id")
+
+  // boundary (GEOMETRY/GEOGRAPHY) is managed via raw SQL migration — Prisma ignores it
+  status        Boolean  @default(true)
+  dataSource    String   @default("MANUAL") @map("data_source") // APSAC | OSM | MANUAL | ESTIMATED
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  parent      PoliceStation?  @relation("StationHierarchy", fields: [parentStationId], references: [id])
+  children    PoliceStation[] @relation("StationHierarchy")
   policeUsers PoliceUser[]
   complaints  Complaint[]
   users       User[]
@@ -153,6 +183,8 @@ model Complaint {
   duplicateOf       String?         @map("duplicate_of")
   versionCount      Int             @default(1) @map("version_count")
   legalConfirmed    Boolean         @default(false) @map("legal_confirmed")
+  migrationCount    Int             @default(0) @map("migration_count")     // # of times escalated
+  lastMigratedAt    DateTime?       @map("last_migrated_at")                 // timestamp of last escalation
   createdAt         DateTime        @default(now()) @map("created_at")
   updatedAt         DateTime        @updatedAt @map("updated_at")
 

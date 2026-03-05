@@ -165,6 +165,17 @@ async function sendMobileOtp(mobileNumber) {
     manualOtpStore.set(mobileNumber, { otp, expires: Date.now() + 5 * 60 * 1000 });
     return { provider: 'twilio', message: 'Verification code sent to your mobile number.' };
   } catch (err) {
+    // Twilio error 21608: Trial accounts cannot send messages to unverified numbers
+    if (err.code === 21608 || err.message?.toLowerCase().includes('unverified')) {
+      logger.warn(`[SMS] Twilio Trial Restriction: Providing OTP via API for ${mobileNumber}. OTP: ${otp}`);
+      manualOtpStore.set(mobileNumber, { otp, expires: Date.now() + 5 * 60 * 1000 });
+      return {
+        provider: 'twilio',
+        message: 'Registration Required: This number is not verified in Twilio Trial. Verification Code: ' + otp,
+        devOtp: otp
+      };
+    }
+
     logger.error('Twilio Send Failed:', err.message);
     throw new Error(`Failed to send SMS: ${err.message}`);
   }

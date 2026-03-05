@@ -200,16 +200,6 @@ export default function PoliceDashboard() {
                     </div>
                   ))}
                 </div>
-                <div>
-                  <label className="text-[0.65rem] text-slate-400 block mb-1">Radius (km)</label>
-                  <input type="number" className={`${INPUT_CLASS} w-full text-xs py-1.5`}
-                    defaultValue={policeUser?.station?.radiusKm || 5}
-                    onBlur={async (e) => {
-                      const radius = parseFloat(e.target.value);
-                      try { await api.patch(`/api/stations/${policeUser.stationId}`, { radiusKm: radius }); } catch { }
-                    }}
-                  />
-                </div>
               </div>
             )}
           </div>
@@ -383,8 +373,8 @@ export default function PoliceDashboard() {
             </div>
           )}
         </main>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 
 }
@@ -394,7 +384,6 @@ function SidebarContent({ onClose, isCollapsed, setIsCollapsed, policeUser, logo
     { to: "/police/dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { to: "/police/complaints", icon: Folder, label: "All Cases" },
     { to: "/police/map", icon: Map, label: "Crime Map" },
-    { to: "/police/analytics", icon: BarChart2, label: "Analytics" },
     { to: "/police/officers", icon: Users, label: "Officers" },
     { to: "/police/linked-complaints", icon: Link2, label: "Joint Complaints" },
     ...(policeUser?.role === "GLOBAL_ADMIN" ? [{ to: "/police/stations", icon: Building, label: "Stations" }] : []),

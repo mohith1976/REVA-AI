@@ -6,6 +6,10 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
+    "worker:migration": "node src/workers/migration_worker.js",
+    "apsac:sync": "node scripts/apsac_sync.js",
+    "apsac:test": "node scripts/apsac_sync.js --test --dry-run",
+    "apsac:westgodavari": "node scripts/apsac_sync.js --test",
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
@@ -35,6 +39,7 @@
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.9.9",
     "openai": "^6.25.0",
+    "pg": "^8.19.0",
     "sharp": "^0.34.5",
     "twilio": "^5.12.2",
     "uuid": "^9.0.0",
@@ -43,5 +48,8 @@
   "devDependencies": {
     "nodemon": "^3.0.3",
     "prisma": "^5.10.0"
+  },
+  "prisma": {
+    "seed": "node prisma/police_seed.js"
   }
 }

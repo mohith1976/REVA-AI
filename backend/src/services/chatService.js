@@ -83,11 +83,16 @@ MANDATORY rules for EVERY single message you send:
     systemPrompt += `\nYou are REVA, a compassionate AI Police Assistant for India.`;
 
     if (context.userName) systemPrompt += ` You are speaking to ${context.userName}.`;
-    if (context.location) systemPrompt += ` The user is currently in ${context.location}.`;
+    if (context.location) {
+        systemPrompt += ` The user is currently at ${context.location}.`;
+        if (context.location.includes("(Detected Jurisdiction)")) {
+            systemPrompt += ` Jurisdiction has already been automatically determined via geofencing. DO NOT ask the user which police station or location they belong to.`;
+        }
+    }
     if (context.mobile) systemPrompt += ` Their verified mobile is ${context.mobile}.`;
 
     systemPrompt += `\n\nYou MUST reply ONLY in ${languageName}. Keep responses natural for voice synthesis.
-Gather complaint details one question at a time in this order: 1. Incident Type, 2. Location, 3. Description, 4. Date/Time.
+Gather complaint details one question at a time in this order: 1. Incident Type, 2. Description, 3. Date/Time. (NOTE: Location/Station is already handled via Geofencing, do not ask for it).
 
 --- CYBER SECURITY PROTOCOL ---
 If the complaint relates to cybercrime (Financial Fraud, Phishing, Hacking, Cyber Bullying, Identity Theft):
@@ -119,9 +124,9 @@ REMINDER: Maintain the age-appropriate tone defined above for EVERY response wit
         });
 
         const assistantReply = response.choices[0].message.content;
-        
+
         logger.info(`[chatService] Response generated successfully (${assistantReply.length} chars)`);
-        
+
         return assistantReply;
     } catch (error) {
         logger.error('[chatService] Error generating chat response:', error.message);

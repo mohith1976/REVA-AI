@@ -7,19 +7,32 @@ const { AppError } = require('../middleware/errorHandler');
 // GET /api/stations - Public endpoint to list active stations
 router.get('/', async (req, res, next) => {
   try {
-    const stations = await prisma.policeStation.findMany({
-      where: { status: true },
-      select: {
-        id: true,
-        stationName: true,
-        district: true,
-        state: true,
-        latitude: true,
-        longitude: true,
-        radiusKm: true,
-        contactNumber: true,
-      },
-    });
+    const { rank } = req.query;
+    let query = `
+      SELECT 
+        id, 
+        station_name as "stationName", 
+        district, 
+        state, 
+        latitude, 
+        longitude, 
+        radius_km as "radiusKm", 
+        contact_number as "contactNumber",
+        parent_station_id as "parentStationId",
+        external_id as "externalId",
+        rank,
+        ST_AsGeoJSON(boundary)::json as boundary
+      FROM police_stations 
+      WHERE status = true
+    `;
+
+    const params = [];
+    if (rank) {
+      query += ` AND rank::text = $1`;
+      params.push(rank);
+    }
+
+    const stations = await prisma.$queryRawUnsafe(query, ...params);
     res.json({ stations });
   } catch (error) {
     next(error);
@@ -30,16 +43,16 @@ router.get('/', async (req, res, next) => {
 router.post('/', authenticatePolice, requireRole('GLOBAL_ADMIN', 'SUPER_ADMIN'), async (req, res, next) => {
   try {
     const { stationName, district, state, latitude, longitude, radiusKm, contactNumber } = req.body;
-    
+
     const station = await prisma.policeStation.create({
-      data: { 
-        stationName, 
-        district, 
-        state, 
-        latitude: parseFloat(latitude), 
-        longitude: parseFloat(longitude), 
-        radiusKm: parseFloat(radiusKm) || 5, 
-        contactNumber 
+      data: {
+        stationName,
+        district,
+        state,
+        latitude: parseFloat(latitude),
+        longitude: parseFloat(longitude),
+        radiusKm: parseFloat(radiusKm) || 5,
+        contactNumber
       },
     });
 
@@ -86,26 +99,33 @@ router.patch('/:id', authenticatePolice, async (req, res, next) => {
   }
 });
 
+const { findStationForPoint } = require('./geofence');
+
 // GET /api/stations/nearest?lat=&lng=
 router.get('/nearest', async (req, res, next) => {
   try {
     const { lat, lng } = req.query;
     if (!lat || !lng) throw new AppError('Coordinates required', 400, 'MISSING_COORDS');
 
-    const stations = await prisma.policeStation.findMany({ where: { status: true } });
-    
-    let nearest = null;
-    let minDistance = Infinity;
+    const parsedLat = parseFloat(lat);
+    const parsedLng = parseFloat(lng);
 
-    for (const station of stations) {
-      const dist = haversineDistance(parseFloat(lat), parseFloat(lng), station.latitude, station.longitude);
-      if (dist < minDistance) {
-        minDistance = dist;
-        nearest = { ...station, distanceKm: dist.toFixed(2) };
-      }
+    if (isNaN(parsedLat) || isNaN(parsedLng)) {
+      throw new AppError('Invalid coordinates', 400, 'INVALID_COORDS');
     }
 
-    res.json({ station: nearest, withinGeofence: nearest && minDistance <= nearest.radiusKm });
+    const station = await findStationForPoint(parsedLat, parsedLng);
+
+    if (station) {
+      res.json({
+        station,
+        withinGeofence: station.matchType === 'POLYGON',
+        routedToDefault: station.matchType === 'NEAREST',
+        distanceKm: station.distanceKm
+      });
+    } else {
+      res.status(404).json({ error: 'No police station found for location' });
+    }
   } catch (error) {
     next(error);
   }
@@ -115,8 +135,8 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat/2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 module.exports = router;
