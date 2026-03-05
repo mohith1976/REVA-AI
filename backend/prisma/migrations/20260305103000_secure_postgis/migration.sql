@@ -10,9 +10,13 @@ BEGIN
   END IF;
 END $$;
 
--- Enable RLS on spatial_ref_sys as it's often flagged by Supabase even if moved
--- (Though moving it out of public is the primary fix)
-ALTER TABLE extensions.spatial_ref_sys ENABLE ROW LEVEL SECURITY;
+-- Enable RLS on spatial_ref_sys if it exists in the extensions schema
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'extensions' AND tablename = 'spatial_ref_sys') THEN
+    ALTER TABLE extensions.spatial_ref_sys ENABLE ROW LEVEL SECURITY;
+  END IF;
+END $$;
 
 -- Ensure the search path includes extensions permanently for the database
 -- Note: In Supabase, search_path can also be set via the dashboard or per-user.
