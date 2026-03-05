@@ -78,9 +78,9 @@ async function findStationForPoint(lat, lng) {
     WHERE
       status = TRUE
       AND boundary IS NOT NULL
-      AND ST_Contains(
+      AND extensions.ST_Contains(
         boundary,
-        ST_SetSRID(ST_Point(${lng}, ${lat}), 4326)
+        extensions.ST_SetSRID(extensions.ST_Point(${lng}, ${lat}), 4326)
       )
     ORDER BY 
       CASE rank
@@ -115,18 +115,18 @@ async function findStationForPoint(lat, lng) {
       data_source      AS "dataSource",
       'NEAREST'        AS "matchType",
       ROUND(
-        (ST_Distance(
-          ST_SetSRID(ST_Point(longitude, latitude), 4326)::geography,
-          ST_SetSRID(ST_Point(${lng}, ${lat}), 4326)::geography
+        (extensions.ST_Distance(
+          extensions.ST_SetSRID(extensions.ST_Point(longitude, latitude), 4326)::geography,
+          extensions.ST_SetSRID(extensions.ST_Point(${lng}, ${lat}), 4326)::geography
         ) / 1000.0)::numeric, 2
       )                AS "distanceKm"
     FROM police_stations
     WHERE status = TRUE 
       AND latitude != 0 AND longitude != 0
     ORDER BY
-      ST_Distance(
-        ST_SetSRID(ST_Point(longitude, latitude), 4326)::geography,
-        ST_SetSRID(ST_Point(${lng}, ${lat}), 4326)::geography
+      extensions.ST_Distance(
+        extensions.ST_SetSRID(extensions.ST_Point(longitude, latitude), 4326)::geography,
+        extensions.ST_SetSRID(extensions.ST_Point(${lng}, ${lat}), 4326)::geography
       )
     LIMIT 1
   `;

@@ -7,8 +7,33 @@ const { AppError } = require('../middleware/errorHandler');
 // GET /api/stations - Public endpoint to list active stations
 router.get('/', async (req, res, next) => {
   try {
-    const { rank } = req.query;
-    let query = `
+    const { rank, search, page = 1, limit = 10 } = req.query;
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const offset = (pageNum - 1) * limitNum;
+
+    let baseQuery = `FROM police_stations WHERE status = true`;
+    const params = [];
+    let paramIdx = 1;
+
+    if (rank) {
+      baseQuery += ` AND rank::text = $${paramIdx++}`;
+      params.push(rank);
+    }
+
+    if (search) {
+      baseQuery += ` AND (station_name ILIKE $${paramIdx} OR district ILIKE $${paramIdx})`;
+      params.push(`%${search}%`);
+      paramIdx++;
+    }
+
+    // Get total count for pagination
+    const countQuery = `SELECT COUNT(*)::int as count ${baseQuery}`;
+    const countResult = await prisma.$queryRawUnsafe(countQuery, ...params);
+    const totalCount = countResult[0].count;
+
+    // Get paginated data
+    const dataQuery = `
       SELECT 
         id, 
         station_name as "stationName", 
@@ -21,19 +46,23 @@ router.get('/', async (req, res, next) => {
         parent_station_id as "parentStationId",
         external_id as "externalId",
         rank,
-        ST_AsGeoJSON(boundary)::json as boundary
-      FROM police_stations 
-      WHERE status = true
+        extensions.ST_AsGeoJSON(boundary)::json as boundary
+      ${baseQuery}
+      ORDER BY station_name ASC
+      LIMIT $${paramIdx++} OFFSET $${paramIdx++}
     `;
 
-    const params = [];
-    if (rank) {
-      query += ` AND rank::text = $1`;
-      params.push(rank);
-    }
+    const stations = await prisma.$queryRawUnsafe(dataQuery, ...params, limitNum, offset);
 
-    const stations = await prisma.$queryRawUnsafe(query, ...params);
-    res.json({ stations });
+    res.json({
+      stations,
+      pagination: {
+        totalCount,
+        totalPages: Math.ceil(totalCount / limitNum),
+        currentPage: pageNum,
+        limit: limitNum
+      }
+    });
   } catch (error) {
     next(error);
   }

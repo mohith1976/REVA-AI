@@ -16,6 +16,7 @@ export default function StationManagement() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1, totalCount: 0 });
   const [form, setForm] = useState({
     stationName: "", district: "", state: "",
     latitude: 12.9716, longitude: 77.5946, radiusKm: 5, contactNumber: "",
@@ -29,13 +30,15 @@ export default function StationManagement() {
 
   useEffect(() => {
     if (policeUser?.role !== "GLOBAL_ADMIN") { router.push("/police/dashboard"); return; }
-    fetchStations();
+    fetchStations(1, searchQuery);
   }, [policeUser, router]);
 
-  const fetchStations = async () => {
+  const fetchStations = async (page = 1, search = "") => {
+    setLoading(true);
     try {
-      const res = await api.get("/api/stations");
+      const res = await api.get(`/api/stations?page=${page}&limit=12&search=${search}`);
       setStations(res.data.stations);
+      setPagination(res.data.pagination);
     } catch { toast.error("Failed to load stations"); }
     finally { setLoading(false); }
   };
@@ -131,14 +134,17 @@ export default function StationManagement() {
             type="text"
             placeholder="Search stations by name or district..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              setSearchQuery(val);
+              // Simple debounce or immediate search? Let's do a basic timeout for better feel
+              clearTimeout(window.searchTimeout);
+              window.searchTimeout = setTimeout(() => fetchStations(1, val), 400);
+            }}
             className="w-full px-5 py-4 bg-white border border-neutral-200 rounded-2xl text-neutral-900 text-[14px] font-medium placeholder:text-neutral-400 outline-none focus:border-neutral-900 focus:ring-4 focus:ring-neutral-900/5 transition-all shadow-sm"
           />
           <div className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 font-bold text-[10px] tracking-widest uppercase px-3 py-1 bg-neutral-50 rounded-lg">
-            {stations.filter(s =>
-              s.stationName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              s.district.toLowerCase().includes(searchQuery.toLowerCase())
-            ).length} Results
+            {pagination.totalCount} Results
           </div>
         </div>
 
@@ -196,52 +202,86 @@ export default function StationManagement() {
         )}
 
         {/* Stations grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {stations
-            .filter(station =>
-              station.stationName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              station.district.toLowerCase().includes(searchQuery.toLowerCase())
-            )
-            .map(station => (
-              <div key={station.id} className="bg-white border border-neutral-200/60 shadow-sm rounded-[24px] p-6 sm:p-7 hover:shadow-md transition-all group">
-                <div className="flex justify-between items-start mb-5">
-                  <div>
-                    <h4 className="text-xl font-bold text-neutral-900 mb-1">{station.stationName}</h4>
-                    <div className="text-[13px] font-medium text-neutral-500">{station.district}, {station.state}</div>
-                  </div>
-                  <div className={`w-3 h-3 rounded-full mt-1.5 shadow-sm ${station.status ? "bg-emerald-500 shadow-emerald-500/20" : "bg-neutral-300"}`} />
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+          {stations.map(station => (
+            <div key={station.id} className="bg-white border border-neutral-200/60 shadow-sm rounded-[24px] p-6 sm:p-7 hover:shadow-md transition-all group">
+              <div className="flex justify-between items-start mb-5">
+                <div>
+                  <h4 className="text-xl font-bold text-neutral-900 mb-1">{station.stationName}</h4>
+                  <div className="text-[13px] font-medium text-neutral-500">{station.district}, {station.state}</div>
                 </div>
+                <div className={`w-3 h-3 rounded-full mt-1.5 shadow-sm ${station.status ? "bg-emerald-500 shadow-emerald-500/20" : "bg-neutral-300"}`} />
+              </div>
 
-                <div className="flex gap-4 mb-6 p-4 bg-neutral-50 rounded-[16px]">
-                  <div className="flex-1">
-                    <div className="text-[10px] font-bold text-neutral-400 tracking-widest uppercase mb-1">Status</div>
-                    <div className="text-neutral-900 font-bold text-[13px]">{station.boundary ? "✅ Official Polygon" : "⚠️ Point Only"}</div>
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-[10px] font-bold text-neutral-400 tracking-widest uppercase mb-1">Location</div>
-                    <div className="text-[13px] font-mono font-semibold text-neutral-600">{station.latitude.toFixed(3)}, {station.longitude.toFixed(3)}</div>
-                  </div>
+              <div className="flex gap-4 mb-6 p-4 bg-neutral-50 rounded-[16px]">
+                <div className="flex-1">
+                  <div className="text-[10px] font-bold text-neutral-400 tracking-widest uppercase mb-1">Status</div>
+                  <div className="text-neutral-900 font-bold text-[13px]">{station.boundary ? "✅ Official Polygon" : "⚠️ Point Only"}</div>
                 </div>
-
-                <button onClick={() => router.push(`/police/officers?stationId=${station.id}`)}
-                  className="w-full py-3.5 text-[13px] font-bold text-neutral-700 bg-white border border-neutral-200 rounded-xl hover:bg-neutral-50 hover:border-neutral-300 hover:text-neutral-900 transition-all"
-                >
-                  Manage Station Officers
-                </button>
+                <div className="flex-1">
+                  <div className="text-[10px] font-bold text-neutral-400 tracking-widest uppercase mb-1">Location</div>
+                  <div className="text-[13px] font-mono font-semibold text-neutral-600">{station.latitude.toFixed(3)}, {station.longitude.toFixed(3)}</div>
+                </div>
               </div>
-            ))}
 
-          {stations.filter(s =>
-            s.stationName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            s.district.toLowerCase().includes(searchQuery.toLowerCase())
-          ).length === 0 && (
-              <div className="col-span-full py-20 text-center">
-                <div className="text-4xl mb-4">🔍</div>
-                <h3 className="text-lg font-bold text-neutral-900">No stations found</h3>
-                <p className="text-neutral-500">Try searching for a different name or district</p>
-              </div>
-            )}
+              <button onClick={() => router.push(`/police/officers?stationId=${station.id}`)}
+                className="w-full py-3.5 text-[13px] font-bold text-neutral-700 bg-white border border-neutral-200 rounded-xl hover:bg-neutral-50 hover:border-neutral-300 hover:text-neutral-900 transition-all"
+              >
+                Manage Station Officers
+              </button>
+            </div>
+          ))}
+
+          {stations.length === 0 && !loading && (
+            <div className="col-span-full py-20 text-center bg-white border border-neutral-200 rounded-[32px]">
+              <div className="text-4xl mb-4">🔍</div>
+              <h3 className="text-lg font-bold text-neutral-900">No stations found</h3>
+              <p className="text-neutral-500">Try searching for a different name or district</p>
+            </div>
+          )}
         </div>
+
+        {/* Pagination Controls */}
+        {pagination.totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 pb-10">
+            <button
+              disabled={pagination.currentPage <= 1 || loading}
+              onClick={() => fetchStations(pagination.currentPage - 1, searchQuery)}
+              className="px-4 py-2 bg-white border border-neutral-200 rounded-xl text-[13px] font-bold text-neutral-600 disabled:opacity-50 hover:bg-neutral-50 transition-all"
+            >
+              Previous
+            </button>
+            <div className="flex items-center gap-1">
+              {[...Array(pagination.totalPages)].map((_, i) => {
+                const p = i + 1;
+                // Only show a few page numbers if too many
+                if (pagination.totalPages > 7 && Math.abs(p - pagination.currentPage) > 2 && p !== 1 && p !== pagination.totalPages) {
+                  if (p === 2 || p === pagination.totalPages - 1) return <span key={p} className="text-neutral-300 px-1">...</span>;
+                  return null;
+                }
+                return (
+                  <button
+                    key={p}
+                    onClick={() => fetchStations(p, searchQuery)}
+                    className={`w-10 h-10 rounded-xl text-[13px] font-bold transition-all ${pagination.currentPage === p
+                      ? "bg-neutral-900 text-white shadow-lg shadow-black/10"
+                      : "bg-white border border-neutral-200 text-neutral-600 hover:bg-neutral-50"
+                      }`}
+                  >
+                    {p}
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              disabled={pagination.currentPage >= pagination.totalPages || loading}
+              onClick={() => fetchStations(pagination.currentPage + 1, searchQuery)}
+              className="px-4 py-2 bg-white border border-neutral-200 rounded-xl text-[13px] font-bold text-neutral-600 disabled:opacity-50 hover:bg-neutral-50 transition-all"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
     </div >
   );
