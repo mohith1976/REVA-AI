@@ -38,8 +38,8 @@ async function main() {
         const BATCH_SIZE = 100;
         for (let i = 0; i < apsacData.length; i += BATCH_SIZE) {
             const batch = apsacData.slice(i, i + BATCH_SIZE);
-            await Promise.all(batch.map(s =>
-                prisma.policeStation.upsert({
+            for (const s of batch) {
+                await prisma.policeStation.upsert({
                     where: { id: s.id },
                     update: {
                         stationName: s.station_name,
@@ -78,8 +78,8 @@ async function main() {
                         subDivisionName: s.sub_division_name,
                         rank: s.rank || 'STATION'
                     }
-                })
-            ));
+                });
+            }
             if (i % 500 === 0 && i > 0) console.log(`   ... processed ${i} stations`);
         }
     } else {
