@@ -4,22 +4,26 @@ const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const path = require('path');
 
+// Load configuration
+const configPath = path.join(__dirname, 'seed_config.json');
+const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+
 const prisma = new PrismaClient();
 
 async function main() {
     console.log('🚀 Starting Consolidated Database Seeding (police_seed.js)...');
 
-    const hashedPwd = await bcrypt.hash('Admin@123', 12);
+    const hashedPwd = await bcrypt.hash(config.adminPassword, 12);
 
     // 1. Upsert GLOBAL_ADMIN
-    console.log('🌍 Upserting Global Admin...');
+    console.log(`🌍 Upserting Global Admin (${config.adminEmail})...`);
     await prisma.policeUser.upsert({
-        where: { email: 'global_admin@reva.gov.in' },
+        where: { email: config.adminEmail },
         update: {},
         create: {
             id: uuidv4(),
             name: 'Global Administrator',
-            email: 'global_admin@reva.gov.in',
+            email: config.adminEmail,
             passwordHash: hashedPwd,
             role: 'GLOBAL_ADMIN',
             isActive: true,
@@ -27,105 +31,104 @@ async function main() {
         }
     });
 
-    // 2. Upsert Police Stations from Official APSAC Data
+    // 2. Upsert Police Stations from Data File
     console.log('📍 Seeding Official Police Stations...');
-    const apsacPath = path.join(__dirname, 'seed_apsac_stations.json');
-    if (fs.existsSync(apsacPath)) {
-        const apsacData = JSON.parse(fs.readFileSync(apsacPath, 'utf8'));
-        console.log(`📊 Found ${apsacData.length} stations in JSON.`);
+    const stationDataPath = path.join(__dirname, config.stationDataPath);
+    if (fs.existsSync(stationDataPath)) {
+        const stationsData = JSON.parse(fs.readFileSync(stationDataPath, 'utf8'));
+        console.log(`📊 Found ${stationsData.length} stations in JSON.`);
 
-        // Using a batch size to avoid overwhelming the DB
+        // Using sequential upserts within batches to avoid connection pool timeouts
         const BATCH_SIZE = 100;
-        for (let i = 0; i < apsacData.length; i += BATCH_SIZE) {
-            const batch = apsacData.slice(i, i + BATCH_SIZE);
-            await Promise.all(batch.map(s =>
-                prisma.policeStation.upsert({
+        for (let i = 0; i < stationsData.length; i += BATCH_SIZE) {
+            const batch = stationsData.slice(i, i + BATCH_SIZE);
+            for (const s of batch) {
+                await prisma.policeStation.upsert({
                     where: { id: s.id },
                     update: {
-                        stationName: s.station_name,
+                        stationName: s.stationName,
                         district: s.district,
                         state: s.state,
                         latitude: s.latitude,
                         longitude: s.longitude,
-                        contactNumber: s.contact_number || 'NA',
+                        contactNumber: s.contactNumber || 'NA',
                         address: s.address,
-                        circleName: s.circle_name,
-                        dataSource: s.data_source,
-                        districtCode: s.district_code,
-                        divisionName: s.division_name,
-                        externalId: s.external_id,
-                        parentStationId: s.parent_station_id,
+                        circleName: s.circleName,
+                        dataSource: s.dataSource || 'MANUAL',
+                        districtCode: s.districtCode,
+                        divisionName: s.divisionName,
+                        externalId: s.externalId,
+                        parentStationId: s.parentStationId,
                         pincode: s.pincode,
-                        subDivisionName: s.sub_division_name,
+                        subDivisionName: s.subDivisionName,
                         rank: s.rank || 'STATION'
                     },
                     create: {
                         id: s.id,
-                        stationName: s.station_name,
+                        stationName: s.stationName,
                         district: s.district,
                         state: s.state,
                         latitude: s.latitude,
                         longitude: s.longitude,
-                        contactNumber: s.contact_number || 'NA',
+                        contactNumber: s.contactNumber || 'NA',
                         address: s.address,
-                        circleName: s.circle_name,
-                        dataSource: s.data_source,
-                        districtCode: s.district_code,
-                        divisionName: s.division_name,
-                        externalId: s.external_id,
-                        parentStationId: s.parent_station_id,
+                        circleName: s.circleName,
+                        dataSource: s.dataSource || 'MANUAL',
+                        districtCode: s.districtCode,
+                        divisionName: s.divisionName,
+                        externalId: s.externalId,
+                        parentStationId: s.parentStationId,
                         pincode: s.pincode,
-                        subDivisionName: s.sub_division_name,
+                        subDivisionName: s.subDivisionName,
                         rank: s.rank || 'STATION'
                     }
-                })
-            ));
+                });
+            }
             if (i % 500 === 0 && i > 0) console.log(`   ... processed ${i} stations`);
         }
     } else {
-        console.warn('⚠️ seed_apsac_stations.json not found. Skipping station seeding.');
+        console.warn(`⚠️ ${config.stationDataPath} not found. Skipping station seeding.`);
     }
 
-    // 3. Create Sample Station Personnel (Bhimavaram focus)
-    console.log('👮 Seeding Bhimavaram Personnel...');
-    const bhimavaramStations = await prisma.policeStation.findMany({
-        where: { stationName: { contains: 'Bhimavaram', mode: 'insensitive' } }
-    });
+    // 3. Create Personnel for ALL Stations (Admin/Inspector per station)
+    console.log('👮 Seeding Personnel for all stations...');
 
-    for (const station of bhimavaramStations) {
-        // Admin
-        const adminEmail = `admin.${station.id.toLowerCase().replace(/[^a-z0-9]/g, '.')}@police.gov.in`;
-        await prisma.policeUser.upsert({
-            where: { email: adminEmail },
-            update: { stationId: station.id },
-            create: {
-                id: uuidv4(),
-                stationId: station.id,
-                name: `${station.stationName} Admin`,
-                email: adminEmail,
-                passwordHash: hashedPwd,
-                role: 'STATION_ADMIN',
-                isActive: true
-            }
-        });
+    // Mapping StationRank to UserRole
+    const rankRoleMap = {
+        'DISTRICT': 'DISTRICT_ADMIN',
+        'SUBDIVISION': 'DIVISION_ADMIN',
+        'CIRCLE': 'CIRCLE_ADMIN',
+        'STATION': 'STATION_ADMIN'
+    };
 
-        // Officers
-        for (let i = 1; i <= 2; i++) {
-            const officerEmail = `officer${i}.${station.id.toLowerCase().replace(/[^a-z0-9]/g, '.')}@police.gov.in`;
+    const stations = await prisma.policeStation.findMany();
+    console.log(`📊 Processing personnel for ${stations.length} stations...`);
+
+    const PERSONNEL_BATCH_SIZE = 100;
+    for (let i = 0; i < stations.length; i += PERSONNEL_BATCH_SIZE) {
+        const batch = stations.slice(i, i + PERSONNEL_BATCH_SIZE);
+        for (const station of batch) {
+            const role = rankRoleMap[station.rank] || 'OFFICER';
+            const adminEmail = `admin.${station.id.toLowerCase().replace(/[^a-z0-9]/g, '.')}@${config.policeDomain}`;
+
             await prisma.policeUser.upsert({
-                where: { email: officerEmail },
-                update: { stationId: station.id },
+                where: { email: adminEmail },
+                update: {
+                    stationId: station.id,
+                    role: role
+                },
                 create: {
                     id: uuidv4(),
                     stationId: station.id,
-                    name: `Officer ${i} (${station.stationName})`,
-                    email: officerEmail,
+                    name: `${station.stationName} ${role.replace('_ADMIN', '').replace('_', ' ')}`,
+                    email: adminEmail,
                     passwordHash: hashedPwd,
-                    role: 'OFFICER',
+                    role: role,
                     isActive: true
                 }
             });
         }
+        if (i % 500 === 0 && i > 0) console.log(`   ... processed ${i} station personnel`);
     }
 
     // 4. Create Citizen Users
@@ -154,8 +157,8 @@ async function main() {
 
     console.log('\n✅ Consolidated Seeding Complete!');
     console.log('--------------------------------------------------');
-    console.log('GLOBAL ADMIN: global_admin@reva.gov.in / Admin@123');
-    console.log('BHIMAVARAM ADMINS: check police_users table for emails starting with "admin.bhima..."');
+    console.log(`GLOBAL ADMIN: ${config.adminEmail} / ${config.adminPassword}`);
+    console.log(`OFFICER EMAIL DOMAIN: @${config.policeDomain}`);
     console.log('--------------------------------------------------');
 }
 
