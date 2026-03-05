@@ -76,22 +76,28 @@ enum AnalysisStatus {
 // ─── Core Identity Models ─────────────────────────────────────────────────────
 
 model User {
-  id             String   @id @default(uuid())
-  name           String?
-  mobileNumber   String?  @unique @map("mobile_number")
-  aadhaarMasked  String?  @unique @map("aadhaar_masked")
-  internalRef    String   @unique @map("internal_ref")
-  isVerified     Boolean  @default(false) @map("is_verified")
-  isAnonymous    Boolean  @default(false) @map("is_anonymous")
-  language       String   @default("en")
-  latitude       Float?
-  longitude      Float?
-  geofenceId     String?  @map("geofence_id")
-  complaintCount Int      @default(0) @map("complaint_count")
-  riskFlagCount  Int      @default(0) @map("risk_flag_count")
-  refreshToken   String?  @map("refresh_token")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  id                   String   @id @default(uuid())
+  name                 String?
+  mobileNumber         String?  @unique @map("mobile_number")
+  aadhaarMasked        String?  @unique @map("aadhaar_masked")
+  internalRef          String   @unique @map("internal_ref")
+  isVerified           Boolean  @default(false) @map("is_verified")
+  isAnonymous          Boolean  @default(false) @map("is_anonymous")
+  registrationComplete Boolean  @default(false) @map("registration_complete")
+  language             String   @default("en")
+  // KYC fields populated from Aadhaar verification
+  dateOfBirth          String?  @map("date_of_birth")
+  careOf               String?  @map("care_of")
+  residentialAddress   String?  @map("residential_address")
+  gender               String?
+  latitude             Float?
+  longitude            Float?
+  geofenceId           String?  @map("geofence_id")
+  complaintCount       Int      @default(0) @map("complaint_count")
+  riskFlagCount        Int      @default(0) @map("risk_flag_count")
+  refreshToken         String?  @map("refresh_token")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
 
   policeStation PoliceStation? @relation(fields: [geofenceId], references: [id])
   complaints    Complaint[]

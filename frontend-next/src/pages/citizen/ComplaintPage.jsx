@@ -129,16 +129,15 @@ export default function ComplaintPage() {
   const geofenceCheckInProgressRef = useRef(false);
 
 
-  // ── Age-adaptive state ─────────────────────────────────────────────────
-  const [isGreetingResponded, setIsGreetingResponded] = useState(false);
-  const [isAgeCollected, setIsAgeCollected] = useState(false);
+  // ── Aadhaar PIN gate (last-4 digits security check) ────────────────────
+  const [isPinVerified, setIsPinVerified] = useState(false);
+  const [pinDigits, setPinDigits] = useState(['', '', '', '']);
+  const [pinError, setPinError] = useState('');
+  const pinCellRefs = useRef([]);
+
+  // ── Personal info (auto-populated from KYC profile, not asked in chat) ──
   const [userAge, setUserAge] = useState(null);
   const [userCategory, setUserCategory] = useState(null); // "child" | "adult" | "senior"
-
-  // ── Personal info intake state ─────────────────────────────────────────
-  const [isFathersNameCollected, setIsFathersNameCollected] = useState(false);
-  const [isOccupationCollected, setIsOccupationCollected] = useState(false);
-  const [isAddressCollected, setIsAddressCollected] = useState(false);
   const [userFathersName, setUserFathersName] = useState(null);
   const [userOccupation, setUserOccupation] = useState(null);
   const [userAddress, setUserAddress] = useState(null);
@@ -147,8 +146,9 @@ export default function ComplaintPage() {
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [editedText, setEditedText] = useState("");
 
-  // ── Age message tracking ─────────────────────────────────────────────
   const ageMessageIdRef = useRef(null);
+  const evidenceAskedRef = useRef(false);
+  const awaitingEvidenceContinuationRef = useRef(false);
 
   const messagesEndRef = useRef(null);
   const shouldProcessRef = useRef(false);
@@ -192,6 +192,34 @@ export default function ComplaintPage() {
     speaking: isSpeaking,
     voices,
   } = useSpeechSynthesis();
+
+  // ── Auto-populate KYC data from Aadhaar profile ──────────────────────
+  useEffect(() => {
+    if (!user) return;
+    // Calculate age from dateOfBirth (supports DD/MM/YYYY and YYYY-MM-DD)
+    if (user.dateOfBirth) {
+      let dob;
+      if (user.dateOfBirth.includes('/')) {
+        const parts = user.dateOfBirth.split('/');
+        // DD/MM/YYYY
+        if (parts[0].length <= 2) dob = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+        // MM/DD/YYYY fallback
+        else dob = new Date(user.dateOfBirth);
+      } else {
+        dob = new Date(user.dateOfBirth);
+      }
+      if (!isNaN(dob.getTime())) {
+        const today = new Date();
+        let age = today.getFullYear() - dob.getFullYear();
+        const dm = today.getMonth() - dob.getMonth();
+        if (dm < 0 || (dm === 0 && today.getDate() < dob.getDate())) age--;
+        setUserAge(age);
+        setUserCategory(age < 18 ? 'child' : age <= 60 ? 'adult' : 'senior');
+      }
+    }
+    if (user.careOf) setUserFathersName(user.careOf);
+    if (user.residentialAddress) setUserAddress(user.residentialAddress);
+  }, [user]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -490,132 +518,7 @@ export default function ComplaintPage() {
       ]);
     };
 
-    // ── STEP 1: First user reply → ask for age ─────────────────────────────
-    if (!isGreetingResponded) {
-      setIsGreetingResponded(true);
-      const q = t("intake.askAge");
-      addAIMsg(q);
-      speakReply(q);
-      return;
-    }
-
-    // ── STEP 2: Collect and validate age ───────────────────────────────
-    if (!isAgeCollected) {
-      const ageMatch = text.match(/\d+/);
-      const age = ageMatch ? parseInt(ageMatch[0], 10) : null;
-
-      if (!age || age < 1 || age > 120) {
-        const retry = t("intake.invalidAge");
-        addAIMsg(retry);
-        speakReply(retry);
-        return;
-      }
-
-      const category = age < 18 ? "child" : age <= 60 ? "adult" : "senior";
-      setUserAge(age);
-      setUserCategory(category);
-      setIsAgeCollected(true);
-      ageMessageIdRef.current = userMsg.id; // remember which message contained the age
-
-      // After age, ask father's / husband's name
-      const fatherNameQuestions = {
-        en: "Thank you. May I know your father's or husband's name?",
-        hi: "धन्यवाद। क्या मैं आपके पिता या पति का नाम जान सकता हूँ?",
-        te: "ధన్యవాదాలు. మీ తండ్రి లేదా భర్త పేరు చెప్పగలరా?",
-        ta: "நன்றி. உங்கள் தந்தை அல்லது கணவரின் பெயர் சொல்லுங்கள்?",
-        kn: "ಧನ್ಯವಾದ. ನಿಮ್ಮ ತಂದೆ ಅಥವಾ ಪತಿಯ ಹೆಸರು ಏನು?",
-        mr: "धन्यवाद. तुमच्या वडिलांचे किंवा पतीचे नाव सांगाल का?",
-        bn: "ধন্যবাদ। আপনার বাবার বা স্বামীর নাম জানতে পারি কি?",
-        gu: "આભાર. શું હું તમારા પિતા અથવા પતિનું નામ જાણી શકું?",
-        ml: "നന്ദി. നിങ്ങളുടെ അച്ഛൻറെ അല്ലെങ്കിൽ ഭർത്താവിൻറെ പേര് പറയാമോ?",
-        pa: "ਧੰਨਵਾਦ। ਕੀ ਮੈਂ ਤੁਹਾਡੇ ਪਿਤਾ ਜਾਂ ਪਤੀ ਦਾ ਨਾਮ ਜਾਣ ਸਕਦਾ ਹਾਂ?",
-      };
-      const fnQ = fatherNameQuestions[language] || fatherNameQuestions.en;
-      addAIMsg(fnQ);
-      speakReply(fnQ);
-      return;
-    }
-
-    // ── STEP 2.5: Collect father's / husband's name ────────────────────
-    if (!isFathersNameCollected) {
-      const name = text.trim();
-      if (name.length < 2) {
-        const retryFN = {
-          en: "I didn't catch that. Please tell me your father's or husband's name.",
-          hi: "कृपया अपने पिता या पति का नाम दोबारा बताएं।",
-          te: "దయచేసి మీ తండ్రి లేదా భర్త పేరు మళ్ళీ చెప్పండి.",
-          ta: "தயவுசெய்து உங்கள் தந்தை அல்லது கணவரின் பெயரை மீண்டும் சொல்லுங்கள்.",
-          kn: "ದಯವಿಟ್ಟು ನಿಮ್ಮ ತಂದೆ ಅಥವಾ ಪತಿಯ ಹೆಸರನ್ನು ಮತ್ತೆ ಹೇಳಿ.",
-          mr: "कृपया तुमच्या वडिलांचे किंवा पतीचे नाव पुन्हा सांगा.",
-          bn: "দয়া করে আপনার বাবার বা স্বামীর নাম আবার বলুন।",
-          gu: "કૃપા કરી તમારા પિતા અથવા પતિનું નામ ફરી કહો.",
-          ml: "ദയവായി നിങ്ങളുടെ അച്ഛൻ അല്ലെങ്കിൽ ഭർത്താവിൻറെ പേര് വീണ്ടും പറയൂ.",
-          pa: "ਕਿਰਪਾ ਕਰਕੇ ਆਪਣੇ ਪਿਤਾ ਜਾਂ ਪਤੀ ਦਾ ਨਾਮ ਦੁਬਾਰਾ ਦੱਸੋ।",
-        };
-        const r = retryFN[language] || retryFN.en;
-        addAIMsg(r);
-        speakReply(r);
-        return;
-      }
-      setUserFathersName(name);
-      setIsFathersNameCollected(true);
-
-      const oQ = t("intake.occupation");
-      addAIMsg(oQ);
-      speakReply(oQ);
-      return;
-    }
-
-    // ── STEP 2.6: Collect occupation ───────────────────────────────────
-    if (!isOccupationCollected) {
-      const occ = text.trim();
-      if (occ.length < 2) {
-        const retryOcc = {
-          en: "Please tell me your occupation (e.g., Student, Farmer, Engineer, etc.).",
-          hi: "कृपया अपना व्यवसाय बताएं (जैसे: छात्र, किसान, इंजीनियर, आदि)।",
-          te: "దయచేసి మీ వృత్తి చెప్పండి (ఉదా: విద్యార్థి, రైతు, ఇంజినీర్).",
-          ta: "தயவுசெய்து உங்கள் தொழிலை சொல்லுங்கள் (எ.கா: மாணவர், விவசாயி, பொறியியலாளர்).",
-          kn: "ದಯವಿಟ್ಟು ನಿಮ್ಮ ವೃತ್ತಿಯನ್ನು ಹೇಳಿ (ಉದಾ: ವಿದ್ಯಾರ್ಥಿ, ರೈತ, ಇಂಜಿನಿಯರ್).",
-          mr: "कृपया तुमचा व्यवसाय सांगा (उदा: विद्यार्थी, शेतकरी, अभियंता).",
-          bn: "দয়া করে আপনার পেশা বলুন (যেমন: ছাত্র, কৃষক, ইঞ্জিনিয়ার)।",
-          gu: "કૃપા કરી તમારો વ્યવસાય જણાવો (દા.ત.: વિદ્યાર્થી, ખેડૂત, ઇજનેર).",
-          ml: "ദയവായി നിങ്ങളുടെ തൊഴിൽ പറയൂ (ഉദാ: വിദ്യാർഥി, കർഷകൻ, എഞ്ചിനീയർ).",
-          pa: "ਕਿਰਪਾ ਕਰਕੇ ਆਪਣਾ ਕਿੱਤਾ ਦੱਸੋ (ਜਿਵੇਂ: ਵਿਦਿਆਰਥੀ, ਕਿਸਾਨ, ਇੰਜੀਨੀਅਰ)।",
-        };
-        const r = retryOcc[language] || retryOcc.en;
-        addAIMsg(r);
-        speakReply(r);
-        return;
-      }
-      setUserOccupation(occ);
-      setIsOccupationCollected(true);
-
-      const aQ = t("intake.address");
-      addAIMsg(aQ);
-      speakReply(aQ);
-      return;
-    }
-
-    // ── STEP 2.7: Collect residential address ─────────────────────────
-    if (!isAddressCollected) {
-      const addr = text.trim();
-      if (addr.length < 5) {
-        const r = t("intake.retryAddr");
-        addAIMsg(r);
-        speakReply(r);
-        return;
-      }
-      setUserAddress(addr);
-      setIsAddressCollected(true);
-
-      const categoryKeys = { child: "proceedChild", adult: "proceedAdult", senior: "proceedSenior" };
-      const proceed = t(`intake.${categoryKeys[userCategory] || "proceedAdult"}`);
-      addAIMsg(proceed);
-      speakReply(proceed);
-      return;
-    }
-
-    // ── STEP 3: Normal AI conversation ────────────────────────────────
+    // ── AI conversation (KYC data is auto-populated from profile) ─────────
     setIsLoading(true);
 
     try {
@@ -635,7 +538,9 @@ export default function ComplaintPage() {
           : user?.policeStation?.stationName
             ? `${user.policeStation.stationName}, ${user.policeStation.district} (Home Station)`
             : "Unknown",
-        history: history.slice(-5), // Send last 5 messages for context
+        history: history.slice(-15), // Extended history for thorough FIR investigation
+        historyLength: history.length,
+        evidenceAsked: evidenceAskedRef.current,
         userAge: userAge,
         userCategory: userCategory, // "child" | "adult" | "senior"
         userFathersName: userFathersName,
@@ -660,12 +565,20 @@ export default function ComplaintPage() {
       if (submitMatch) {
         try {
           aiData = JSON.parse(submitMatch[1].trim());
-          lastAiDataRef.current = aiData; // persist for manual button fallback
-          aiText = aiResponseRaw.replace(submitMatch[0], "").trim();
+          lastAiDataRef.current = aiData;
+          aiText = aiText.replace(submitMatch[0], "").trim();
         } catch (e) {
           console.error("Failed to parse AI submission data", e);
         }
       }
+
+      // Parse [[ASK_EVIDENCE]] signal — shown exactly once mid-conversation
+      let showEvidencePrompt = false;
+      if (aiText.includes('[[ASK_EVIDENCE]]') && !evidenceAskedRef.current) {
+        showEvidencePrompt = true;
+        evidenceAskedRef.current = true;
+      }
+      aiText = aiText.replace(/\[\[ASK_EVIDENCE\]\]/g, '').trim();
 
       const aiMsg = {
         id: (Date.now() + 1).toString(),
@@ -675,6 +588,7 @@ export default function ComplaintPage() {
           hour: "2-digit",
           minute: "2-digit",
         }),
+        ...(showEvidencePrompt ? { type: "evidencePrompt", responded: false } : {}),
       };
 
       setMessages((prev) => [...prev, aiMsg]);
@@ -826,6 +740,19 @@ export default function ComplaintPage() {
     }
   };
 
+  // ── Evidence prompt handlers ────────────────────────────────────────────────
+  const handleEvidenceUpload = (msgId) => {
+    setMessages((prev) => prev.map((m) => m.id === msgId ? { ...m, responded: true } : m));
+    awaitingEvidenceContinuationRef.current = true;
+    // Open the file picker (camera or gallery — whichever is available)
+    imageFileRef.current?.click();
+  };
+
+  const handleEvidenceSkip = (msgId) => {
+    setMessages((prev) => prev.map((m) => m.id === msgId ? { ...m, responded: true } : m));
+    sendMessage("I don't have any evidence to provide. Please continue.");
+  };
+
   // ── Camera Modal ────────────────────────────────────────────────────────────
   const openCameraModal = async () => {
     setShowMediaMenu(false);
@@ -953,6 +880,11 @@ export default function ComplaintPage() {
       } else {
         setMessages((prev) => prev.map((m) => m.id === mediaId ? { ...m, loading: false } : m));
         if (result.evidenceId) setPendingEvidenceIds((prev) => [...prev, result.evidenceId]);
+        // Auto-continue chat if this upload was triggered by the evidence prompt
+        if (awaitingEvidenceContinuationRef.current) {
+          awaitingEvidenceContinuationRef.current = false;
+          setTimeout(() => sendMessage("I have attached the evidence. Please continue."), 900);
+        }
         if (result.module1?.status === "completed") {
           toast.success("Evidence uploaded and analysed.");
         } else {
@@ -1023,6 +955,11 @@ export default function ComplaintPage() {
           prev.map((m) => (m.id === mediaId ? { ...m, loading: false } : m)),
         );
         if (result.evidenceId) setPendingEvidenceIds((prev) => [...prev, result.evidenceId]);
+        // Auto-continue chat if this upload was triggered by the evidence prompt
+        if (awaitingEvidenceContinuationRef.current) {
+          awaitingEvidenceContinuationRef.current = false;
+          setTimeout(() => sendMessage("I have attached the evidence. Please continue."), 900);
+        }
         if (result.module1?.status === "completed") {
           toast.success("Evidence uploaded and analysed.");
         } else {
@@ -1058,8 +995,113 @@ export default function ComplaintPage() {
     ? "0 0 0 16px rgba(239,68,68,0.12), 0 0 0 32px rgba(239,68,68,0.06)"
     : "0 4px 24px rgba(37,99,235,0.35)";
 
+  // ── Aadhaar PIN verification handler ────────────────────────────────────
+  const handlePinVerify = () => {
+    const entered = pinDigits.join('');
+    if (entered.length < 4) {
+      setPinError('Please enter all 4 digits.');
+      return;
+    }
+    // aadhaarMasked format: "XXXX-XXXX-1234" — last 4 chars are the real digits
+    const storedLast4 = user?.aadhaarMasked ? user.aadhaarMasked.replace(/\D/g, '').slice(-4) : null;
+    if (!storedLast4) {
+      // No Aadhaar on file — allow access (anonymous / edge case)
+      setIsPinVerified(true);
+      return;
+    }
+    if (entered === storedLast4) {
+      setPinError('');
+      setIsPinVerified(true);
+    } else {
+      setPinError('Invalid PIN. Please check the last 4 digits of your Aadhaar.');
+      setPinDigits(['', '', '', '']);
+      setTimeout(() => pinCellRefs.current[0]?.focus(), 50);
+    }
+  };
+
+  const handlePinKeyDown = (e, idx) => {
+    if (e.key === 'Backspace' && !pinDigits[idx] && idx > 0) {
+      pinCellRefs.current[idx - 1]?.focus();
+    }
+    if (e.key === 'Enter') handlePinVerify();
+  };
+
+  const handlePinChange = (val, idx) => {
+    if (!/^\d?$/.test(val)) return;
+    const updated = [...pinDigits];
+    updated[idx] = val;
+    setPinDigits(updated);
+    setPinError('');
+    if (val && idx < 3) pinCellRefs.current[idx + 1]?.focus();
+  };
+
   return (
     <>
+      {/* ── Aadhaar PIN Gate ─────────────────────────────────────────── */}
+      {!isPinVerified && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-neutral-900/60 backdrop-blur-sm px-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.94, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-7 flex flex-col items-center gap-5"
+          >
+            <div className="w-14 h-14 rounded-full bg-neutral-100 flex items-center justify-center">
+              <ShieldCheck size={26} className="text-neutral-700" />
+            </div>
+            <div className="text-center">
+              <h2 className="text-[17px] font-semibold text-neutral-900 mb-1">Security Verification</h2>
+              <p className="text-[13px] text-neutral-500 leading-relaxed">
+                Enter the <span className="font-medium text-neutral-700">last 4 digits</span> of your Aadhaar number to access the complaint portal.
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              {pinDigits.map((d, i) => (
+                <input
+                  key={i}
+                  ref={(el) => { pinCellRefs.current[i] = el; }}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={d}
+                  onChange={(e) => handlePinChange(e.target.value, i)}
+                  onKeyDown={(e) => handlePinKeyDown(e, i)}
+                  className="w-12 h-12 sm:w-14 sm:h-14 text-center text-[20px] font-semibold border-2 rounded-xl outline-none transition-all
+                    border-neutral-200 bg-neutral-50 text-neutral-900
+                    focus:border-neutral-800 focus:bg-white"
+                />
+              ))}
+            </div>
+
+            {pinError && (
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-[12px] text-red-500 text-center"
+              >
+                {pinError}
+              </motion.p>
+            )}
+
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={handlePinVerify}
+              className="w-full py-3 rounded-xl bg-neutral-900 text-white text-[14px] font-semibold hover:bg-neutral-700 transition-colors"
+            >
+              Verify & Continue
+            </motion.button>
+
+            <button
+              onClick={() => router.back()}
+              className="text-[12px] text-neutral-400 hover:text-neutral-600 transition-colors"
+            >
+              Go back
+            </button>
+          </motion.div>
+        </div>
+      )}
+
       {/* ── Root shell ───────────────────────────────────────────────── */}
       <div className="relative flex flex-col h-screen bg-neutral-50 text-neutral-900 overflow-hidden font-[Inter,system-ui,sans-serif]">
 
@@ -1255,8 +1297,8 @@ export default function ComplaintPage() {
                     </div>
                   )}
 
-                  {/* Normal text bubble */}
-                  {!msg.type && (
+                  {/* Normal text bubble / evidence prompt */}
+                  {(!msg.type || msg.type === "evidencePrompt") && (
                     <div className="relative flex-1">
                       {editingMessageId === msg.id ? (
                         <div className="flex flex-col gap-2 min-w-[220px] max-w-[420px]">
@@ -1303,6 +1345,33 @@ export default function ComplaintPage() {
                               )}
                             </div>
                           </div>
+
+                          {/* Evidence upload prompt — inline below AI message */}
+                          {msg.type === "evidencePrompt" && !msg.responded && (
+                            <div className="mt-3 flex flex-col gap-2 pl-[2px]">
+                              <div className="flex gap-2 flex-wrap">
+                                <motion.button
+                                  whileTap={{ scale: 0.97 }}
+                                  onClick={() => handleEvidenceUpload(msg.id)}
+                                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-neutral-900 text-white text-[12px] font-semibold cursor-pointer border-none"
+                                >
+                                  <ImageIcon size={13} /> Upload Evidence
+                                </motion.button>
+                                <motion.button
+                                  whileTap={{ scale: 0.97 }}
+                                  onClick={() => handleEvidenceSkip(msg.id)}
+                                  className="px-4 py-2 rounded-xl bg-neutral-100 border border-neutral-200 text-neutral-600 text-[12px] font-semibold cursor-pointer"
+                                >
+                                  Skip
+                                </motion.button>
+                              </div>
+                            </div>
+                          )}
+                          {msg.type === "evidencePrompt" && msg.responded && (
+                            <div className="mt-2 flex items-center gap-1.5 text-[11px] text-neutral-400">
+                              <CheckCircle2 size={12} className="text-emerald-500" /> Evidence step complete
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

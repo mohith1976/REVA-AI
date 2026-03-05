@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/utils/api";
 import toast from "react-hot-toast";
-import { User, Phone, MapPin, Globe, Save, ArrowLeft, Shield, Edit2, X, ChevronDown } from "lucide-react";
+import { User, Phone, MapPin, Globe, Save, ArrowLeft, Shield, Edit2, X, ChevronDown, Trash2 } from "lucide-react";
 import Link from "next/link";
 
 export default function ProfilePage() {
@@ -16,6 +16,8 @@ export default function ProfilePage() {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     name: user?.name || "",
@@ -69,6 +71,21 @@ export default function ProfilePage() {
       latitude: user?.latitude || "",
       longitude: user?.longitude || "",
     });
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleteLoading(true);
+    try {
+      await api.delete("/api/users/account");
+      auth?.logoutCitizen?.();
+      toast.success("Account deleted successfully.");
+      router.push("/login");
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Failed to delete account");
+    } finally {
+      setDeleteLoading(false);
+      setShowDeleteConfirm(false);
+    }
   };
 
   return (
@@ -233,6 +250,40 @@ export default function ProfilePage() {
               </>
             )}
           </form>
+
+          {/* ── Danger Zone ── */}
+          <div className="mt-8 pt-6 border-t border-neutral-100">
+            {!showDeleteConfirm ? (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="flex items-center gap-2 text-[13px] font-bold text-red-500 hover:text-red-700 transition-colors px-1"
+              >
+                <Trash2 size={15} />
+                Delete Account
+              </button>
+            ) : (
+              <div className="p-4 bg-red-50 border border-red-100 rounded-2xl">
+                <p className="text-sm font-bold text-red-700 mb-1">Are you absolutely sure?</p>
+                <p className="text-xs text-red-500 mb-4">This will permanently delete your account and all associated data. This action cannot be undone.</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    disabled={deleteLoading}
+                    className="flex-1 py-2.5 text-[13px] font-bold text-neutral-600 bg-white border border-neutral-200 rounded-xl hover:bg-neutral-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDeleteAccount}
+                    disabled={deleteLoading}
+                    className="flex-1 py-2.5 text-[13px] font-bold text-white bg-red-600 rounded-xl hover:bg-red-700 disabled:opacity-50 transition-colors"
+                  >
+                    {deleteLoading ? "Deleting…" : "Yes, Delete"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

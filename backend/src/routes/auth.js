@@ -45,6 +45,10 @@ const setAuthCookies = (res, accessToken, refreshToken) => {
 // In-memory pending tasks
 const pendingAadhaarTasks = new Map();
 
+// In-memory temp sessions for the phone-registration step
+// Key: tempToken (uuid), Value: { userId, expiresAt }
+const pendingPhoneRegistrations = new Map();
+
 // ─────────────────────────────────────────────────────────────────────────────
 // AADHAAR ROUTES
 // ─────────────────────────────────────────────────────────────────────────────
@@ -78,7 +82,7 @@ router.post('/send-otp', async (req, res, next) => {
 
 router.post('/verify-otp', async (req, res, next) => {
   try {
-    const { aadhaar, otp, name: manualName, language = 'en' } = req.body;
+    const { aadhaar, otp, language = 'en' } = req.body;
     if (!aadhaar || !otp) throw new AppError('Aadhaar and OTP required', 400);
 
     const cleaned = aadhaar.replace(/\s|-/g, '');
@@ -88,15 +92,160 @@ router.post('/verify-otp', async (req, res, next) => {
       throw new AppError('OTP expired or not requested', 400);
     }
 
-    let result = await aadhaarKyc.verifyAadhaarOtp(cleaned, otp, pending.taskId);
-
+    const result = await aadhaarKyc.verifyAadhaarOtp(cleaned, otp, pending.taskId);
     if (!result.verified) throw new AppError('Invalid OTP', 400);
 
     pendingAadhaarTasks.delete(cleaned);
 
-    // Prioritize KYC name, fallback to manual name
-    const finalName = result.name || manualName;
-    const user = await upsertCitizenUser(maskAadhaar(cleaned), finalName, pending.language);
+    // Log full KYC response for audit trail
+    logger.info('Aadhaar KYC Verified', {
+      aadhaarMasked: maskAadhaar(cleaned),
+      name: result.name,
+      dateOfBirth: result.dob,
+      careOf: result.rawData?.care_of,
+      gender: result.rawData?.gender,
+      address: result.rawData?.full_address,
+    });
+
+    // Extract KYC fields
+    const kycName    = result.name || null;
+    const kycDob     = result.dob || result.rawData?.date_of_birth || null;
+    const kycCareOf  = result.rawData?.care_of || null;
+    const kycAddress = result.rawData?.full_address || result.address || null;
+    const kycGender  = result.rawData?.gender || result.gender || null;
+
+    // Find or create user, save all KYC fields
+    const user = await upsertCitizenUserWithKyc(
+      maskAadhaar(cleaned),
+      { name: kycName, dateOfBirth: kycDob, careOf: kycCareOf, residentialAddress: kycAddress, gender: kycGender },
+      pending.language || language
+    );
+
+    // If account registration is already complete (phone linked previously), log in directly
+    if (user.registrationComplete && user.mobileNumber) {
+      const { accessToken, refreshToken } = generateTokens(user.id);
+      await updateRefreshToken(user.id, refreshToken);
+      setAuthCookies(res, accessToken, refreshToken);
+      return res.json({ user, accessToken, needsPhone: false });
+    }
+
+    // New/incomplete account → need phone registration step
+    const tempToken = uuidv4();
+    pendingPhoneRegistrations.set(tempToken, {
+      userId: user.id,
+      expiresAt: Date.now() + 15 * 60 * 1000, // 15 minutes
+    });
+
+    return res.json({
+      needsPhone: true,
+      tempToken,
+      user: { name: user.name, gender: user.gender },
+    });
+  } catch (error) { next(error); }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PHONE REGISTRATION ROUTES (second step of new account creation)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Step 1: send Twilio OTP to the phone number
+router.post('/register/send-phone-otp', async (req, res, next) => {
+  try {
+    const { tempToken, mobile } = req.body;
+    if (!tempToken || !mobile) throw new AppError('tempToken and mobile are required', 400);
+    if (!/^\d{10}$/.test(mobile)) throw new AppError('Enter a valid 10-digit mobile number', 400);
+
+    const session = pendingPhoneRegistrations.get(tempToken);
+    if (!session || session.expiresAt < Date.now()) {
+      throw new AppError('Session expired. Please restart Aadhaar verification.', 400);
+    }
+
+    // Check if mobile is already taken by another account
+    const existing = await prisma.user.findFirst({ where: { mobileNumber: mobile } });
+    if (existing && existing.id !== session.userId) {
+      throw new AppError('This mobile number is already linked to another account', 409);
+    }
+
+    const result = await sendMobileOtp(mobile);
+    res.json({ message: result.message, ...(result.devOtp ? { devOtp: result.devOtp } : {}) });
+  } catch (error) { next(error); }
+});
+
+// Step 2: verify phone OTP + save phone + location → complete registration
+router.post('/register/complete', async (req, res, next) => {
+  try {
+    const { tempToken, mobile, otp, latitude, longitude } = req.body;
+    if (!tempToken || !mobile || !otp) throw new AppError('tempToken, mobile, and otp are required', 400);
+
+    const session = pendingPhoneRegistrations.get(tempToken);
+    if (!session || session.expiresAt < Date.now()) {
+      throw new AppError('Session expired. Please restart Aadhaar verification.', 400);
+    }
+
+    const isOtpValid = await verifyMobileOtp(mobile, otp);
+    if (!isOtpValid) throw new AppError('Invalid or expired OTP', 400);
+
+    pendingPhoneRegistrations.delete(tempToken);
+
+    const updateData = {
+      mobileNumber: mobile,
+      registrationComplete: true,
+    };
+
+    if (latitude && longitude) {
+      updateData.latitude  = parseFloat(latitude);
+      updateData.longitude = parseFloat(longitude);
+      // Assign geofence
+      const stations = await prisma.policeStation.findMany({ where: { status: true } });
+      let matchedStationId = null, minDistance = Infinity;
+      for (const st of stations) {
+        const dist = haversineDistance(parseFloat(latitude), parseFloat(longitude), st.latitude, st.longitude);
+        if (dist <= st.radiusKm && dist < minDistance) { minDistance = dist; matchedStationId = st.id; }
+      }
+      updateData.geofenceId = matchedStationId;
+    }
+
+    const user = await prisma.user.update({ where: { id: session.userId }, data: updateData });
+
+    const { accessToken, refreshToken } = generateTokens(user.id);
+    await updateRefreshToken(user.id, refreshToken);
+    setAuthCookies(res, accessToken, refreshToken);
+
+    res.json({ user, accessToken });
+  } catch (error) {
+    if (error.code === 'P2002') return next(new AppError('Mobile number already in use', 409));
+    next(error);
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PHONE LOGIN ROUTES (returning users — phone-only quick login)
+// ─────────────────────────────────────────────────────────────────────────────
+
+router.post('/phone/send-otp', async (req, res, next) => {
+  try {
+    const { mobile } = req.body;
+    if (!mobile || !/^\d{10}$/.test(mobile)) throw new AppError('Valid 10-digit mobile number required', 400);
+
+    const user = await prisma.user.findFirst({ where: { mobileNumber: mobile } });
+    if (!user) throw new AppError('No account found for this number. Please register with Aadhaar first.', 404);
+    if (!user.registrationComplete) throw new AppError('Account registration is incomplete. Please complete Aadhaar onboarding.', 400);
+
+    const result = await sendMobileOtp(mobile);
+    res.json({ message: result.message, ...(result.devOtp ? { devOtp: result.devOtp } : {}) });
+  } catch (error) { next(error); }
+});
+
+router.post('/phone/login', async (req, res, next) => {
+  try {
+    const { mobile, otp } = req.body;
+    if (!mobile || !otp) throw new AppError('Mobile and OTP required', 400);
+
+    const isOtpValid = await verifyMobileOtp(mobile, otp);
+    if (!isOtpValid) throw new AppError('Invalid or expired OTP', 400);
+
+    const user = await prisma.user.findFirst({ where: { mobileNumber: mobile } });
+    if (!user) throw new AppError('Account not found', 404);
 
     const { accessToken, refreshToken } = generateTokens(user.id);
     await updateRefreshToken(user.id, refreshToken);
@@ -213,15 +362,18 @@ router.post('/mobile/login', async (req, res, next) => {
 // BASE AUTH
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function upsertCitizenUser(idMasked, name, language) {
-  let user = await prisma.user.findFirst({
-    where: {
-      OR: [
-        { aadhaarMasked: idMasked },
-        // If we have more identifiers we'd add them here
-      ]
-    }
-  });
+async function upsertCitizenUserWithKyc(idMasked, kyc, language) {
+  let user = await prisma.user.findFirst({ where: { aadhaarMasked: idMasked } });
+
+  const kycData = {
+    name:                kyc.name || undefined,
+    dateOfBirth:         kyc.dateOfBirth || undefined,
+    careOf:              kyc.careOf || undefined,
+    residentialAddress:  kyc.residentialAddress || undefined,
+    gender:              kyc.gender || undefined,
+  };
+  // Remove undefined keys so we don't null out existing values
+  Object.keys(kycData).forEach((k) => kycData[k] === undefined && delete kycData[k]);
 
   if (!user) {
     user = await prisma.user.create({
@@ -229,23 +381,36 @@ async function upsertCitizenUser(idMasked, name, language) {
         id: uuidv4(),
         internalRef: `reg_${idMasked.replace(/X|-/g, '')}_${Date.now().toString().slice(-4)}`,
         aadhaarMasked: idMasked,
-        name: name || null,
         isVerified: true,
-        language
+        language,
+        ...kycData,
       }
     });
   } else {
     user = await prisma.user.update({
       where: { id: user.id },
-      data: { name: name || user.name, language }
+      data: { language, ...kycData },
     });
   }
   return user;
 }
 
+// Keep original for PAN / mobile routes that still use it
+async function upsertCitizenUser(idMasked, name, language) {
+  return upsertCitizenUserWithKyc(idMasked, { name }, language);
+}
+
 async function updateRefreshToken(userId, token) {
   const hash = await bcrypt.hash(token, 8);
   await prisma.user.update({ where: { id: userId }, data: { refreshToken: hash } });
+}
+
+function haversineDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
 router.post('/refresh', async (req, res, next) => {

@@ -151,9 +151,10 @@ async function sendMobileOtp(mobileNumber) {
     throw new Error('Twilio SMS service is not configured.');
   }
 
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
   try {
     const client = twilio(TWILIO_SID, TWILIO_TOKEN);
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const formatted = mobileNumber.startsWith('+') ? mobileNumber : `+91${mobileNumber}`;
 
     await client.messages.create({

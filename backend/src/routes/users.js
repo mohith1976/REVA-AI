@@ -75,4 +75,16 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
+// DELETE /api/users/account - Permanently delete the authenticated user's account
+router.delete('/account', authenticateUser, async (req, res, next) => {
+  try {
+    await prisma.user.delete({ where: { id: req.user.id } });
+    res.clearCookie('accessToken');
+    res.clearCookie('refreshToken');
+    res.json({ message: 'Account deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;
