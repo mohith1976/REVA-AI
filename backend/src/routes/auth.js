@@ -12,22 +12,28 @@ const {
   maskAadhaar, validateAadhaar, validatePan 
 } = require('../services/idfyService');
 const aadhaarKyc = require('../services/aadhaarKycService');
+const quantumService = require('../services/quantumService');
 
 /**
  * TOKEN UTILS
  */
-const generateTokens = (userId) => ({
-  accessToken: jwt.sign(
-    { userId, type: 'CITIZEN' },
-    process.env.JWT_ACCESS_SECRET,
-    { expiresIn: process.env.JWT_ACCESS_EXPIRY || '15m' }
-  ),
-  refreshToken: jwt.sign(
-    { userId, type: 'CITIZEN' },
-    process.env.JWT_REFRESH_SECRET,
-    { expiresIn: process.env.JWT_REFRESH_EXPIRY || '7d' }
-  ),
-});
+const generateTokens = async (userId) => {
+  // Generate a Quantum-Hardened fingerprint for this session
+  const quantumFingerprint = await quantumService.getQuantumEntropy(64);
+
+  return {
+    accessToken: jwt.sign(
+      { userId, type: 'CITIZEN', qf: quantumFingerprint },
+      process.env.JWT_ACCESS_SECRET,
+      { expiresIn: process.env.JWT_ACCESS_EXPIRY || '15m' }
+    ),
+    refreshToken: jwt.sign(
+      { userId, type: 'CITIZEN', qf: quantumFingerprint },
+      process.env.JWT_REFRESH_SECRET,
+      { expiresIn: process.env.JWT_REFRESH_EXPIRY || '7d' }
+    ),
+  };
+};
 
 const setAuthCookies = (res, accessToken, refreshToken) => {
   const prod = process.env.NODE_ENV === 'production';
@@ -98,7 +104,7 @@ router.post('/verify-otp', async (req, res, next) => {
     const finalName = result.name || manualName;
     const user = await upsertCitizenUser(maskAadhaar(cleaned), finalName, pending.language);
 
-    const { accessToken, refreshToken } = generateTokens(user.id);
+    const { accessToken, refreshToken } = await generateTokens(user.id);
     await updateRefreshToken(user.id, refreshToken);
     setAuthCookies(res, accessToken, refreshToken);
 
@@ -164,7 +170,7 @@ router.post('/pan/login', async (req, res, next) => {
       });
     }
 
-    const { accessToken, refreshToken } = generateTokens(user.id);
+    const { accessToken, refreshToken } = await generateTokens(user.id);
     await updateRefreshToken(user.id, refreshToken);
     setAuthCookies(res, accessToken, refreshToken);
 
@@ -201,7 +207,7 @@ router.post('/mobile/login', async (req, res, next) => {
       });
     }
 
-    const { accessToken, refreshToken } = generateTokens(user.id);
+    const { accessToken, refreshToken } = await generateTokens(user.id);
     await updateRefreshToken(user.id, refreshToken);
     setAuthCookies(res, accessToken, refreshToken);
 
@@ -261,7 +267,7 @@ router.post('/refresh', async (req, res, next) => {
     const isValid = await bcrypt.compare(refreshToken, user.refreshToken);
     if (!isValid) throw new AppError('Session compromised', 401);
 
-    const { accessToken: newAccess, refreshToken: newRefresh } = generateTokens(user.id);
+    const { accessToken: newAccess, refreshToken: newRefresh } = await generateTokens(user.id);
     await updateRefreshToken(user.id, newRefresh);
     setAuthCookies(res, newAccess, newRefresh);
 
@@ -292,10 +298,14 @@ router.post('/anonymous', async (req, res, next) => {
         isVerified: true
       }
     });
-    const { accessToken, refreshToken } = generateTokens(user.id);
+    const { accessToken, refreshToken } = await generateTokens(user.id);
     setAuthCookies(res, accessToken, refreshToken);
     res.json({ user, accessToken });
   } catch (error) { next(error); }
+});
+
+router.get('/quantum-status', async (req, res) => {
+  res.json(quantumService.getHealth());
 });
 
 module.exports = router;

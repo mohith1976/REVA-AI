@@ -8,6 +8,7 @@ const { AppError } = require('../middleware/errorHandler');
 const { logger } = require('../utils/logger');
 const { sendSMS } = require('../services/smsService');
 const { linkComplaintsForEvidence } = require('../services/evidenceMatchingService');
+const quantumService = require('../services/quantumService');
 
 // POST /api/complaints/start-session
 // Initiates an AI complaint intake conversation
@@ -148,7 +149,9 @@ router.post('/submit', authenticateUser, async (req, res, next) => {
       throw new AppError('Please select a police station to file your complaint', 400, 'STATION_REQUIRED');
     }
 
-    const trackingId = `REVA-${new Date().getFullYear()}-${uuidv4().slice(0, 8).toUpperCase()}`;
+    // --- QUANTUM SECURITY: TRULY RANDOM TRACKING ID ---
+    const qEntropy = await quantumService.getQuantumEntropy(32);
+    const trackingId = `REVA-${new Date().getFullYear()}-${qEntropy.slice(0, 8).toUpperCase()}`;
 
     // --- CYBER SECURITY: THREAT INTELLIGENCE & AUDIT VAULT ---
     const cyberKeywords = ['phishing', 'fraud', 'hacker', 'scam', 'otp', 'link', 'bullying', 'harassment', 'financial', 'bank'];
@@ -168,8 +171,9 @@ router.post('/submit', authenticateUser, async (req, res, next) => {
     if ((transcript || '').includes('bank') || (transcript || '').includes('money')) attackVector = 'Financial Fraud';
     if ((transcript || '').includes('password') || (transcript || '').includes('otp')) attackVector = 'Credential Theft';
 
-    // Generate a 'Digital Audit Signature' for Forensics
-    const auditSignature = crypto.createHmac('sha256', process.env.JWT_ACCESS_SECRET || 'fallback-secret')
+    // Generate a 'Digital Audit Signature' for Forensics with Quantum Salt
+    const qsalt = await quantumService.getQuantumEntropy(64);
+    const auditSignature = crypto.createHmac('sha3-512', qsalt)
       .update(`${trackingId}|${req.user.id}|${new Date().toISOString()}`)
       .digest('hex');
 

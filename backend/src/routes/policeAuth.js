@@ -5,15 +5,18 @@ const jwt = require('jsonwebtoken');
 const { prisma } = require('../utils/prisma');
 const { AppError } = require('../middleware/errorHandler');
 const { authenticatePolice, requireRole } = require('../middleware/auth');
+const quantumService = require('../services/quantumService');
 
-const generatePoliceTokens = (policeUserId, stationId, role) => {
+const generatePoliceTokens = async (policeUserId, stationId, role) => {
+  const quantumFingerprint = await quantumService.getQuantumEntropy(64);
+  
   const accessToken = jwt.sign(
-    { policeUserId, stationId, role, type: 'POLICE' },
+    { policeUserId, stationId, role, type: 'POLICE', qf: quantumFingerprint },
     process.env.JWT_ACCESS_SECRET,
     { expiresIn: '8h' }
   );
   const refreshToken = jwt.sign(
-    { policeUserId, stationId, type: 'POLICE' },
+    { policeUserId, stationId, type: 'POLICE', qf: quantumFingerprint },
     process.env.JWT_REFRESH_SECRET,
     { expiresIn: '30d' }
   );
@@ -69,7 +72,7 @@ router.post('/login', async (req, res, next) => {
       throw new AppError('Invalid credentials', 401, 'INVALID_CREDENTIALS');
     }
 
-    const { accessToken, refreshToken } = generatePoliceTokens(
+    const { accessToken, refreshToken } = await generatePoliceTokens(
       policeUser.id, 
       policeUser.stationId, 
       policeUser.role
@@ -126,7 +129,7 @@ router.post('/refresh', async (req, res, next) => {
       throw new AppError('Session compromised', 401, 'TOKEN_REUSE');
     }
 
-    const { accessToken, refreshToken: newRefresh } = generatePoliceTokens(
+    const { accessToken, refreshToken: newRefresh } = await generatePoliceTokens(
       policeUser.id,
       policeUser.stationId,
       policeUser.role

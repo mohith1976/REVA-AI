@@ -153,7 +153,8 @@ export default function ComplaintPage() {
   useEffect(() => {
     const handleBeforeUnload = (e) => {
       e.preventDefault();
-      e.returnValue = "Your complaint session will be lost. Are you sure you want to leave?";
+      e.returnValue =
+        "Your complaint session will be lost. Are you sure you want to leave?";
       return e.returnValue;
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
@@ -163,7 +164,10 @@ export default function ComplaintPage() {
   // ── Custom back-navigation confirmation modal state ─────────────────────
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const handleBackClick = () => setShowLeaveModal(true);
-  const confirmLeave = () => { setShowLeaveModal(false); navigate(-1); };
+  const confirmLeave = () => {
+    setShowLeaveModal(false);
+    navigate(-1);
+  };
   const cancelLeave = () => setShowLeaveModal(false);
 
   // Auto-enable mic after AI finishes speaking (Hands-free mode)
@@ -195,6 +199,20 @@ export default function ComplaintPage() {
   const [isSecureHandshakeComplete, setIsSecureHandshakeComplete] =
     useState(false);
   const [handshakeStep, setHandshakeStep] = useState(0);
+
+  const [quantumStatus, setQuantumStatus] = useState(null);
+
+  useEffect(() => {
+    const checkQuantum = async () => {
+      try {
+        const res = await api.get("/api/auth/quantum-status");
+        setQuantumStatus(res.data);
+      } catch (err) {
+        console.error("Quantum Status Error", err);
+      }
+    };
+    checkQuantum();
+  }, []);
 
   useEffect(() => {
     if (user && !user.name && !user.isAnonymous) {
@@ -228,10 +246,10 @@ export default function ComplaintPage() {
 
   useEffect(() => {
     const steps = [
-      "ESTABLISHING E2EE CHANNEL...",
-      "SCANNING FOR VPN LEAKS...",
-      "VERIFYING DEVICE INTEGRITY...",
-      "CYBER-SEC PROTOCOL ACTIVE",
+      "ESTABLISHING QUANTUM-SAFE CHANNEL...",
+      "GENERATING HADAMARD ENTROPY...",
+      "ENTANGLING SESSION KEYS...",
+      "QUANTUM-SECURED PROTOCOL ACTIVE",
     ];
 
     let currentStep = 0;
@@ -339,10 +357,20 @@ export default function ComplaintPage() {
         legalConfirmed: true,
         structuredJson: {
           stationId: activeStation.id,
-          incidentType: aiData?.incidentType || lastAiDataRef.current?.incidentType || "AI Assistant Report",
-          incidentLocation: aiData?.location || lastAiDataRef.current?.location || "Detected",
-          incidentDescription: aiData?.description || lastAiDataRef.current?.description || "See transcript",
-          incidentDateTime: aiData?.dateTime || lastAiDataRef.current?.dateTime || new Date().toISOString(),
+          incidentType:
+            aiData?.incidentType ||
+            lastAiDataRef.current?.incidentType ||
+            "AI Assistant Report",
+          incidentLocation:
+            aiData?.location || lastAiDataRef.current?.location || "Detected",
+          incidentDescription:
+            aiData?.description ||
+            lastAiDataRef.current?.description ||
+            "See transcript",
+          incidentDateTime:
+            aiData?.dateTime ||
+            lastAiDataRef.current?.dateTime ||
+            new Date().toISOString(),
           // Personal intake fields for FIR
           userFathersName: userFathersName || null,
           userOccupation: userOccupation || null,
@@ -365,7 +393,10 @@ export default function ComplaintPage() {
         id: (Date.now() + 2).toString(),
         role: "ai",
         type: "receipt",
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        timestamp: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
         receipt: {
           trackingId,
           station: station || activeStation?.stationName,
@@ -373,10 +404,16 @@ export default function ComplaintPage() {
           priority,
           isEmergency,
           incidentType: aiData?.incidentType || "AI Assistant Report",
-          location: aiData?.location || activeStation ? `${activeStation.stationName}, ${activeStation.district}` : "Detected",
+          location:
+            aiData?.location || activeStation
+              ? `${activeStation.stationName}, ${activeStation.district}`
+              : "Detected",
           description: aiData?.description || userTexts.slice(0, 200),
           dateTime: aiData?.dateTime || new Date().toISOString(),
-          filedAt: new Date().toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }),
+          filedAt: new Date().toLocaleString("en-IN", {
+            dateStyle: "medium",
+            timeStyle: "short",
+          }),
         },
       };
 
@@ -435,7 +472,10 @@ export default function ComplaintPage() {
           id: (Date.now() + 1).toString(),
           text: replyText,
           role: "ai",
-          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          timestamp: new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
         },
       ]);
     };
@@ -606,29 +646,44 @@ export default function ComplaintPage() {
 
       const proceedMessages = {
         en: {
-          child: "Thank you, dear. I have noted all your details. Now, please tell me what happened. I am here to help you.",
-          adult: "Thank you. I have noted all your details. Now, how can I help you today? Please describe what happened.",
-          senior: "Thank you. I have noted all your details. Please take your time and tell me what happened.",
+          child:
+            "Thank you, dear. I have noted all your details. Now, please tell me what happened. I am here to help you.",
+          adult:
+            "Thank you. I have noted all your details. Now, how can I help you today? Please describe what happened.",
+          senior:
+            "Thank you. I have noted all your details. Please take your time and tell me what happened.",
         },
         hi: {
-          child: "धन्यवाद, प्रिय। मैंने आपकी सभी जानकारी नोट कर ली है। अब बताइए क्या हुआ। मैं आपकी मदद के लिए यहाँ हूँ।",
-          adult: "धन्यवाद। मैंने आपकी सभी जानकारी नोट कर ली है। अब बताइए, मैं आज आपकी कैसे मदद करूं?",
-          senior: "धन्यवाद। मैंने आपकी सभी जानकारी नोट कर ली है। कृपया अपने समय से बताइए क्या हुआ।",
+          child:
+            "धन्यवाद, प्रिय। मैंने आपकी सभी जानकारी नोट कर ली है। अब बताइए क्या हुआ। मैं आपकी मदद के लिए यहाँ हूँ।",
+          adult:
+            "धन्यवाद। मैंने आपकी सभी जानकारी नोट कर ली है। अब बताइए, मैं आज आपकी कैसे मदद करूं?",
+          senior:
+            "धन्यवाद। मैंने आपकी सभी जानकारी नोट कर ली है। कृपया अपने समय से बताइए क्या हुआ।",
         },
         te: {
-          child: "ధన్యవాదాలు, నేస్తమా. మీ వివరాలన్నీ నమోదు చేసాను. ఇప్పుడు ఏం జరిగిందో చెప్పండి. నేను మీకు సహాయపడేందుకు ఇక్కడ ఉన్నాను.",
-          adult: "ధన్యవాదాలు. మీ వివరాలన్నీ నమోదు చేసాను. ఇప్పుడు ఏం జరిగిందో చెప్పండి.",
-          senior: "ధన్యవాదాలు. మీ వివరాలన్నీ నమోదు చేసాను. దయచేసి మీకు సౌకర్యంగా ఉన్నప్పుడు చెప్పండి ఏం జరిగిందో.",
+          child:
+            "ధన్యవాదాలు, నేస్తమా. మీ వివరాలన్నీ నమోదు చేసాను. ఇప్పుడు ఏం జరిగిందో చెప్పండి. నేను మీకు సహాయపడేందుకు ఇక్కడ ఉన్నాను.",
+          adult:
+            "ధన్యవాదాలు. మీ వివరాలన్నీ నమోదు చేసాను. ఇప్పుడు ఏం జరిగిందో చెప్పండి.",
+          senior:
+            "ధన్యవాదాలు. మీ వివరాలన్నీ నమోదు చేసాను. దయచేసి మీకు సౌకర్యంగా ఉన్నప్పుడు చెప్పండి ఏం జరిగిందో.",
         },
         ta: {
-          child: "நன்றி. உங்கள் விவரங்கள் குறிப்பிட்டுள்ளேன். இப்போது என்ன நடந்தது என்று சொல்லுங்கள்.",
-          adult: "நன்றி. உங்கள் விவரங்கள் குறிப்பிட்டுள்ளேன். இப்போது நான் எப்படி உதவலாம்?",
-          senior: "நன்றி. உங்கள் விவரங்கள் குறிப்பிட்டுள்ளேன். தயவுசெய்து என்ன நடந்தது என்று சொல்லுங்கள்.",
+          child:
+            "நன்றி. உங்கள் விவரங்கள் குறிப்பிட்டுள்ளேன். இப்போது என்ன நடந்தது என்று சொல்லுங்கள்.",
+          adult:
+            "நன்றி. உங்கள் விவரங்கள் குறிப்பிட்டுள்ளேன். இப்போது நான் எப்படி உதவலாம்?",
+          senior:
+            "நன்றி. உங்கள் விவரங்கள் குறிப்பிட்டுள்ளேன். தயவுசெய்து என்ன நடந்தது என்று சொல்லுங்கள்.",
         },
         kn: {
-          child: "ಧನ್ಯವಾದ. ನಿಮ್ಮ ವಿವರಗಳನ್ನು ದಾಖಲಿಸಿದ್ದೇನೆ. ಈಗ ಏನಾಯಿತು ಎಂದು ಹೇಳಿ.",
-          adult: "ಧನ್ಯವಾದ. ನಿಮ್ಮ ವಿವರಗಳನ್ನು ದಾಖಲಿಸಿದ್ದೇನೆ. ಇಂದು ನಾನು ಹೇಗೆ ಸಹಾಯ ಮಾಡಬಹುದು?",
-          senior: "ಧನ್ಯವಾದ. ನಿಮ್ಮ ವಿವರಗಳನ್ನು ದಾಖಲಿಸಿದ್ದೇನೆ. ದಯವಿಟ್ಟು ಏನಾಯಿತು ಎಂದು ಹೇಳಿ.",
+          child:
+            "ಧನ್ಯವಾದ. ನಿಮ್ಮ ವಿವರಗಳನ್ನು ದಾಖಲಿಸಿದ್ದೇನೆ. ಈಗ ಏನಾಯಿತು ಎಂದು ಹೇಳಿ.",
+          adult:
+            "ಧನ್ಯವಾದ. ನಿಮ್ಮ ವಿವರಗಳನ್ನು ದಾಖಲಿಸಿದ್ದೇನೆ. ಇಂದು ನಾನು ಹೇಗೆ ಸಹಾಯ ಮಾಡಬಹುದು?",
+          senior:
+            "ಧನ್ಯವಾದ. ನಿಮ್ಮ ವಿವರಗಳನ್ನು ದಾಖಲಿಸಿದ್ದೇನೆ. ದಯವಿಟ್ಟು ಏನಾಯಿತು ಎಂದು ಹೇಳಿ.",
         },
         mr: {
           child: "धन्यवाद. तुमचे तपशील नोंदवले आहेत. आता काय झाले ते सांगा.",
@@ -637,27 +692,33 @@ export default function ComplaintPage() {
         },
         bn: {
           child: "ধন্যবাদ। আপনার তথ্য নোট করেছি। এখন কী হয়েছে বলুন।",
-          adult: "ধন্যবাদ। আপনার তথ্য নোট করেছি। আজ আমি কীভাবে সাহায্য করতে পারি?",
+          adult:
+            "ধন্যবাদ। আপনার তথ্য নোট করেছি। আজ আমি কীভাবে সাহায্য করতে পারি?",
           senior: "ধন্যবাদ। আপনার তথ্য নোট করেছি। কী হয়েছে বলুন।",
         },
         gu: {
           child: "આભાર. તમારી વિગતો નોંધ લઈ છે. હવે શું થયું તે જણાવો.",
-          adult: "આભાર. તમારી વિગતો નોંધ લઈ છે. આવ, હું આજ તમારી કેવી રીતે મદદ કરી શકું?",
+          adult:
+            "આભાર. તમારી વિગતો નોંધ લઈ છે. આવ, હું આજ તમારી કેવી રીતે મદદ કરી શકું?",
           senior: "આભાર. તમારી વિગતો નોંધ લઈ છે. શું થયું તે જણાવો.",
         },
         ml: {
-          child: "നന്ദി. നിങ്ങളുടെ വിവരങ്ങൾ കുറിച്ചു. ഇനി എന്ത് സംഭവിച്ചു എന്ന് പറയൂ.",
-          adult: "നന്ദി. നിങ്ങളുടെ വിവരങ്ങൾ കുറിച്ചു. ഇന്ന് ഞാൻ എങ്ങനെ സഹായിക്കണം?",
-          senior: "നന്ദി. നിങ്ങളുടെ വിവരങ്ങൾ കുറിച്ചു. എന്ത് സംഭവിച്ചു എന്ന് പറയൂ.",
+          child:
+            "നന്ദി. നിങ്ങളുടെ വിവരങ്ങൾ കുറിച്ചു. ഇനി എന്ത് സംഭവിച്ചു എന്ന് പറയൂ.",
+          adult:
+            "നന്ദി. നിങ്ങളുടെ വിവരങ്ങൾ കുറിച്ചു. ഇന്ന് ഞാൻ എങ്ങനെ സഹായിക്കണം?",
+          senior:
+            "നന്ദി. നിങ്ങളുടെ വിവരങ്ങൾ കുറിച്ചു. എന്ത് സംഭവിച്ചു എന്ന് പറയൂ.",
         },
         pa: {
           child: "ਧੰਨਵਾਦ। ਤੁਹਾਡੇ ਵੇਰਵੇ ਨੋਟ ਕਰ ਲਏ। ਹੁਣ ਦੱਸੋ ਕੀ ਹੋਇਆ।",
-          adult: "ਧੰਨਵਾਦ। ਤੁਹਾਡੇ ਵੇਰਵੇ ਨੋਟ ਕਰ ਲਏ। ਅੱਜ ਮੈਂ ਤੁਹਾਡੀ ਕਿਵੇਂ ਮਦਦ ਕਰ ਸਕਦਾ ਹਾਂ?",
+          adult:
+            "ਧੰਨਵਾਦ। ਤੁਹਾਡੇ ਵੇਰਵੇ ਨੋਟ ਕਰ ਲਏ। ਅੱਜ ਮੈਂ ਤੁਹਾਡੀ ਕਿਵੇਂ ਮਦਦ ਕਰ ਸਕਦਾ ਹਾਂ?",
           senior: "ਧੰਨਵਾਦ। ਤੁਹਾਡੇ ਵੇਰਵੇ ਨੋਟ ਕਰ ਲਏ। ਕੀ ਹੋਇਆ ਦੱਸੋ।",
         },
       };
       const langProc = proceedMessages[language] || proceedMessages.en;
-      const proceed = (langProc[userCategory] || langProc.adult);
+      const proceed = langProc[userCategory] || langProc.adult;
       addAIMsg(proceed);
       speakReply(proceed);
       return;
@@ -799,7 +860,8 @@ export default function ComplaintPage() {
       const ageMatch = trimmed.match(/\d+/);
       const parsedAge = ageMatch ? parseInt(ageMatch[0], 10) : null;
       if (parsedAge && parsedAge >= 1 && parsedAge <= 120) {
-        const newCategory = parsedAge < 18 ? "child" : parsedAge <= 60 ? "adult" : "senior";
+        const newCategory =
+          parsedAge < 18 ? "child" : parsedAge <= 60 ? "adult" : "senior";
         effectiveAge = parsedAge;
         effectiveCategory = newCategory;
         setUserAge(parsedAge);
@@ -809,7 +871,7 @@ export default function ComplaintPage() {
 
     // 1. Update the user message in-place
     setMessages((prev) =>
-      prev.map((m) => (m.id === msgId ? { ...m, text: trimmed } : m))
+      prev.map((m) => (m.id === msgId ? { ...m, text: trimmed } : m)),
     );
 
     // 2. Remove the AI reply that immediately follows this message
@@ -827,7 +889,10 @@ export default function ComplaintPage() {
     try {
       const history = messages
         .filter((m) => !m.type && m.text)
-        .map((m) => ({ role: m.role === "ai" ? "assistant" : "user", content: m.text }));
+        .map((m) => ({
+          role: m.role === "ai" ? "assistant" : "user",
+          content: m.text,
+        }));
 
       const context = {
         userName: user?.name,
@@ -853,7 +918,10 @@ export default function ComplaintPage() {
           id: (Date.now() + 1).toString(),
           text: aiText,
           role: "ai",
-          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          timestamp: new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
         },
       ]);
 
@@ -993,10 +1061,16 @@ export default function ComplaintPage() {
       if (result.rejected || result.module1?.isAiGenerated) {
         // Remove the bubble — AI-generated images are not accepted as evidence
         setMessages((prev) => prev.filter((m) => m.id !== mediaId));
-        toast.error("🤖 AI-generated image detected. This evidence has been rejected.", { duration: 5000 });
+        toast.error(
+          "🤖 AI-generated image detected. This evidence has been rejected.",
+          { duration: 5000 },
+        );
       } else {
-        setMessages((prev) => prev.map((m) => m.id === mediaId ? { ...m, loading: false } : m));
-        if (result.evidenceId) setPendingEvidenceIds((prev) => [...prev, result.evidenceId]);
+        setMessages((prev) =>
+          prev.map((m) => (m.id === mediaId ? { ...m, loading: false } : m)),
+        );
+        if (result.evidenceId)
+          setPendingEvidenceIds((prev) => [...prev, result.evidenceId]);
         if (result.module1?.status === "completed") {
           toast.success("Evidence uploaded and analysed.");
         } else {
@@ -1061,12 +1135,16 @@ export default function ComplaintPage() {
       if (result.rejected || result.module1?.isAiGenerated) {
         // AI-generated — remove the bubble and reject
         setMessages((prev) => prev.filter((m) => m.id !== mediaId));
-        toast.error("🤖 AI-generated image detected. This evidence has been rejected.", { duration: 5000 });
+        toast.error(
+          "🤖 AI-generated image detected. This evidence has been rejected.",
+          { duration: 5000 },
+        );
       } else {
         setMessages((prev) =>
           prev.map((m) => (m.id === mediaId ? { ...m, loading: false } : m)),
         );
-        if (result.evidenceId) setPendingEvidenceIds((prev) => [...prev, result.evidenceId]);
+        if (result.evidenceId)
+          setPendingEvidenceIds((prev) => [...prev, result.evidenceId]);
         if (result.module1?.status === "completed") {
           toast.success("Evidence uploaded and analysed.");
         } else {
@@ -1720,46 +1798,151 @@ export default function ComplaintPage() {
                         fontSize: "0.85rem",
                       }}
                     >
-                      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "14px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          marginBottom: "14px",
+                        }}
+                      >
                         <CheckCircle2 size={20} color="#10b981" />
-                        <span style={{ fontWeight: 700, color: "#10b981", fontSize: "0.95rem" }}>
+                        <span
+                          style={{
+                            fontWeight: 700,
+                            color: "#10b981",
+                            fontSize: "0.95rem",
+                          }}
+                        >
                           Complaint Filed Successfully
                         </span>
                       </div>
-                      <div style={{ background: "rgba(0,0,0,0.3)", borderRadius: "10px", padding: "12px", marginBottom: "12px", textAlign: "center" }}>
-                        <div style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.4)", letterSpacing: "1px", textTransform: "uppercase", marginBottom: "4px" }}>
+                      <div
+                        style={{
+                          background: "rgba(0,0,0,0.3)",
+                          borderRadius: "10px",
+                          padding: "12px",
+                          marginBottom: "12px",
+                          textAlign: "center",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: "0.7rem",
+                            color: "rgba(255,255,255,0.4)",
+                            letterSpacing: "1px",
+                            textTransform: "uppercase",
+                            marginBottom: "4px",
+                          }}
+                        >
                           Tracking ID
                         </div>
-                        <div style={{ fontSize: "1.2rem", fontWeight: 800, color: "#a78bfa", letterSpacing: "2px" }}>
+                        <div
+                          style={{
+                            fontSize: "1.2rem",
+                            fontWeight: 800,
+                            color: "#a78bfa",
+                            letterSpacing: "2px",
+                          }}
+                        >
                           {msg.receipt.trackingId}
                         </div>
                       </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "14px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "8px",
+                          marginBottom: "14px",
+                        }}
+                      >
                         {msg.receipt.station && (
-                          <div style={{ display: "flex", gap: "8px", color: "rgba(255,255,255,0.7)" }}>
-                            <MapPin size={14} style={{ flexShrink: 0, marginTop: "2px", color: "#60a5fa" }} />
-                            <span>{msg.receipt.station}{msg.receipt.district ? `, ${msg.receipt.district}` : ""}</span>
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "8px",
+                              color: "rgba(255,255,255,0.7)",
+                            }}
+                          >
+                            <MapPin
+                              size={14}
+                              style={{
+                                flexShrink: 0,
+                                marginTop: "2px",
+                                color: "#60a5fa",
+                              }}
+                            />
+                            <span>
+                              {msg.receipt.station}
+                              {msg.receipt.district
+                                ? `, ${msg.receipt.district}`
+                                : ""}
+                            </span>
                           </div>
                         )}
                         {msg.receipt.incidentType && (
-                          <div style={{ display: "flex", gap: "8px", color: "rgba(255,255,255,0.7)" }}>
-                            <FileText size={14} style={{ flexShrink: 0, marginTop: "2px", color: "#a78bfa" }} />
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "8px",
+                              color: "rgba(255,255,255,0.7)",
+                            }}
+                          >
+                            <FileText
+                              size={14}
+                              style={{
+                                flexShrink: 0,
+                                marginTop: "2px",
+                                color: "#a78bfa",
+                              }}
+                            />
                             <span>{msg.receipt.incidentType}</span>
                           </div>
                         )}
                         {msg.receipt.priority && (
-                          <div style={{ display: "flex", gap: "8px", color: "rgba(255,255,255,0.7)" }}>
-                            <AlertCircle size={14} style={{ flexShrink: 0, marginTop: "2px", color: msg.receipt.priority === "URGENT" ? "#f87171" : "#fbbf24" }} />
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "8px",
+                              color: "rgba(255,255,255,0.7)",
+                            }}
+                          >
+                            <AlertCircle
+                              size={14}
+                              style={{
+                                flexShrink: 0,
+                                marginTop: "2px",
+                                color:
+                                  msg.receipt.priority === "URGENT"
+                                    ? "#f87171"
+                                    : "#fbbf24",
+                              }}
+                            />
                             <span>Priority: {msg.receipt.priority}</span>
                           </div>
                         )}
-                        <div style={{ display: "flex", gap: "8px", color: "rgba(255,255,255,0.7)" }}>
-                          <Clock size={14} style={{ flexShrink: 0, marginTop: "2px", color: "#34d399" }} />
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: "8px",
+                            color: "rgba(255,255,255,0.7)",
+                          }}
+                        >
+                          <Clock
+                            size={14}
+                            style={{
+                              flexShrink: 0,
+                              marginTop: "2px",
+                              color: "#34d399",
+                            }}
+                          />
                           <span>Filed at {msg.receipt.filedAt}</span>
                         </div>
                       </div>
                       <button
-                        onClick={() => navigate(`/track/${msg.receipt.trackingId}`)}
+                        onClick={() =>
+                          navigate(`/track/${msg.receipt.trackingId}`)
+                        }
                         style={{
                           width: "100%",
                           padding: "10px",
@@ -1785,7 +1968,15 @@ export default function ComplaintPage() {
                   {!msg.type && (
                     <div style={{ position: "relative" }}>
                       {editingMessageId === msg.id ? (
-                        <div style={{ display: "flex", flexDirection: "column", gap: "8px", minWidth: "220px", maxWidth: "420px" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "8px",
+                            minWidth: "220px",
+                            maxWidth: "420px",
+                          }}
+                        >
                           <textarea
                             value={editedText}
                             onChange={(e) => setEditedText(e.target.value)}
@@ -1805,16 +1996,41 @@ export default function ComplaintPage() {
                               boxSizing: "border-box",
                             }}
                           />
-                          <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "flex-end",
+                              gap: "8px",
+                            }}
+                          >
                             <button
                               onClick={() => setEditingMessageId(null)}
-                              style={{ padding: "6px 14px", borderRadius: "8px", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", color: "#ccc", fontSize: "0.8rem", cursor: "pointer" }}
+                              style={{
+                                padding: "6px 14px",
+                                borderRadius: "8px",
+                                background: "rgba(255,255,255,0.08)",
+                                border: "1px solid rgba(255,255,255,0.15)",
+                                color: "#ccc",
+                                fontSize: "0.8rem",
+                                cursor: "pointer",
+                              }}
                             >
                               Cancel
                             </button>
                             <button
                               onClick={() => handleSaveEdit(msg.id)}
-                              style={{ padding: "6px 14px", borderRadius: "8px", background: "rgba(79,70,229,0.5)", border: "1px solid rgba(79,70,229,0.7)", color: "#fff", fontSize: "0.8rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
+                              style={{
+                                padding: "6px 14px",
+                                borderRadius: "8px",
+                                background: "rgba(79,70,229,0.5)",
+                                border: "1px solid rgba(79,70,229,0.7)",
+                                color: "#fff",
+                                fontSize: "0.8rem",
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "4px",
+                              }}
                             >
                               <Check size={13} /> Save
                             </button>
@@ -1852,7 +2068,10 @@ export default function ComplaintPage() {
                           </div>
                           {msg.role === "user" && (
                             <button
-                              onClick={() => { setEditingMessageId(msg.id); setEditedText(msg.text); }}
+                              onClick={() => {
+                                setEditingMessageId(msg.id);
+                                setEditedText(msg.text);
+                              }}
                               title="Edit message"
                               style={{
                                 position: "absolute",
@@ -1870,8 +2089,12 @@ export default function ComplaintPage() {
                                 opacity: 0.25,
                                 transition: "opacity 0.2s",
                               }}
-                              onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
-                              onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.25")}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.opacity = "1")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.opacity = "0.25")
+                              }
                             >
                               <Pencil size={12} color="#c4b5fd" />
                             </button>
@@ -2364,14 +2587,23 @@ export default function ComplaintPage() {
                 alignItems: "center",
                 gap: "6px",
                 fontSize: "10px",
-                color: "#60a5fa",
-                opacity: 0.8,
+                color: "#38bdf8",
+                opacity: 0.9,
                 borderLeft: "1px solid rgba(255,255,255,0.1)",
                 paddingLeft: "12px",
+                animation: "pulse 2s infinite",
               }}
             >
-              <Shield size={12} />
-              <b>ENCRYPTED & HASHED</b>
+              <div
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: "50%",
+                  background: "#38bdf8",
+                  boxShadow: "0 0 8px #38bdf8",
+                }}
+              ></div>
+              <b>QUANTUM PROTECTED</b>
             </div>
           </div>
         </div>
@@ -2756,39 +2988,65 @@ export default function ComplaintPage() {
       {/* ── In-browser Camera Modal ─────────────────────────────────────── */}
       {/* ── Leave Confirmation Modal ───────────────────────── */}
       {showLeaveModal && (
-        <div style={{
-          position: "fixed", inset: 0, zIndex: 10000,
-          background: "rgba(0,0,0,0.75)",
-          backdropFilter: "blur(6px)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          padding: "24px",
-        }}>
-          <div style={{
-            background: "#111827",
-            border: "1px solid rgba(239,68,68,0.35)",
-            borderRadius: "20px",
-            padding: "32px 28px",
-            maxWidth: "380px",
-            width: "100%",
-            textAlign: "center",
-            boxShadow: "0 24px 60px rgba(0,0,0,0.6)",
-          }}>
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 10000,
+            background: "rgba(0,0,0,0.75)",
+            backdropFilter: "blur(6px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "24px",
+          }}
+        >
+          <div
+            style={{
+              background: "#111827",
+              border: "1px solid rgba(239,68,68,0.35)",
+              borderRadius: "20px",
+              padding: "32px 28px",
+              maxWidth: "380px",
+              width: "100%",
+              textAlign: "center",
+              boxShadow: "0 24px 60px rgba(0,0,0,0.6)",
+            }}
+          >
             <div style={{ fontSize: "2.5rem", marginBottom: "12px" }}>⚠️</div>
-            <h3 style={{ margin: "0 0 8px", fontSize: "1.15rem", color: "#f3f4f6" }}>
+            <h3
+              style={{
+                margin: "0 0 8px",
+                fontSize: "1.15rem",
+                color: "#f3f4f6",
+              }}
+            >
               Leave complaint session?
             </h3>
-            <p style={{ margin: "0 0 24px", fontSize: "0.85rem", color: "rgba(255,255,255,0.45)", lineHeight: 1.5 }}>
-              Your conversation will be lost and cannot be recovered. Are you sure you want to go back?
+            <p
+              style={{
+                margin: "0 0 24px",
+                fontSize: "0.85rem",
+                color: "rgba(255,255,255,0.45)",
+                lineHeight: 1.5,
+              }}
+            >
+              Your conversation will be lost and cannot be recovered. Are you
+              sure you want to go back?
             </p>
             <div style={{ display: "flex", gap: "12px" }}>
               <button
                 onClick={cancelLeave}
                 style={{
-                  flex: 1, padding: "12px",
+                  flex: 1,
+                  padding: "12px",
                   background: "rgba(255,255,255,0.07)",
                   border: "1px solid rgba(255,255,255,0.12)",
-                  borderRadius: "12px", color: "white",
-                  fontWeight: "600", cursor: "pointer", fontSize: "0.9rem",
+                  borderRadius: "12px",
+                  color: "white",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  fontSize: "0.9rem",
                 }}
               >
                 Stay
@@ -2796,11 +3054,15 @@ export default function ComplaintPage() {
               <button
                 onClick={confirmLeave}
                 style={{
-                  flex: 1, padding: "12px",
+                  flex: 1,
+                  padding: "12px",
                   background: "rgba(239,68,68,0.85)",
                   border: "1px solid rgba(239,68,68,0.5)",
-                  borderRadius: "12px", color: "white",
-                  fontWeight: "700", cursor: "pointer", fontSize: "0.9rem",
+                  borderRadius: "12px",
+                  color: "white",
+                  fontWeight: "700",
+                  cursor: "pointer",
+                  fontSize: "0.9rem",
                 }}
               >
                 Yes, Leave

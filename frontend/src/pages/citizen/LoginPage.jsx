@@ -37,6 +37,19 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const { loginCitizen, user, loading: authLoading } = useAuth();
   const { t, i18n } = useTranslation();
+  const [quantumStatus, setQuantumStatus] = useState(null);
+
+  useEffect(() => {
+    const checkQuantum = async () => {
+      try {
+        const res = await api.get("/api/auth/quantum-status");
+        setQuantumStatus(res.data);
+      } catch (err) {
+        console.error("Quantum Status Error", err);
+      }
+    };
+    checkQuantum();
+  }, []);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -273,6 +286,36 @@ export default function LoginPage() {
                 ? "Confirm your identity details"
                 : `${t("login.otpSentTo")} ${masked}`}
           </p>
+          {quantumStatus && (
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "6px 12px",
+                background: "rgba(56, 189, 248, 0.1)",
+                border: "1px solid rgba(56, 189, 248, 0.2)",
+                borderRadius: "20px",
+                marginTop: "16px",
+                fontSize: "0.75rem",
+                color: "#38bdf8",
+                fontWeight: 600,
+                letterSpacing: "0.05em",
+                animation: "pulse 2s infinite",
+              }}
+            >
+              <span
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  background: "#38bdf8",
+                  boxShadow: "0 0 10px #38bdf8",
+                }}
+              ></span>
+              QUANTUM PROTOCOL: {quantumStatus.status.toUpperCase()}
+            </div>
+          )}
         </div>
 
         <div className="card" style={{ padding: "32px" }}>
@@ -431,9 +474,20 @@ export default function LoginPage() {
                       loading || rawAadhaar().length !== 12 || !acceptedTerms
                     }
                   >
-                    {loading
-                      ? t("login.requestingOtp")
-                      : t("login.getAadhaarOtp")}
+                    {loading ? (
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                        }}
+                      >
+                        <div className="spinner-small" />
+                        ENTANGLING...
+                      </div>
+                    ) : (
+                      t("login.getAadhaarOtp")
+                    )}
                   </button>
                   <p
                     style={{
@@ -519,7 +573,9 @@ export default function LoginPage() {
                     onClick={getPanDetails}
                     disabled={loading || pan.length !== 10 || !acceptedTerms}
                   >
-                    {loading ? t("login.verifyingRecord") : t("login.verifyPan")}
+                    {loading
+                      ? t("login.verifyingRecord")
+                      : t("login.verifyPan")}
                   </button>
                 </div>
               ) : (
@@ -734,7 +790,9 @@ export default function LoginPage() {
                 onClick={sendMobileOtpForPan}
                 disabled={loading || mobile.length !== 10}
               >
-                {loading ? t("login.sendingVerification") : t("login.verifyMobile")}
+                {loading
+                  ? t("login.sendingVerification")
+                  : t("login.verifyMobile")}
               </button>
               <button
                 className="btn btn-ghost w-full"
@@ -801,7 +859,7 @@ export default function LoginPage() {
                 }
                 disabled={loading || otpCells.join("").length !== 6}
               >
-                    {loading ? t("login.verifying") : t("login.verifyOtp")}
+                {loading ? t("login.verifying") : t("login.verifyOtp")}
               </button>
               <button
                 className="btn btn-ghost w-full"
