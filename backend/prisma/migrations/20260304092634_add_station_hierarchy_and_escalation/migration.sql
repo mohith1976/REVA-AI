@@ -1,3 +1,6 @@
+/*
+  Warnings:
+
   - A unique constraint covering the columns `[external_id]` on the table `police_stations` will be added.
 
 */
