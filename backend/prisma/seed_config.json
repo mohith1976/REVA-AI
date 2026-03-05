@@ -1,0 +1,7 @@
+{
+    "adminEmail": "global_admin@reva.gov.in",
+    "adminPassword": "Admin@123",
+    "policeDomain": "police.gov.in",
+    "govDomain": "reva.gov.in",
+    "stationDataPath": "./full_police_stations.json"
+}
